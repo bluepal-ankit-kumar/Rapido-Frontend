@@ -1,3 +1,4 @@
+import useGeolocation from '../../hooks/useGeolocation';
 import React, { useState, useEffect } from 'react';
 import VehicleTypeSelector from '../../components/common/VehicleTypeSelector';
 import MapDisplay from '../../components/shared/MapDisplay';
@@ -30,7 +31,13 @@ import {
 } from '@mui/icons-material';
 
 export default function RideBooking() {
+  const geo = useGeolocation();
   const [pickup, setPickup] = useState('');
+  useEffect(() => {
+    if (geo && geo.latitude && geo.longitude && !pickup) {
+      setPickup(`${geo.latitude}, ${geo.longitude}`);
+    }
+  }, [geo]);
   const [dropoff, setDropoff] = useState('');
   const [selectedType, setSelectedType] = useState('Bike');
   const [selectedRider, setSelectedRider] = useState(null);
@@ -226,7 +233,7 @@ export default function RideBooking() {
                 <Typography variant="h6" className="font-bold text-gray-800 p-4 pb-2">Map View</Typography>
                 <Divider />
                 <MapDisplay 
-                  userLocation={{ lat: 12.9716, lng: 77.5946 }} 
+                  userLocation={geo && geo.latitude && geo.longitude ? [geo.latitude, geo.longitude] : [12.9716, 77.5946]} 
                   nearbyRiders={availableRiders} 
                 />
               </CardContent>

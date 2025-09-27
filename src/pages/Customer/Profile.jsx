@@ -1,3 +1,4 @@
+import useGeolocation from '../../hooks/useGeolocation';
 import React, { useState } from 'react';
 import { 
   TextField, 
@@ -25,6 +26,7 @@ import {
   CalendarToday,
   Lock
 } from '@mui/icons-material';
+import MapDisplay from '../../components/shared/MapDisplay';
 
 const initialProfile = {
   name: 'John Doe',
@@ -37,7 +39,9 @@ const initialProfile = {
 };
 
 export default function Profile() {
+  const geo = useGeolocation();
   const [profile, setProfile] = useState(initialProfile);
+  // Optionally, you can display or use geo location in the profile if needed
   const [edit, setEdit] = useState(false);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -72,6 +76,9 @@ export default function Profile() {
     }, 1000);
   };
 
+  // Compute userLocation as [lat, lng] array for MapDisplay
+  const userLocation = geo && geo.latitude && geo.longitude ? [geo.latitude, geo.longitude] : [28.6139, 77.2090];
+
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       <div className="max-w-4xl mx-auto">
@@ -79,6 +86,11 @@ export default function Profile() {
         <Box className="mb-8">
           <Typography variant="h4" className="font-bold text-gray-800">My Profile</Typography>
           <Typography variant="body2" className="text-gray-600">Manage your account information and preferences</Typography>
+        </Box>
+        {/* Live Location Map */}
+        <Box className="mb-8">
+          <Typography variant="body2" className="mb-2">Current Location</Typography>
+          <MapDisplay userLocation={userLocation} nearbyRiders={[]} />
         </Box>
 
         <Grid container spacing={4}>
@@ -92,9 +104,7 @@ export default function Profile() {
                 />
                 <Typography variant="h5" className="font-bold text-gray-800">{profile.name}</Typography>
                 <Typography variant="body2" className="text-gray-600 mb-4">{profile.email}</Typography>
-                
                 <Divider className="my-4" />
-                
                 <Box className="space-y-3">
                   <Box className="flex items-center">
                     <Phone className="text-gray-500 mr-2" fontSize="small" />

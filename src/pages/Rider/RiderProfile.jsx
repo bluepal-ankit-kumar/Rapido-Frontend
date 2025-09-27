@@ -1,3 +1,4 @@
+import useGeolocation from '../../hooks/useGeolocation';
 import React, { useState } from 'react';
 import { 
   TextField, 
@@ -27,6 +28,7 @@ import {
   Lock,
   Notifications
 } from '@mui/icons-material';
+import MapDisplay from '../../components/shared/MapDisplay';
 
 const initialProfile = {
   name: 'Ravi Kumar',
@@ -38,7 +40,9 @@ const initialProfile = {
 };
 
 export default function RiderProfile() {
+  const geo = useGeolocation();
   const [profile, setProfile] = useState(initialProfile);
+  // Optionally, you can display or use geo location in the rider profile if needed
   const [edit, setEdit] = useState(false);
   const [tempProfile, setTempProfile] = useState(initialProfile);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
@@ -74,7 +78,6 @@ export default function RiderProfile() {
           Manage your personal information and preferences
         </Typography>
       </Box>
-      
       <Card elevation={3} className="mb-6">
         <CardContent className="p-6">
           <Box className="flex flex-col items-center mb-6">
@@ -88,9 +91,7 @@ export default function RiderProfile() {
               Member since Jan 2023
             </Typography>
           </Box>
-          
           <Divider className="mb-6" />
-          
           <Grid container spacing={4}>
             <Grid item xs={12} md={6}>
               <Box className="flex items-center mb-4">
@@ -98,17 +99,20 @@ export default function RiderProfile() {
                 <TextField
                   label="Full Name"
                   name="name"
-                  value={edit ? tempProfile.name : profile.name}
+                  value={profile.name}
                   onChange={handleChange}
                   fullWidth
-                  variant={edit ? "outlined" : "standard"}
-                  InputProps={{
-                    readOnly: !edit,
-                    disableUnderline: !edit
-                  }}
+                  disabled={!edit}
                 />
               </Box>
-              
+              {/* Show live location map */}
+              <Box className="mt-4">
+                <Typography variant="body2" className="mb-2">Current Location</Typography>
+                <MapDisplay userLocation={geo && geo.latitude && geo.longitude ? [geo.latitude, geo.longitude] : [28.6139, 77.2090]} nearbyRiders={[]} />
+              </Box>
+            </Grid>
+            
+            <Grid item xs={12} md={6}>
               <Box className="flex items-center mb-4">
                 <Email className="text-gray-500 mr-2" />
                 <TextField
@@ -131,56 +135,6 @@ export default function RiderProfile() {
                   label="Phone Number"
                   name="phone"
                   value={edit ? tempProfile.phone : profile.phone}
-                  onChange={handleChange}
-                  fullWidth
-                  variant={edit ? "outlined" : "standard"}
-                  InputProps={{
-                    readOnly: !edit,
-                    disableUnderline: !edit
-                  }}
-                />
-              </Box>
-            </Grid>
-            
-            <Grid item xs={12} md={6}>
-              <Box className="flex items-center mb-4">
-                <Home className="text-gray-500 mr-2" />
-                <TextField
-                  label="Address"
-                  name="address"
-                  value={edit ? tempProfile.address : profile.address}
-                  onChange={handleChange}
-                  fullWidth
-                  variant={edit ? "outlined" : "standard"}
-                  InputProps={{
-                    readOnly: !edit,
-                    disableUnderline: !edit
-                  }}
-                />
-              </Box>
-              
-              <Box className="flex items-center mb-4">
-                <LocationCity className="text-gray-500 mr-2" />
-                <TextField
-                  label="City"
-                  name="city"
-                  value={edit ? tempProfile.city : profile.city}
-                  onChange={handleChange}
-                  fullWidth
-                  variant={edit ? "outlined" : "standard"}
-                  InputProps={{
-                    readOnly: !edit,
-                    disableUnderline: !edit
-                  }}
-                />
-              </Box>
-              
-              <Box className="flex items-center mb-4">
-                <Phone className="text-gray-500 mr-2" />
-                <TextField
-                  label="Emergency Contact"
-                  name="emergencyContact"
-                  value={edit ? tempProfile.emergencyContact : profile.emergencyContact}
                   onChange={handleChange}
                   fullWidth
                   variant={edit ? "outlined" : "standard"}

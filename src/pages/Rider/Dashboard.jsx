@@ -1,3 +1,4 @@
+import useGeolocation from '../../hooks/useGeolocation';
 import React, { useState } from 'react';
 import { 
   Typography, 
@@ -37,6 +38,7 @@ import {
   Directions,
   MoreVert
 } from '@mui/icons-material';
+import MapDisplay from '../../components/shared/MapDisplay';
 
 const summary = [
   { title: 'Completed Rides', value: 120, icon: <TwoWheeler className="text-yellow-500" />, color: '#FFF8E1' },
@@ -77,7 +79,9 @@ function TabPanel(props) {
 }
 
 export default function Dashboard() {
+  const geo = useGeolocation();
   const [tabValue, setTabValue] = useState(0);
+  // Optionally, you can display or use geo location in the dashboard if needed
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
 
@@ -98,90 +102,16 @@ export default function Dashboard() {
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <Box className="mb-8 flex justify-between items-center">
-          <div>
-            <Typography variant="h4" className="font-bold text-gray-800">Rider Dashboard</Typography>
-            <Typography variant="body1" className="text-gray-600">Welcome back, Rahul!</Typography>
-          </div>
-          <Box className="flex items-center">
-            <Avatar className="mr-3" src="https://i.pravatar.cc/150?u=rider" />
-            <div>
-              <Typography variant="h6" className="font-medium">Rahul Kumar</Typography>
-              <Typography variant="body2" className="text-gray-600">Online</Typography>
-            </div>
-            <IconButton
-              aria-label="more"
-              aria-controls="long-menu"
-              aria-haspopup="true"
-              onClick={handleMenuClick}
-            >
-              <MoreVert />
-            </IconButton>
-            <Menu
-              id="long-menu"
-              anchorEl={anchorEl}
-              keepMounted
-              open={open}
-              onClose={handleMenuClose}
-              PaperProps={{
-                elevation: 0,
-                sx: {
-                  overflow: 'visible',
-                  filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.1))',
-                  mt: 1.5,
-                  '& .MuiAvatar-root': {
-                    width: 32,
-                    height: 32,
-                    ml: -0.5,
-                    mr: 1,
-                  },
-                },
-              }}
-            >
-              <MenuItem onClick={handleMenuClose}>
-                <Avatar /> Profile
-              </MenuItem>
-              <MenuItem onClick={handleMenuClose}>
-                <AccountBalanceWallet /> Wallet
-              </MenuItem>
-              <MenuItem onClick={handleMenuClose}>
-                <History /> Ride History
-              </MenuItem>
-              <MenuItem onClick={handleMenuClose}>
-                <Settings /> Settings
-              </MenuItem>
-              <Divider />
-              <MenuItem onClick={handleMenuClose}>
-                <Notifications /> Notifications
-              </MenuItem>
-              <MenuItem onClick={handleMenuClose}>
-                <Person /> Logout
-              </MenuItem>
-            </Menu>
-          </Box>
+          <Typography variant="h4" className="font-bold text-gray-800">Rider Dashboard</Typography>
         </Box>
-
-        {/* Summary Cards */}
-        <Grid container spacing={3} className="mb-6">
-          {summary.map((item) => (
-            <Grid item xs={12} sm={4} key={item.title}>
-              <Card className="shadow-md rounded-xl h-full">
-                <CardContent className="p-4">
-                  <Box className="flex items-center mb-2">
-                    <Box className="p-2 rounded-lg" style={{ backgroundColor: item.color }}>
-                      {item.icon}
-                    </Box>
-                    <Typography variant="h6" className="text-gray-600 ml-2">{item.title}</Typography>
-                  </Box>
-                  <Typography variant="h5" className="font-bold text-gray-800">{item.value}</Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
-
         <Grid container spacing={4}>
-          {/* Left Column - Recent Rides and Actions */}
           <Grid item xs={12} md={8}>
+            {/* Show live location map */}
+            <Box className="mb-6">
+              <Typography variant="body2" className="mb-2">Current Location</Typography>
+              <MapDisplay userLocation={geo && geo.latitude && geo.longitude ? [geo.latitude, geo.longitude] : [28.6139, 77.2090]} nearbyRiders={[]} />
+            </Box>
+
             {/* Tabs */}
             <Box className="mb-4">
               <Tabs value={tabValue} onChange={handleTabChange} aria-label="dashboard tabs">

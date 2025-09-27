@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import useGeolocation from '../../hooks/useGeolocation';
 import { useNavigate } from 'react-router-dom';
 import MapDisplay from '../../components/shared/MapDisplay';
 import VehicleTypeSelector from '../../components/common/VehicleTypeSelector';
@@ -23,6 +24,19 @@ export default function HomePage() {
     { id: 2, name: 'Vikram', location: [28.6120, 77.2080] },
     { id: 3, name: 'Amit', location: [28.6140, 77.2110] },
   ]);
+  const geo = useGeolocation();
+  useEffect(() => {
+    if (geo && geo.latitude && geo.longitude) {
+      setUserLocation([geo.latitude, geo.longitude]);
+    }
+  }, [geo]);
+
+  // Always pass userLocation as [lat, lng] array to MapDisplay
+  const mapUserLocation = Array.isArray(userLocation)
+    ? userLocation
+    : (userLocation && userLocation.latitude && userLocation.longitude
+        ? [userLocation.latitude, userLocation.longitude]
+        : [28.6139, 77.2090]);
 
   const handleBookRide = () => {
     navigate('/ride-booking', { state: { vehicleType: selectedType } });
@@ -104,7 +118,7 @@ export default function HomePage() {
                 <Box className="p-4 pt-0">
                   <Typography variant="body2" className="text-gray-600 mb-3">Your Location</Typography>
                   <MapDisplay 
-                    userLocation={userLocation} 
+                    userLocation={mapUserLocation} 
                     nearbyRiders={nearbyRiders} 
                   />
                 </Box>

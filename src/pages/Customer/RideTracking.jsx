@@ -1,3 +1,4 @@
+import useGeolocation from '../../hooks/useGeolocation';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -64,6 +65,7 @@ const mockLocation = {
 };
 
 export default function RideTracking() {
+  const geo = useGeolocation();
   const navigate = useNavigate();
   const [ride, setRide] = useState(null);
   const [location, setLocation] = useState(null);
@@ -78,10 +80,14 @@ export default function RideTracking() {
     // Simulate API call
     setTimeout(() => {
       setRide(mockRide);
-      setLocation(mockLocation);
+      if (geo && geo.latitude && geo.longitude) {
+        setLocation({ latitude: geo.latitude, longitude: geo.longitude });
+      } else {
+        setLocation(mockLocation);
+      }
       setLoading(false);
     }, 1000);
-  }, []);
+  }, [geo]);
 
   // Simulate real-time tracking updates
   useEffect(() => {
@@ -214,11 +220,11 @@ export default function RideTracking() {
                 <Typography variant="h6" className="font-bold text-gray-800 p-4 pb-2">Live Tracking</Typography>
                 <Divider />
                 <MapDisplay 
-                  userLocation={location} 
+                  userLocation={geo && geo.latitude && geo.longitude ? [geo.latitude, geo.longitude] : (location ? [location.latitude, location.longitude] : [12.9716, 77.5946])} 
                   nearbyRiders={[{
                     id: 1,
-                    name: ride.driver.name,
-                    location: location
+                    name: ride && ride.driver ? ride.driver.name : 'Driver',
+                    location: geo && geo.latitude && geo.longitude ? [geo.latitude, geo.longitude] : (location ? [location.latitude, location.longitude] : [12.9716, 77.5946])
                   }]} 
                 />
               </CardContent>

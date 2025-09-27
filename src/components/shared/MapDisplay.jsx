@@ -38,13 +38,12 @@ export default function MapDisplay({ userLocation, nearbyRiders }) {
   const [center, setCenter] = useState([28.6139, 77.2090]); // Default to Delhi
   
   useEffect(() => {
-    if (userLocation) {
+    if (userLocation && map) {
       setCenter(userLocation);
-      if (map) {
-        map.flyTo(userLocation, 15, {
-          duration: 1.5
-        });
-      }
+      // Use setView for instant recentering, or flyTo for smooth animation
+      map.setView(userLocation, 15, { animate: true });
+    } else if (userLocation) {
+      setCenter(userLocation);
     }
   }, [userLocation, map]);
 
