@@ -10,6 +10,7 @@ export const mockAvailableVehicles = [
   { id: 3, type: 'Car', name: 'Rapido Car' },
 ];
 
+
 export const mockRiders = [
   { id: 101, name: 'Rider One', type: 'Bike', rating: 4.8, location: [12.9721, 77.5933], distance: 2.1, eta: 5 },
   { id: 102, name: 'Rider Two', type: 'Auto', rating: 4.6, location: [12.9750, 77.5990], distance: 3.5, eta: 7 },
