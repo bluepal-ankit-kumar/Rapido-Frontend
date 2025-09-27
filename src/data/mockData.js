@@ -1,6 +1,8 @@
 // Mock users array for registration and login
 export const mockUsers = [
-  { name: 'Admin', email: 'admin@rapido.com', password: 'admin123', role: 'admin', verified: true }
+  { name: 'Admin', email: 'admin@rapido.com', password: 'admin123', role: 'admin', verified: true },
+  { name: 'Test User', email: 'user@rapido.com', password: 'user123', role: 'customer', verified: true },
+  { name: 'Test Rider', email: 'rider@rapido.com', password: 'rider123', role: 'rider', verified: true }
 ];
 // mockData.js
 

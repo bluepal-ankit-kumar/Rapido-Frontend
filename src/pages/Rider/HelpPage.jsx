@@ -380,33 +380,35 @@ export default function HelpPage() {
                       <ListItemText
                         primary={request.issue}
                         secondary={
-                          <Box className="flex items-center mt-1">
-                            <Chip 
-                              label={request.category} 
-                              size="small" 
-                              className="mr-2"
-                              style={{ backgroundColor: '#f0f0f0' }}
-                            />
-                            <Chip 
-                              label={request.status}
-                              size="small"
-                              style={{ 
-                                backgroundColor: `${getStatusColor(request.status)}20`,
-                                color: getStatusColor(request.status)
-                              }}
-                            />
-                            <Chip 
-                              label={request.priority}
-                              size="small"
-                              style={{ 
-                                backgroundColor: `${getPriorityColor(request.priority)}20`,
-                                color: getPriorityColor(request.priority)
-                              }}
-                            />
-                            <Typography variant="caption" className="ml-2 text-gray-500">
-                              {request.date}
-                            </Typography>
-                          </Box>
+                          <span>
+                            <Box className="flex items-center mt-1">
+                              <Chip 
+                                label={request.category} 
+                                size="small" 
+                                className="mr-2"
+                                style={{ backgroundColor: '#f0f0f0' }}
+                              />
+                              <Chip 
+                                label={request.status}
+                                size="small"
+                                style={{ 
+                                  backgroundColor: `${getStatusColor(request.status)}20`,
+                                  color: getStatusColor(request.status)
+                                }}
+                              />
+                              <Chip 
+                                label={request.priority}
+                                size="small"
+                                style={{ 
+                                  backgroundColor: `${getPriorityColor(request.priority)}20`,
+                                  color: getPriorityColor(request.priority)
+                                }}
+                              />
+                              <Typography variant="caption" className="ml-2 text-gray-500">
+                                {request.date}
+                              </Typography>
+                            </Box>
+                          </span>
                         }
                       />
                       <IconButton 

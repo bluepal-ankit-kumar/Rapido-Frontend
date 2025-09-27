@@ -446,7 +446,7 @@ export default function RatingsReview() {
           updateStatus(selectedRating.id, 'Pending');
           handleMenuClose();
         }}>
-          <Unpublish className="mr-2" fontSize="small" />
+          <Block className="mr-2" fontSize="small" />
           Unpublish Review
         </MenuItem>
         <MenuItem onClick={() => {

@@ -335,31 +335,33 @@ export default function RideHistory() {
                       </Box>
                     }
                     secondary={
-                      <Box className="mt-1">
-                        <Box className="flex items-center mb-1">
-                          <CalendarToday className="text-gray-500 mr-1" fontSize="small" />
-                          <Typography variant="body2" component="span">{ride.date} at {ride.time}</Typography>
-                          <Typography variant="body2" component="span" className="mx-2">•</Typography>
-                          <Typography variant="body2" component="span">{ride.distance} • {ride.duration}</Typography>
-                        </Box>
-                        <Box className="flex items-center justify-between">
-                          <Box className="flex items-center">
-                            {getVehicleIcon(ride.vehicleType)}
-                            <Typography variant="body2" component="span" className="ml-1">{ride.vehicleType}</Typography>
+                      <span>
+                        <Box className="mt-1">
+                          <Box className="flex items-center mb-1">
+                            <CalendarToday className="text-gray-500 mr-1" fontSize="small" />
+                            <Typography variant="body2" component="span">{ride.date} at {ride.time}</Typography>
                             <Typography variant="body2" component="span" className="mx-2">•</Typography>
-                            <Typography variant="body2" component="span">Driver: {ride.driver}</Typography>
+                            <Typography variant="body2" component="span">{ride.distance} • {ride.duration}</Typography>
                           </Box>
-                          <Box className="flex items-center">
-                            <Typography variant="body2" component="span" className="font-medium mr-2">₹{ride.fare}</Typography>
-                            {ride.rating > 0 && (
-                              <Box className="flex items-center">
-                                <Star className="text-yellow-500" fontSize="small" />
-                                <Typography variant="body2" component="span">{ride.rating}</Typography>
-                              </Box>
-                            )}
+                          <Box className="flex items-center justify-between">
+                            <Box className="flex items-center">
+                              {getVehicleIcon(ride.vehicleType)}
+                              <Typography variant="body2" component="span" className="ml-1">{ride.vehicleType}</Typography>
+                              <Typography variant="body2" component="span" className="mx-2">•</Typography>
+                              <Typography variant="body2" component="span">Driver: {ride.driver}</Typography>
+                            </Box>
+                            <Box className="flex items-center">
+                              <Typography variant="body2" component="span" className="font-medium mr-2">₹{ride.fare}</Typography>
+                              {ride.rating > 0 && (
+                                <Box className="flex items-center">
+                                  <Star className="text-yellow-500" fontSize="small" />
+                                  <Typography variant="body2" component="span">{ride.rating}</Typography>
+                                </Box>
+                              )}
+                            </Box>
                           </Box>
                         </Box>
-                      </Box>
+                      </span>
                     }
                   />
                   <IconButton 

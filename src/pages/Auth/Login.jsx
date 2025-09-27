@@ -1,15 +1,26 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { Paper, Typography, TextField, Button, Checkbox, Link, Box, Alert, CircularProgress } from '@mui/material';
 import useAuth from '../../hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 import useFormValidation from '../../hooks/useFormValidation';
 import { validate } from '../../utils/validators';
 import { mockUsers } from '../../data/mockData';
 
 export default function Login() {
-  const { signIn, loading } = useAuth();
+  const { signIn, loading, user, userRole } = useAuth();
+  const navigate = useNavigate();
   const { values, errors, handleChange } = useFormValidation({ email: '', password: '' }, validate);
   const [formError, setFormError] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      if (userRole === 'rider') navigate('/rider/dashboard');
+      else if (userRole === 'admin') navigate('/admin/dashboard');
+      else navigate('/');
+    }
+  }, [user, userRole, navigate]);
 
   const handleSubmit = e => {
     e.preventDefault();

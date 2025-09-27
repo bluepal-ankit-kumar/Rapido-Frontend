@@ -1,7 +1,11 @@
+
+import { mockUsers } from '../data/mockData.js';
+
 export function login(email, password) {
-	// Simulate login
-	if (email && password) {
-		return { user: { email, name: 'Demo User', role: 'customer' } };
+	// Check credentials against mockUsers
+	const user = mockUsers.find(u => u.email === email && u.password === password);
+	if (user) {
+		return { user };
 	}
 	return { user: null };
 }
