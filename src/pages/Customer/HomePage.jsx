@@ -73,11 +73,10 @@ export default function HomePage() {
   return (
     <div className="bg-gray-50 min-h-screen">
       {/* Hero Section */}
-      <Box className="bg-gradient-to-r from-yellow-400 to-yellow-500 text-white p-8 rounded-b-3xl shadow-lg">
+      <Box className="bg-gradient-to-r from-yellow-400 to-yellow-500 text-white p-8 rounded-b-3xl shadow-lg mb-8">
         <div className="max-w-6xl mx-auto">
           <Typography variant="h3" className="font-bold mb-2">Welcome to Rapido!</Typography>
           <Typography variant="h6" className="mb-6 opacity-90">Fast, safe, and affordable rides at your fingertips</Typography>
-          
           <Grid container spacing={3}>
             {rideSummary.map((item, index) => (
               <Grid item xs={12} sm={4} key={index}>
@@ -98,15 +97,14 @@ export default function HomePage() {
         </div>
       </Box>
 
-      <div className="max-w-6xl mx-auto p-6">
+      <div className="max-w-6xl mx-auto p-4">
         <Grid container spacing={4}>
-          {/* Left Column - Map and Vehicle Selection */}
-          <Grid item xs={12} md={8}>
-            <Card className="shadow-md rounded-xl overflow-hidden">
+          {/* Left Column - Booking & Map */}
+          <Grid item xs={12} md={7}>
+            <Card className="shadow-md rounded-xl mb-6">
               <CardContent className="p-0">
                 <Typography variant="h6" className="font-bold p-4 pb-2">Book Your Ride</Typography>
                 <Divider />
-                
                 <Box className="p-4">
                   <Typography variant="body2" className="text-gray-600 mb-3">Select Vehicle Type</Typography>
                   <VehicleTypeSelector 
@@ -114,7 +112,6 @@ export default function HomePage() {
                     onSelect={setSelectedType} 
                   />
                 </Box>
-                
                 <Box className="p-4 pt-0">
                   <Typography variant="body2" className="text-gray-600 mb-3">Your Location</Typography>
                   <MapDisplay 
@@ -122,7 +119,6 @@ export default function HomePage() {
                     nearbyRiders={nearbyRiders} 
                   />
                 </Box>
-                
                 <Box className="p-4">
                   <Button 
                     variant="contained" 
@@ -136,12 +132,11 @@ export default function HomePage() {
             </Card>
           </Grid>
 
-          {/* Right Column - Quick Actions */}
-          <Grid item xs={12} md={4}>
-            <Card className="shadow-md rounded-xl">
+          {/* Right Column - Quick Actions & Offers */}
+          <Grid item xs={12} md={5}>
+            <Card className="shadow-md rounded-xl mb-6">
               <CardContent>
                 <Typography variant="h6" className="font-bold mb-4">Quick Actions</Typography>
-                
                 <Box className="space-y-3">
                   {quickActions.map((action, index) => (
                     <Card 
@@ -160,13 +155,10 @@ export default function HomePage() {
                 </Box>
               </CardContent>
             </Card>
-
-            {/* Offers Section */}
-            <Card className="shadow-md rounded-xl mt-4">
+            <Card className="shadow-md rounded-xl">
               <CardContent>
                 <Typography variant="h6" className="font-bold mb-4">Special Offers</Typography>
-                
-                <Card className="bg-gradient-to-r from-yellow-50 to-yellow-100 border border-yellow-200">
+                <Card className="bg-gradient-to-r from-yellow-50 to-yellow-100 border border-yellow-200 mb-3">
                   <CardContent className="p-3">
                     <Typography variant="body1" className="font-bold text-yellow-800 mb-1">
                       First Ride Free
@@ -176,8 +168,7 @@ export default function HomePage() {
                     </Typography>
                   </CardContent>
                 </Card>
-                
-                <Card className="bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 mt-3">
+                <Card className="bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200">
                   <CardContent className="p-3">
                     <Typography variant="body1" className="font-bold text-blue-800 mb-1">
                       Weekend Special

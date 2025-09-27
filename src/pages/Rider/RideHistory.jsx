@@ -39,7 +39,8 @@ export default function RideHistory() {
         <Typography variant="h4" fontWeight="bold" gutterBottom>
           Ride History
         </Typography>
-        <Typography variant="body2" color="textSecondary">
+        {/* Changed variant from body2 to span to avoid rendering as <p> */}
+        <Typography variant="span" color="textSecondary" component="div">
           Your recent ride details and status
         </Typography>
       </Box>
@@ -52,12 +53,12 @@ export default function RideHistory() {
                 <Box className="flex-1">
                   <Box className="flex items-center mb-2">
                     <LocationOn className="text-blue-500 mr-1" fontSize="small" />
-                    <Typography variant="subtitle1" fontWeight="medium">
+                    <Typography variant="subtitle1" fontWeight="medium" component="div">
                       {ride.pickup}
                     </Typography>
                     <ArrowRightAlt className="mx-2 text-gray-400" />
                     <LocationOn className="text-green-500 mr-1" fontSize="small" />
-                    <Typography variant="subtitle1" fontWeight="medium">
+                    <Typography variant="subtitle1" fontWeight="medium" component="div">
                       {ride.drop}
                     </Typography>
                   </Box>
@@ -65,20 +66,23 @@ export default function RideHistory() {
                   <Box className="flex flex-wrap items-center gap-3 mt-3">
                     <Box className="flex items-center">
                       <CalendarToday className="text-gray-500 mr-1" fontSize="small" />
-                      <Typography variant="body2" color="textSecondary">
+                      {/* Changed to use component="div" to avoid rendering as <p> */}
+                      <Typography variant="body2" color="textSecondary" component="div">
                         {ride.date}
                       </Typography>
                     </Box>
                     
                     <Divider orientation="vertical" flexItem className="mx-1" />
                     
-                    <Typography variant="body2" color="textSecondary">
+                    {/* Changed to use component="div" to avoid rendering as <p> */}
+                    <Typography variant="body2" color="textSecondary" component="div">
                       {ride.distance} • {ride.duration}
                     </Typography>
                     
                     <Divider orientation="vertical" flexItem className="mx-1" />
                     
-                    <Typography variant="body2" fontWeight="medium">
+                    {/* Changed to use component="div" to avoid rendering as <p> */}
+                    <Typography variant="body2" fontWeight="medium" component="div">
                       {ride.fare}
                     </Typography>
                   </Box>
@@ -109,7 +113,8 @@ export default function RideHistory() {
       </Paper>
       
       <Box className="mt-6 text-center">
-        <Typography variant="body2" color="textSecondary">
+        {/* Changed to use component="div" to avoid rendering as <p> */}
+        <Typography variant="body2" color="textSecondary" component="div">
           Showing {rides.length} of 12 rides
         </Typography>
       </Box>

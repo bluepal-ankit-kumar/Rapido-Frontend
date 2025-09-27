@@ -158,7 +158,7 @@ export default function RideTracking() {
 
         <Grid container spacing={4}>
           {/* Left Column - Map and Status */}
-          <Grid item xs={12} md={8}>
+          <Grid>
             {/* Status Card */}
             <Card className="shadow-md rounded-xl mb-4">
               <CardContent className="p-6">
@@ -232,7 +232,7 @@ export default function RideTracking() {
           </Grid>
 
           {/* Right Column - Driver Info and Actions */}
-          <Grid item xs={12} md={4}>
+          <Grid>
             {/* Driver Info */}
             <Card className="shadow-md rounded-xl mb-4">
               <CardContent className="p-6">

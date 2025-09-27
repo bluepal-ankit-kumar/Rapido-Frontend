@@ -208,7 +208,7 @@ export default function RideHistory() {
 
         {/* Statistics Cards */}
         <Grid container spacing={3} className="mb-6">
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid>
             <Card className="border-l-4 border-blue-500">
               <CardContent>
                 <Typography variant="h6" className="text-gray-600">Total Rides</Typography>
@@ -216,7 +216,7 @@ export default function RideHistory() {
               </CardContent>
             </Card>
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid>
             <Card className="border-l-4 border-green-500">
               <CardContent>
                 <Typography variant="h6" className="text-gray-600">Completed</Typography>
@@ -224,7 +224,7 @@ export default function RideHistory() {
               </CardContent>
             </Card>
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid>
             <Card className="border-l-4 border-red-500">
               <CardContent>
                 <Typography variant="h6" className="text-gray-600">Cancelled</Typography>
@@ -232,7 +232,7 @@ export default function RideHistory() {
               </CardContent>
             </Card>
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid>
             <Card className="border-l-4 border-yellow-500">
               <CardContent>
                 <Typography variant="h6" className="text-gray-600">Total Spent</Typography>
@@ -335,7 +335,7 @@ export default function RideHistory() {
                       </Box>
                     }
                     secondary={
-                      <span>
+                      <React.Fragment>
                         <Box className="mt-1">
                           <Box className="flex items-center mb-1">
                             <CalendarToday className="text-gray-500 mr-1" fontSize="small" />
@@ -361,8 +361,9 @@ export default function RideHistory() {
                             </Box>
                           </Box>
                         </Box>
-                      </span>
+                      </React.Fragment>
                     }
+                    secondaryTypographyProps={{ component: 'div' }}
                   />
                   <IconButton 
                     edge="end" 

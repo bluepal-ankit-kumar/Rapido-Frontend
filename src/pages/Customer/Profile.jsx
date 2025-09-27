@@ -1,4 +1,5 @@
 import useGeolocation from '../../hooks/useGeolocation';
+import CustomPagination from '../../components/common/Pagination';
 import React, { useState } from 'react';
 import { 
   TextField, 
@@ -27,6 +28,7 @@ import {
   Lock
 } from '@mui/icons-material';
 import MapDisplay from '../../components/shared/MapDisplay';
+import ProfileField from '../../components/common/ProfileField';
 
 const initialProfile = {
   name: 'John Doe',
@@ -35,15 +37,27 @@ const initialProfile = {
   address: '123 Main Street, Delhi',
   joinDate: '2023-01-15',
   totalRides: 24,
-  rating: 4.8
+  rating: 4.8,
+  rides: Array.from({ length: 24 }, (_, i) => ({
+    id: i + 1,
+    date: `2023-09-${(i % 30) + 1}`,
+    pickup: 'Location A',
+    dropoff: 'Location B',
+    fare: Math.floor(Math.random() * 100) + 50
+  }))
 };
 
 export default function Profile() {
+  const ridesPerPage = 5;
+  const [page, setPage] = useState(1);
   const geo = useGeolocation();
   const [profile, setProfile] = useState(initialProfile);
   // Optionally, you can display or use geo location in the profile if needed
   const [edit, setEdit] = useState(false);
   const [loading, setLoading] = useState(false);
+  const totalPages = Math.ceil(profile.rides.length / ridesPerPage);
+  const paginatedRides = profile.rides.slice((page - 1) * ridesPerPage, page * ridesPerPage);
+  const handlePageChange = (event, value) => setPage(value);
   const [success, setSuccess] = useState(false);
   const [tempProfile, setTempProfile] = useState(initialProfile);
 
@@ -122,12 +136,24 @@ export default function Profile() {
                 
                 <Box className="mt-6 pt-4 border-t border-gray-200">
                   <Typography variant="body2" className="text-gray-600 mb-1">Ride Statistics</Typography>
-                  <Box className="flex justify-between">
+                  <Box className="flex justify-between mb-2">
                     <Typography variant="body1" className="font-medium">{profile.totalRides} rides</Typography>
                     <Typography variant="body1" className="font-medium flex items-center">
                       <span className="text-yellow-500 mr-1">★</span> {profile.rating}
                     </Typography>
                   </Box>
+                  <Divider className="my-2" />
+                  <Box>
+                    {paginatedRides.map(ride => (
+                      <Box key={ride.id} className="flex justify-between items-center py-2 px-2 border-b last:border-b-0">
+                        <Typography variant="body2" className="font-medium">#{ride.id}</Typography>
+                        <Typography variant="body2">{ride.date}</Typography>
+                        <Typography variant="body2">{ride.pickup} → {ride.dropoff}</Typography>
+                        <Typography variant="body2" color="primary">₹{ride.fare}</Typography>
+                      </Box>
+                    ))}
+                  </Box>
+                  <CustomPagination count={totalPages} page={page} onChange={handlePageChange} />
                 </Box>
                 
                 <Button 
@@ -167,94 +193,35 @@ export default function Profile() {
                 )}
                 
                 <Grid container spacing={3}>
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      label="Full Name"
-                      name="name"
-                      value={profile.name}
-                      onChange={handleChange}
-                      fullWidth
-                      variant="outlined"
-                      size="small"
-                      disabled={!edit}
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      label="Email Address"
-                      name="email"
-                      value={profile.email}
-                      onChange={handleChange}
-                      fullWidth
-                      variant="outlined"
-                      size="small"
-                      disabled={!edit}
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      label="Phone Number"
-                      name="phone"
-                      value={profile.phone}
-                      onChange={handleChange}
-                      fullWidth
-                      variant="outlined"
-                      size="small"
-                      disabled={!edit}
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      label="Address"
-                      name="address"
-                      value={profile.address}
-                      onChange={handleChange}
-                      fullWidth
-                      variant="outlined"
-                      size="small"
-                      disabled={!edit}
-                    />
-                  </Grid>
-                </Grid>
-                
-                <Divider className="my-6" />
-                
-                <Typography variant="h6" className="font-bold text-gray-800 mb-4">Security</Typography>
-                
-                <Grid container spacing={3}>
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      label="Current Password"
-                      type="password"
-                      fullWidth
-                      variant="outlined"
-                      size="small"
-                      disabled={!edit}
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      label="New Password"
-                      type="password"
-                      fullWidth
-                      variant="outlined"
-                      size="small"
-                      disabled={!edit}
-                    />
-                  </Grid>
-                </Grid>
-                
-                <Box className="mt-6">
-                  <Button 
-                    variant="outlined" 
-                    color="primary"
-                    className="mr-2"
+                  <ProfileField
+                    label="Full Name"
+                    name="name"
+                    value={profile.name}
+                    onChange={handleChange}
                     disabled={!edit}
-                    startIcon={<Lock />}
-                  >
-                    Change Password
-                  </Button>
-                </Box>
+                  />
+                  <ProfileField
+                    label="Email Address"
+                    name="email"
+                    value={profile.email}
+                    onChange={handleChange}
+                    disabled={!edit}
+                  />
+                  <ProfileField
+                    label="Phone Number"
+                    name="phone"
+                    value={profile.phone}
+                    onChange={handleChange}
+                    disabled={!edit}
+                  />
+                  <ProfileField
+                    label="Address"
+                    name="address"
+                    value={profile.address}
+                    onChange={handleChange}
+                    disabled={!edit}
+                  />
+                </Grid>
               </CardContent>
             </Card>
           </Grid>
