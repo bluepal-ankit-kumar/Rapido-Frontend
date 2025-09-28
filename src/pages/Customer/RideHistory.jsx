@@ -38,78 +38,7 @@ import {
   Directions
 } from '@mui/icons-material';
 
-const rides = [
-  { 
-    id: 1, 
-    pickup: 'MG Road', 
-    drop: 'Koramangala', 
-    date: '2025-09-20', 
-    time: '10:30 AM',
-    status: 'Completed',
-    fare: 120,
-    distance: '5.2 km',
-    duration: '15 min',
-    driver: 'Rahul Kumar',
-    rating: 5,
-    vehicleType: 'Bike'
-  },
-  { 
-    id: 2, 
-    pickup: 'Indiranagar', 
-    drop: 'HSR Layout', 
-    date: '2025-09-22', 
-    time: '06:45 PM',
-    status: 'Completed',
-    fare: 85,
-    distance: '3.8 km',
-    duration: '12 min',
-    driver: 'Vikram Singh',
-    rating: 4,
-    vehicleType: 'Auto'
-  },
-  { 
-    id: 3, 
-    pickup: 'Koramangala', 
-    drop: 'Electronic City', 
-    date: '2025-09-25', 
-    time: '09:15 AM',
-    status: 'Cancelled',
-    fare: 0,
-    distance: '8.1 km',
-    duration: '22 min',
-    driver: 'Amit Sharma',
-    rating: 0,
-    vehicleType: 'Cab'
-  },
-  { 
-    id: 4, 
-    pickup: 'HSR Layout', 
-    drop: 'Bellandur', 
-    date: '2025-09-28', 
-    time: '02:30 PM',
-    status: 'Completed',
-    fare: 150,
-    distance: '12.5 km',
-    duration: '30 min',
-    driver: 'Sanjay Patel',
-    rating: 4.5,
-    vehicleType: 'Bike'
-  },
-  { 
-    id: 5, 
-    pickup: 'Electronic City', 
-    drop: 'MG Road', 
-    date: '2025-09-30', 
-    time: '07:45 PM',
-    status: 'Completed',
-    fare: 95,
-    distance: '4.3 km',
-    duration: '18 min',
-    driver: 'Rajesh Kumar',
-    rating: 4,
-    vehicleType: 'Auto'
-  }
-];
+const rides = mockRides;
 
 const statusColors = {
   'Completed': '#4CAF50',

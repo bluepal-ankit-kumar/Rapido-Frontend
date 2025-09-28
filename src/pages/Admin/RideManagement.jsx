@@ -13,12 +13,12 @@ import {
   Box,
   TextField,
   InputAdornment,
-  IconButton,
+
+
   Menu,
   MenuItem,
   TablePagination,
   Avatar,
-  Grid,
   Card,
   CardContent,
   Badge
@@ -40,10 +40,11 @@ import {
   Cancel,
   Directions
 } from '@mui/icons-material';
-
+  import { mockRides } from '../../data/mockData';
 const rides = [
   { 
     id: 101, 
+ 
     user: 'John Doe', 
     email: 'john@example.com',
     phone: '+91 9876543210',
@@ -98,25 +99,7 @@ const rides = [
     status: 'Completed', 
     fare: 150,
     date: '2023-06-14',
-    time: '02:30 PM',
-    vehicleType: 'Bike',
-    driver: 'Sanjay Patel',
-    pickup: 'Airport Terminal',
-    destination: 'City Center',
-    distance: '12.5 km',
-    duration: '30 min'
-  },
-  { 
-    id: 105, 
-    user: 'Michael Wilson', 
-    email: 'michael@example.com',
-    phone: '+91 5432109876',
-    status: 'Scheduled', 
-    fare: 95,
-    date: '2023-06-16',
-    time: '08:00 AM',
-    vehicleType: 'Auto',
-    driver: 'Rajesh Kumar',
+ 
     pickup: 'Home Address',
     destination: 'Railway Station',
     distance: '4.3 km',

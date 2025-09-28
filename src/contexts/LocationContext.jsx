@@ -4,11 +4,7 @@ import { mockUsers, mockRiders } from '../data/mockData';
 const LocationContext = createContext();
 
 export function LocationProvider({ children }) {
-  // Use profile or user location if available, fallback to default
-  const [userLocation, setUserLocation] = useState({
-    lat: 12.9716,
-    lon: 77.5946
-  });
+  const [userLocation, setUserLocation] = useState(mockUsers[0].location);
   const [nearbyRiders, setNearbyRiders] = useState(mockRiders);
 
   // Simulate location update

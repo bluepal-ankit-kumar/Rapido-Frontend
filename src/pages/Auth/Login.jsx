@@ -30,8 +30,7 @@ export default function Login() {
         setFormError('Invalid credentials');
         return;
       }
-      // Rider verification logic (if needed)
-      if (user.user_type === 'RIDER' && user.verified === false) {
+      if (user.role === 'rider' && user.verified === false) {
         setFormError('Your profile verification is pending. Please try after some time.');
         return;
       }

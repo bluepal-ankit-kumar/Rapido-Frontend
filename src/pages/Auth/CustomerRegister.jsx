@@ -18,24 +18,14 @@ export default function CustomerRegister() {
       return;
     }
     // Check if already registered
-  const exists = mockUsers.find(u => u.email === email && u.user_type === 'CUSTOMER');
+    const exists = mockUsers.find(u => u.email === email && u.role === 'customer');
     if (exists) {
       setError('Already registered. Please login.');
       setTimeout(() => navigate('/login'), 1500);
       return;
     }
     // Register user
-    mockUsers.push({
-      id: mockUsers.length + 1,
-      username: name,
-      password,
-      email,
-      phone: '',
-      user_type: 'CUSTOMER',
-      rating: 0,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    });
+    mockUsers.push({ name, email, password, role: 'customer' });
     setSuccess(true);
     setTimeout(() => navigate('/login'), 1500);
   };

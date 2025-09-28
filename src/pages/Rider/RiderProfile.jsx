@@ -1,5 +1,6 @@
 import useGeolocation from '../../hooks/useGeolocation';
 import React, { useState } from 'react';
+import { mockProfiles, mockUsers } from '../../data/mockData';
 import { 
   TextField, 
   Button, 
@@ -30,13 +31,18 @@ import {
 } from '@mui/icons-material';
 import MapDisplay from '../../components/shared/MapDisplay';
 
+const userId = 3; // Example: Rider user id
+const user = mockUsers.find(u => u.id === userId);
+const profileData = mockProfiles.find(p => p.user_id === userId);
 const initialProfile = {
-  name: 'Ravi Kumar',
-  email: 'ravi@rider.com',
-  phone: '9876543210',
-  address: '123, MG Road, Bangalore',
-  city: 'Bangalore',
-  emergencyContact: '9876543211',
+  full_name: profileData?.full_name || '',
+  email: user?.email || '',
+  phone: user?.phone || '',
+  address: profileData?.address || '',
+  rating: user?.rating || 0,
+  user_type: user?.user_type || '',
+  documents: profileData?.documents || {},
+  fcm_token: profileData?.fcm_token || '',
 };
 
 export default function RiderProfile() {

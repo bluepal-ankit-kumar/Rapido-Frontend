@@ -8,21 +8,16 @@ import {
   Search, FilterList, MoreVert, Visibility, Edit, Delete, PersonAdd, Block, CheckCircle,
   Email, Phone, CalendarToday, AdminPanelSettings, Person, TwoWheeler
 } from '@mui/icons-material';
+import { mockUsers } from '../../data/mockData';
 
-const users = [
-  { id: 1, name: 'John Doe', email: 'john@example.com', phone: '+91 9876543210', status: 'Active', role: 'Customer', lastLogin: '2023-06-15 10:30 AM', totalRides: 24, totalSpent: 2840 },
-  { id: 2, name: 'Jane Smith', email: 'jane@example.com', phone: '+91 8765432109', status: 'Inactive', role: 'Customer', lastLogin: '2023-05-20 03:45 PM', totalRides: 12, totalSpent: 1560 },
-  { id: 3, name: 'Rahul Kumar', email: 'rahul@example.com', phone: '+91 7654321098', status: 'Active', role: 'Rider', lastLogin: '2023-06-15 09:15 AM', totalRides: 342, totalSpent: 42560 },
-  { id: 4, name: 'Vikram Singh', email: 'vikram@example.com', phone: '+91 6543210987', status: 'Active', role: 'Rider', lastLogin: '2023-06-14 06:30 PM', totalRides: 287, totalSpent: 35890 },
-  { id: 5, name: 'Admin User', email: 'admin@example.com', phone: '+91 5432109876', status: 'Active', role: 'Admin', lastLogin: '2023-06-15 11:45 AM', totalRides: 0, totalSpent: 0 }
-];
+// ...existing code...
 
 const statusColors = { 'Active': '#4CAF50', 'Inactive': '#F44336', 'Pending': '#FF9800', 'Suspended': '#9E9E9E' };
 const roleIcons = { 'Customer': <Person className="text-blue-500" />, 'Rider': <TwoWheeler className="text-yellow-500" />, 'Admin': <AdminPanelSettings className="text-purple-500" /> };
 const roleColors = { 'Customer': '#2196F3', 'Rider': '#FFC107', 'Admin': '#9C27B0' };
 
 export default function UserManagement() {
-  const [usersData, setUsersData] = useState(users);
+  const [usersData, setUsersData] = useState(mockUsers);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [searchTerm, setSearchTerm] = useState('');

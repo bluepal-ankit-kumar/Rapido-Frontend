@@ -19,26 +19,14 @@ export default function RiderRegister() {
       return;
     }
     // Check if already registered
-  const exists = mockUsers.find(u => u.email === email && u.user_type === 'RIDER');
+    const exists = mockUsers.find(u => u.email === email && u.role === 'rider');
     if (exists) {
       setError('Already registered. Please login.');
       setTimeout(() => navigate('/login'), 1500);
       return;
     }
     // Register rider with verification pending
-    mockUsers.push({
-      id: mockUsers.length + 1,
-      username: name,
-      password,
-      email,
-      phone: '',
-      user_type: 'RIDER',
-      rating: 0,
-      verified: false,
-      vehicle,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    });
+    mockUsers.push({ name, email, password, vehicle, role: 'rider', verified: false });
     setSuccess(true);
     setTimeout(() => navigate('/login'), 1500);
   };

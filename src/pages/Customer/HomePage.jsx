@@ -5,6 +5,7 @@ import MapDisplay from '../../components/shared/MapDisplay';
 import VehicleTypeSelector from '../../components/common/VehicleTypeSelector';
 import Button from '../../components/common/Button';
 import { Card, CardContent, Grid, Typography, Box, Divider } from '@mui/material';
+import { mockRides, mockUsers } from '../../data/mockData';
 import { 
   DirectionsBike, 
   AccessTime, 
@@ -42,27 +43,29 @@ export default function HomePage() {
     navigate('/ride-booking', { state: { vehicleType: selectedType } });
   };
 
+  const userId = 2; // Example Customer user id
+  const userRides = mockRides.filter(r => r.rider_id === userId);
+  const user = mockUsers.find(u => u.id === userId);
   const rideSummary = [
     { 
       title: 'Upcoming Ride', 
-      value: 'No rides scheduled',
+      value: userRides.length > 0 ? `#${userRides[userRides.length-1].id}` : 'No rides scheduled',
       icon: <AccessTime className="text-blue-500" />,
       color: '#E3F2FD'
     },
     { 
       title: 'Total Rides', 
-      value: '24',
+      value: userRides.length,
       icon: <DirectionsBike className="text-yellow-500" />,
       color: '#FFF8E1'
     },
     { 
       title: 'Rating', 
-      value: '4.8/5',
+      value: `${user?.rating || 0}/5`,
       icon: <Star className="text-green-500" />,
       color: '#E8F5E9'
     },
   ];
-
   const quickActions = [
     { title: 'Book a Ride', icon: <DirectionsBike />, action: handleBookRide },
     { title: 'Ride History', icon: <AccessTime />, action: () => navigate('/ride-history') },

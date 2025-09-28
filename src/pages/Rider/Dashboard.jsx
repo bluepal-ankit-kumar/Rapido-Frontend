@@ -39,18 +39,26 @@ import {
   MoreVert
 } from '@mui/icons-material';
 import MapDisplay from '../../components/shared/MapDisplay';
+import { mockRides, mockUsers } from '../../data/mockData';
 
+const riderId = 3; // Example Rider user id
+const completedRides = mockRides.filter(r => r.driver_id === riderId && r.status === 'COMPLETED');
+const totalEarnings = completedRides.reduce((sum, ride) => sum + ride.fare, 0);
+const riderUser = mockUsers.find(u => u.id === riderId);
+const riderRating = riderUser?.rating || 0;
 const summary = [
-  { title: 'Completed Rides', value: 120, icon: <TwoWheeler className="text-yellow-500" />, color: '#FFF8E1' },
-  { title: 'Earnings', value: '₹8,500', icon: <CurrencyRupee className="text-yellow-500" />, color: '#FFF8E1' },
-  { title: 'Rating', value: '4.9/5', icon: <Star className="text-yellow-500" />, color: '#FFF8E1' },
+  { title: 'Completed Rides', value: completedRides.length, icon: <TwoWheeler className="text-yellow-500" />, color: '#FFF8E1' },
+  { title: 'Earnings', value: `₹${totalEarnings}`, icon: <CurrencyRupee className="text-yellow-500" />, color: '#FFF8E1' },
+  { title: 'Rating', value: `${riderRating}/5`, icon: <Star className="text-yellow-500" />, color: '#FFF8E1' },
 ];
-
-const recentRides = [
-  { id: 1, pickup: 'MG Road', drop: 'Koramangala', date: '2023-06-15', time: '10:30 AM', fare: 120 },
-  { id: 2, pickup: 'Indiranagar', drop: 'HSR Layout', date: '2023-06-14', time: '06:45 PM', fare: 85 },
-  { id: 3, pickup: 'Koramangala', drop: 'Electronic City', date: '2023-06-13', time: '09:15 AM', fare: 150 },
-];
+const recentRides = completedRides.slice(-3).map(ride => ({
+  id: ride.id,
+  pickup: ride.pickup_location.name,
+  drop: ride.dropoff_location.name,
+  date: ride.start_time.split('T')[0],
+  time: ride.start_time.split('T')[1],
+  fare: ride.fare
+}));
 
 const earningsData = [
   { day: 'Mon', amount: 1200 },

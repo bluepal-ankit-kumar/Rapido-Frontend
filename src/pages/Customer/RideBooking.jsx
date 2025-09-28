@@ -83,7 +83,7 @@ export default function RideBooking() {
     }
   }, [pickup, dropoff, selectedType]);
 
-  const availableRiders = mockRiders.filter(r => r.type.toLowerCase() === selectedType.toLowerCase());
+  const availableRiders = mockRiders.filter(r => r.type === selectedType);
 
   useEffect(() => {
     if (availableRiders.length > 0 && !selectedRider) {
