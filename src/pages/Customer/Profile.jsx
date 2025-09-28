@@ -43,6 +43,7 @@ const initialProfile = {
   user_type: user?.user_type || '',
   documents: profileData?.documents || {},
   fcm_token: profileData?.fcm_token || '',
+  rides: [], // Ensure rides is always an array
 };
 
 export default function Profile() {

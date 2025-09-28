@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { mockRides } from '../../data/mockData';
 import { 
   Typography, 
   Paper, 
@@ -80,9 +81,12 @@ export default function RideHistory() {
 
   // Filter rides based on search and filters
   const filteredRides = rides.filter(ride => {
-    const matchesSearch = ride.pickup.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                         ride.drop.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         ride.driver.toLowerCase().includes(searchTerm.toLowerCase());
+    const pickup = ride.pickup_location?.name || '';
+    const dropoff = ride.dropoff_location?.name || '';
+    const driverName = ride.driver?.name || '';
+    const matchesSearch = pickup.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                         dropoff.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         driverName.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = filterStatus === 'All' || ride.status === filterStatus;
     return matchesSearch && matchesStatus;
   });
@@ -250,7 +254,7 @@ export default function RideHistory() {
                     primary={
                       <Box className="flex justify-between">
                         <Typography variant="h6" className="font-bold">
-                          {ride.pickup} → {ride.drop}
+                          {ride.pickup_location?.name || ''} → {ride.dropoff_location?.name || ''}
                         </Typography>
                         <Chip 
                           label={ride.status}
@@ -268,16 +272,16 @@ export default function RideHistory() {
                         <Box className="mt-1">
                           <Box className="flex items-center mb-1">
                             <CalendarToday className="text-gray-500 mr-1" fontSize="small" />
-                            <Typography variant="body2" component="span">{ride.date} at {ride.time}</Typography>
+                            <Typography variant="body2" component="span">{ride.start_time}</Typography>
                             <Typography variant="body2" component="span" className="mx-2">•</Typography>
-                            <Typography variant="body2" component="span">{ride.distance} • {ride.duration}</Typography>
+                            <Typography variant="body2" component="span">{ride.distance} km • {ride.duration} min</Typography>
                           </Box>
                           <Box className="flex items-center justify-between">
                             <Box className="flex items-center">
-                              {getVehicleIcon(ride.vehicleType)}
-                              <Typography variant="body2" component="span" className="ml-1">{ride.vehicleType}</Typography>
+                              {getVehicleIcon(ride.driver?.vehicle_type || '')}
+                              <Typography variant="body2" component="span" className="ml-1">{ride.driver?.vehicle_type || ''}</Typography>
                               <Typography variant="body2" component="span" className="mx-2">•</Typography>
-                              <Typography variant="body2" component="span">Driver: {ride.driver}</Typography>
+                              <Typography variant="body2" component="span">Driver: {ride.driver?.name || ''}</Typography>
                             </Box>
                             <Box className="flex items-center">
                               <Typography variant="body2" component="span" className="font-medium mr-2">₹{ride.fare}</Typography>
