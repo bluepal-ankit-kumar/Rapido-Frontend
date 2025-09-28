@@ -1,17 +1,13 @@
 import React, { createContext, useContext, useState } from 'react';
-import { mockRiders } from '../data/mockData.js';
+import { mockRiders, mockRides } from '../data/mockData.js';
 
 const RideContext = createContext();
 
 export default RideContext;
 
 export function RideProvider({ children }) {
-	// Mock rides data
-	const [rides, setRides] = useState([
-		{ id: 101, rider: mockRiders[0], status: 'in-progress', location: { latitude: 12.9716, longitude: 77.5946 } },
-		{ id: 102, rider: mockRiders[1], status: 'completed', location: { latitude: 12.9352, longitude: 77.6245 } },
-		{ id: 103, rider: mockRiders[2], status: 'booked', location: { latitude: 12.9081, longitude: 77.6476 } },
-	]);
+	// Use mockRides from mockData.js for schema alignment
+	const [rides, setRides] = useState(mockRides);
 	const [activeRide, setActiveRide] = useState(null);
 	const [rideStatus, setRideStatus] = useState('idle');
 

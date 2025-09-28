@@ -2,7 +2,7 @@ import { mockRiders } from '../data/mockData';
 
 export function getNearbyRiders(userLocation, vehicleType) {
   // Filter by vehicleType (mock proximity)
-  return mockRiders.filter(r => r.type === vehicleType);
+  return mockRiders.filter(r => r.type.toLowerCase() === vehicleType.toLowerCase());
 }
 
 export function sendRiderLocation(riderId, location) {
