@@ -36,7 +36,7 @@ export default function Header({ onSidebarToggle }) {
           {/* Logo and Sidebar Toggle */}
           <div className="flex items-center space-x-2">
             <button className="mr-2" onClick={onSidebarToggle} aria-label="Open sidebar">
-              <Menu className="text-yellow-500" />
+              <Menu className="text-yellow-400" />
             </button>
             <Link to="/" className="flex items-center space-x-2">
               <div className="w-10 h-10 rounded-full bg-yellow-400 flex items-center justify-center">
@@ -47,8 +47,8 @@ export default function Header({ onSidebarToggle }) {
           </div>
           {/* Right Nav: About, Help, User Section */}
           <div className="flex items-center space-x-6">
-            <Link to="/about" className="text-gray-700 hover:text-yellow-500 font-medium">About</Link>
-            <Link to="/help" className="text-gray-700 hover:text-yellow-500 font-medium">Help</Link>
+            <Link to="/about" className="text-gray-700 hover:text-yellow-400 font-medium">About</Link>
+            <Link to="/help" className="text-gray-700 hover:text-yellow-400 font-medium">Help</Link>
             {user ? (
               <div className="relative">
                 <button

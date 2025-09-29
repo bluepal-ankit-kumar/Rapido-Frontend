@@ -142,34 +142,34 @@ export default function RideHistory() {
         {/* Statistics Cards */}
         <Grid container spacing={3} className="mb-6">
           <Grid>
-            <Card className="border-l-4 border-blue-500">
+            <Card className="border-l-4 border-yellow-400">
               <CardContent>
                 <Typography variant="h6" className="text-gray-600">Total Rides</Typography>
-                <Typography variant="h4" className="font-bold text-blue-500">{totalRides}</Typography>
+                <Typography variant="h4" className="font-bold text-yellow-400">{totalRides}</Typography>
               </CardContent>
             </Card>
           </Grid>
           <Grid>
-            <Card className="border-l-4 border-green-500">
+            <Card className="border-l-4 border-yellow-400">
               <CardContent>
                 <Typography variant="h6" className="text-gray-600">Completed</Typography>
-                <Typography variant="h4" className="font-bold text-green-500">{completedRides}</Typography>
+                <Typography variant="h4" className="font-bold text-yellow-400">{completedRides}</Typography>
               </CardContent>
             </Card>
           </Grid>
           <Grid>
-            <Card className="border-l-4 border-red-500">
+            <Card className="border-l-4 border-yellow-400">
               <CardContent>
                 <Typography variant="h6" className="text-gray-600">Cancelled</Typography>
-                <Typography variant="h4" className="font-bold text-red-500">{cancelledRides}</Typography>
+                <Typography variant="h4" className="font-bold text-yellow-400">{cancelledRides}</Typography>
               </CardContent>
             </Card>
           </Grid>
           <Grid>
-            <Card className="border-l-4 border-yellow-500">
+            <Card className="border-l-4 border-yellow-400">
               <CardContent>
                 <Typography variant="h6" className="text-gray-600">Total Spent</Typography>
-                <Typography variant="h4" className="font-bold text-yellow-500">₹{totalSpent}</Typography>
+                <Typography variant="h4" className="font-bold text-yellow-400">₹{totalSpent}</Typography>
               </CardContent>
             </Card>
           </Grid>

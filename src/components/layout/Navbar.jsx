@@ -28,17 +28,17 @@ export default function Navbar() {
               to={link.to}
               className={`flex flex-col items-center justify-center px-1 py-1 rounded-lg transition-all duration-200 ${
                 location.pathname === link.to 
-                  ? 'text-yellow-500 bg-yellow-50' 
-                  : 'text-gray-500 hover:text-yellow-500'
+                  ? 'text-yellow-400 bg-yellow-50' 
+                  : 'text-gray-500 hover:text-yellow-400'
               }`}
             >
               <span className={`text-xl mb-1 ${
-                location.pathname === link.to ? 'text-yellow-500' : 'text-gray-400'
+                location.pathname === link.to ? 'text-yellow-400' : 'text-gray-400'
               }`}>
                 {link.icon}
               </span>
               <span className={`text-xs font-medium ${
-                location.pathname === link.to ? 'text-yellow-500' : 'text-gray-600'
+                location.pathname === link.to ? 'text-yellow-400' : 'text-gray-600'
               }`}>
                 {link.label}
               </span>

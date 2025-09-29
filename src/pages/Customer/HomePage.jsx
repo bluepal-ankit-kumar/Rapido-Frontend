@@ -190,7 +190,7 @@ export default function HomePage() {
 
               <Button
                 variant="contained"
-                className="px-10 py-3 bg-gradient-to-r from-yellow-500 to-yellow-500 hover:from-yellow-600 hover:to-yellow-600 text-gray-900 font-bold rounded-full text-lg shadow-lg transition-all transform hover:scale-105"
+                className="px-10 py-3 bg-gradient-to-r from-yellow-400 to-yellow-400 hover:from-yellow-600 hover:to-yellow-600 text-gray-900 font-bold rounded-full text-lg shadow-lg transition-all transform hover:scale-105"
                 onClick={handleBookRide}
                 sx={{ mt: 2, px: 6, py: 2 }}
               >
@@ -255,7 +255,7 @@ export default function HomePage() {
                     maxHeight: '100%'
                   }}
                 >
-                  <Box className="bg-gradient-to-b from-yellow-400 to-yellow-500 flex items-center justify-center" sx={{ width: 80, minHeight: 320, height: '100%' }}>
+                  <Box className="bg-gradient-to-b from-yellow-400 to-yellow-400 flex items-center justify-center" sx={{ width: 80, minHeight: 320, height: '100%' }}>
                     <span className="text-3xl">{feature.icon}</span>
                   </Box>
                   <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
@@ -354,7 +354,7 @@ export default function HomePage() {
       </Box>
 
       {/* Final CTA Section */}
-      <Box className="py-20 px-4 bg-gradient-to-r from-yellow-500 to-yellow-500">
+      <Box className="py-20 px-4 bg-gradient-to-r from-yellow-400 to-yellow-400">
         <Container maxWidth="md">
           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
             <Typography
