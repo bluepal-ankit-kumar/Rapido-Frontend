@@ -1,4 +1,5 @@
 // App.jsx
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext.jsx';
 import { RideProvider } from './contexts/RideContext.jsx';
@@ -15,6 +16,7 @@ import RideHistory from './pages/Customer/RideHistory.jsx';
 import Profile from './pages/Customer/Profile.jsx';
 import RatingPage from './pages/Customer/RatingPage.jsx';
 import HelpPage from './pages/Customer/HelpPage.jsx';
+import About from './pages/About.jsx';
 
 // Auth pages
 import Login from './pages/Auth/Login.jsx';
@@ -39,17 +41,20 @@ import HelpManagement from './pages/Admin/HelpManagement.jsx';
 
 import NotFound from './pages/NotFound.jsx';
 
+
 function App() {
+  const [sidebarOpen, setSidebarOpen] = React.useState(false);
   return (
     <AuthProvider>
       <RideProvider>
         <Router>
           <div className="flex flex-col min-h-screen bg-gray-50">
-            <Header />
+            <Header onSidebarToggle={() => setSidebarOpen((open) => !open)} />
             <Navbar />
             <div className="flex flex-1">
-              <Sidebar />
-              <main className="flex-1">
+              {/* Responsive Sidebar: hidden by default, toggled open on all screens */}
+              <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+              <main className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'md:ml-64' : ''}`}>
                 <Routes>
                   {/* Customer routes */}
                   <Route path="/" element={<HomePage />} />
@@ -59,12 +64,11 @@ function App() {
                   <Route path="/profile" element={<Profile />} />
                   <Route path="/rating" element={<RatingPage />} />
                   <Route path="/help" element={<HelpPage />} />
-
+                  <Route path="/about" element={<About />} />
                   {/* Auth routes */}
                   <Route path="/login" element={<Login />} />
                   <Route path="/register" element={<Register />} />
                   <Route path="/otp-verification" element={<OTPVerification />} />
-
                   {/* Rider routes */}
                   <Route path="/rider/dashboard" element={<RiderDashboard />} />
                   <Route path="/rider/accept-ride" element={<AcceptRide />} />
@@ -72,7 +76,6 @@ function App() {
                   <Route path="/rider/ride-history" element={<RiderRideHistory />} />
                   <Route path="/rider/profile" element={<RiderProfile />} />
                   <Route path="/rider/help" element={<RiderHelpPage />} />
-
                   {/* Admin routes */}
                   <Route path="/admin/dashboard" element={<AdminDashboard />} />
                   <Route path="/admin/user-management" element={<UserManagement />} />
@@ -80,7 +83,6 @@ function App() {
                   <Route path="/admin/reports" element={<Reports />} />
                   <Route path="/admin/ratings-review" element={<RatingsReview />} />
                   <Route path="/admin/help-management" element={<HelpManagement />} />
-
                   {/* Not Found */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>

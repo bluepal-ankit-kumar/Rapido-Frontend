@@ -1,191 +1,268 @@
 import React, { useState, useEffect } from 'react';
-import useGeolocation from '../../hooks/useGeolocation';
 import { useNavigate } from 'react-router-dom';
-import MapDisplay from '../../components/shared/MapDisplay';
-import VehicleTypeSelector from '../../components/common/VehicleTypeSelector';
 import Button from '../../components/common/Button';
-import { Card, CardContent, Grid, Typography, Box, Divider } from '@mui/material';
-import { mockRides, mockUsers } from '../../data/mockData';
-import { 
-  DirectionsBike, 
-  AccessTime, 
-  Star, 
-  LocationOn, 
-  Person,
-  LocalTaxi,
-  AirportShuttle
-} from '@mui/icons-material';
+import { Typography, Box, Grid, Card, CardContent, Container, Divider } from '@mui/material';
+import Lottie from 'lottie-react';
+import animationData from '../../assets/ride-3d.json';
+import { features, testimonials } from '../../data/mockData.js';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
+
+
 
 export default function HomePage() {
   const navigate = useNavigate();
-  const [selectedType, setSelectedType] = useState('Bike');
-  const [userLocation, setUserLocation] = useState([28.6139, 77.2090]); // Default to Delhi
-  const [nearbyRiders, setNearbyRiders] = useState([
-    { id: 1, name: 'Rahul', location: [28.6150, 77.2100] },
-    { id: 2, name: 'Vikram', location: [28.6120, 77.2080] },
-    { id: 3, name: 'Amit', location: [28.6140, 77.2110] },
-  ]);
-  const geo = useGeolocation();
-  useEffect(() => {
-    if (geo && geo.latitude && geo.longitude) {
-      setUserLocation([geo.latitude, geo.longitude]);
-    }
-  }, [geo]);
+  const [loading, setLoading] = useState(true);
 
-  // Always pass userLocation as [lat, lng] array to MapDisplay
-  const mapUserLocation = Array.isArray(userLocation)
-    ? userLocation
-    : (userLocation && userLocation.latitude && userLocation.longitude
-        ? [userLocation.latitude, userLocation.longitude]
-        : [28.6139, 77.2090]);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleBookRide = () => {
-    navigate('/ride-booking', { state: { vehicleType: selectedType } });
+    navigate('/ride-booking');
   };
 
-  const userId = 2; // Example Customer user id
-  const userRides = mockRides.filter(r => r.rider_id === userId);
-  const user = mockUsers.find(u => u.id === userId);
-  const rideSummary = [
-    { 
-      title: 'Upcoming Ride', 
-      value: userRides.length > 0 ? `#${userRides[userRides.length-1].id}` : 'No rides scheduled',
-      icon: <AccessTime className="text-blue-500" />,
-      color: '#E3F2FD'
-    },
-    { 
-      title: 'Total Rides', 
-      value: userRides.length,
-      icon: <DirectionsBike className="text-yellow-500" />,
-      color: '#FFF8E1'
-    },
-    { 
-      title: 'Rating', 
-      value: `${user?.rating || 0}/5`,
-      icon: <Star className="text-green-500" />,
-      color: '#E8F5E9'
-    },
-  ];
-  const quickActions = [
-    { title: 'Book a Ride', icon: <DirectionsBike />, action: handleBookRide },
-    { title: 'Ride History', icon: <AccessTime />, action: () => navigate('/ride-history') },
-    { title: 'Payment', icon: <LocationOn />, action: () => navigate('/payment') },
-    { title: 'Profile', icon: <Person />, action: () => navigate('/profile') },
-  ];
+  if (loading) {
+    return <LoadingSpinner />;
+  }
 
   return (
-    <div className="bg-gray-50 min-h-screen">
+    <div className="bg-white min-h-screen">
       {/* Hero Section */}
-      <Box className="bg-gradient-to-r from-yellow-400 to-yellow-500 text-white p-8 rounded-b-3xl shadow-lg mb-8">
-        <div className="max-w-6xl mx-auto">
-          <Typography variant="h3" className="font-bold mb-2">Welcome to Rapido!</Typography>
-          <Typography variant="h6" className="mb-6 opacity-90">Fast, safe, and affordable rides at your fingertips</Typography>
-          <Grid container spacing={3}>
-            {rideSummary.map((item, index) => (
-              <Grid item xs={12} sm={4} key={index}>
-                <Card className="bg-white bg-opacity-20 backdrop-blur-sm border-0 shadow-md">
-                  <CardContent className="flex items-center p-3">
-                    <Box className="p-2 rounded-full bg-white bg-opacity-30 mr-3">
-                      {item.icon}
-                    </Box>
-                    <Box>
-                      <Typography variant="body2" className="opacity-90">{item.title}</Typography>
-                      <Typography variant="h6" className="font-bold">{item.value}</Typography>
-                    </Box>
+      <Box className="py-20 px-4 bg-gradient-to-r from-blue-50 to-indigo-100">
+        <Container maxWidth="lg">
+          <Grid container spacing={6} alignItems="center">
+            <Grid item xs={12} md={6}>
+              <Typography 
+                variant="h2" 
+                className="font-bold mb-6 text-gray-900"
+                sx={{ 
+                  fontSize: { xs: '2.2rem', md: '2.8rem', lg: '3.2rem' },
+                  lineHeight: 1.2
+                }}
+              >
+                Your Journey Begins Here
+              </Typography>
+              
+              <Typography 
+                variant="h6" 
+                className="mb-8 text-gray-700"
+                sx={{ 
+                  fontSize: { xs: '1rem', md: '1.1rem' },
+                  lineHeight: 1.7
+                }}
+              >
+                Experience the freedom of seamless travel. With Rapido, every ride is an adventure waiting to happen. Fast, safe, and affordable journeys are just a tap away!
+              </Typography>
+              
+              <Button
+                variant="contained"
+                className="px-10 py-3 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-gray-900 font-bold rounded-full text-lg shadow-lg transition-all transform hover:scale-105"
+                onClick={handleBookRide}
+                sx={{
+                  fontWeight: 700,
+                  fontSize: '1.1rem',
+                  py: 1.5,
+                  px: 6,
+                  borderRadius: '50px',
+                  boxShadow: '0 4px 15px rgba(245, 158, 11, 0.4)'
+                }}
+              >
+                Book Your Adventure Now
+              </Button>
+            </Grid>
+            
+            <Grid item xs={12} md={6} className="flex justify-center">
+              <div className="w-[300px] h-[300px] md:w-[350px] md:h-[350px]">
+                <Lottie animationData={animationData} loop={true} />
+              </div>
+            </Grid>
+          </Grid>
+        </Container>
+      </Box>
+
+      {/* Why Choose Rapido Section */}
+      <Box className="py-16 px-4 bg-white">
+        <Container maxWidth="lg">
+          <Box className="text-center mb-16">
+            <Typography 
+              variant="h3" 
+              className="font-bold mb-4 text-gray-900"
+              sx={{ 
+                fontSize: { xs: '1.8rem', md: '2.2rem' }
+              }}
+            >
+              Why Choose Rapido?
+            </Typography>
+            
+            <Typography 
+              variant="h6" 
+              className="text-gray-600 max-w-3xl mx-auto"
+              sx={{ 
+                fontSize: { xs: '1rem', md: '1.1rem' },
+                lineHeight: 1.6
+              }}
+            >
+              We're not just another ride-hailing service. We're your travel partner committed to making every journey exceptional.
+            </Typography>
+          </Box>
+          
+          {/* Features Grid - 2 cards per row */}
+          <Grid container spacing={6}>
+            {features.map((feature, index) => (
+              <Grid item xs={12} sm={6} key={index}>
+                <Card 
+                  className="h-full shadow-md hover:shadow-lg transition-all duration-300"
+                  sx={{ 
+                    borderRadius: '16px',
+                    display: 'flex',
+                    height: '100%',
+                    overflow: 'hidden'
+                  }}
+                >
+                  <Box className="w-1/4 bg-gradient-to-b from-yellow-400 to-orange-500 flex items-center justify-center">
+                    <div className="text-4xl text-white">{feature.icon}</div>
+                  </Box>
+                  <CardContent className="w-3/4 p-6">
+                    <Typography 
+                      variant="h6" 
+                      className="font-bold mb-3 text-gray-900"
+                      sx={{ fontSize: '1.2rem' }}
+                    >
+                      {feature.title}
+                    </Typography>
+                    <Typography 
+                      variant="body2" 
+                      className="text-gray-600"
+                      sx={{ 
+                        lineHeight: 1.6
+                      }}
+                    >
+                      {feature.description}
+                    </Typography>
                   </CardContent>
                 </Card>
               </Grid>
             ))}
           </Grid>
-        </div>
+        </Container>
       </Box>
 
-      <div className="max-w-6xl mx-auto p-4">
-        <Grid container spacing={4}>
-          {/* Left Column - Booking & Map */}
-          <Grid item xs={12} md={7}>
-            <Card className="shadow-md rounded-xl mb-6">
-              <CardContent className="p-0">
-                <Typography variant="h6" className="font-bold p-4 pb-2">Book Your Ride</Typography>
-                <Divider />
-                <Box className="p-4">
-                  <Typography variant="body2" className="text-gray-600 mb-3">Select Vehicle Type</Typography>
-                  <VehicleTypeSelector 
-                    selected={selectedType} 
-                    onSelect={setSelectedType} 
-                  />
-                </Box>
-                <Box className="p-4 pt-0">
-                  <Typography variant="body2" className="text-gray-600 mb-3">Your Location</Typography>
-                  <MapDisplay 
-                    userLocation={mapUserLocation} 
-                    nearbyRiders={nearbyRiders} 
-                  />
-                </Box>
-                <Box className="p-4">
-                  <Button 
-                    variant="contained" 
-                    className="w-full py-3 bg-yellow-500 hover:bg-yellow-600 text-white font-medium rounded-lg shadow-md"
-                    onClick={handleBookRide}
-                  >
-                    Book a Ride
-                  </Button>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
+      {/* Divider */}
+      <Divider className="my-2" />
 
-          {/* Right Column - Quick Actions & Offers */}
-          <Grid item xs={12} md={5}>
-            <Card className="shadow-md rounded-xl mb-6">
-              <CardContent>
-                <Typography variant="h6" className="font-bold mb-4">Quick Actions</Typography>
-                <Box className="space-y-3">
-                  {quickActions.map((action, index) => (
-                    <Card 
-                      key={index} 
-                      className="cursor-pointer hover:shadow-md transition-shadow duration-300"
-                      onClick={action.action}
+      {/* Testimonials */}
+      <Box className="py-16 px-4 bg-gray-50">
+        <Container maxWidth="lg">
+          <Box className="text-center mb-12">
+            <Typography 
+              variant="h4" 
+              className="font-bold mb-4 text-gray-900"
+              sx={{ 
+                fontSize: { xs: '1.8rem', md: '2.2rem' }
+              }}
+            >
+              What Our Riders Say
+            </Typography>
+          </Box>
+          
+          <Grid container spacing={6}>
+            {testimonials.map((testimonial, index) => (
+              <Grid item xs={12} md={4} key={index}>
+                <Card 
+                  className="h-full shadow-md hover:shadow-lg transition-shadow duration-300"
+                  sx={{ 
+                    borderRadius: '16px',
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    position: 'relative',
+                    overflow: 'visible'
+                  }}
+                >
+                  <Box className="absolute -top-4 left-1/2 transform -translate-x-1/2 w-12 h-12 rounded-full bg-yellow-500 flex items-center justify-center">
+                    <span className="text-white text-xl">"</span>
+                  </Box>
+                  <CardContent className="p-6 pt-8 flex flex-col h-full">
+                    <Typography 
+                      variant="body1" 
+                      className="italic mb-6 text-gray-700 flex-grow text-center"
+                      sx={{ 
+                        fontSize: '1rem',
+                        lineHeight: 1.6
+                      }}
                     >
-                      <CardContent className="flex items-center p-3">
-                        <Box className="p-2 rounded-lg bg-yellow-100 mr-3">
-                          {action.icon}
-                        </Box>
-                        <Typography variant="body1" className="font-medium">{action.title}</Typography>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </Box>
-              </CardContent>
-            </Card>
-            <Card className="shadow-md rounded-xl">
-              <CardContent>
-                <Typography variant="h6" className="font-bold mb-4">Special Offers</Typography>
-                <Card className="bg-gradient-to-r from-yellow-50 to-yellow-100 border border-yellow-200 mb-3">
-                  <CardContent className="p-3">
-                    <Typography variant="body1" className="font-bold text-yellow-800 mb-1">
-                      First Ride Free
+                      {testimonial.text}
                     </Typography>
-                    <Typography variant="body2" className="text-yellow-700">
-                      Use code FREERIDE on your first booking
-                    </Typography>
+                    <div className="text-center mt-auto">
+                      <Typography 
+                        variant="h6" 
+                        className="font-bold text-gray-900"
+                        sx={{ fontSize: '1.1rem' }}
+                      >
+                        {testimonial.name}
+                      </Typography>
+                      <Typography 
+                        variant="body2" 
+                        className="text-gray-600"
+                        sx={{ fontSize: '0.9rem' }}
+                      >
+                        {testimonial.role}
+                      </Typography>
+                    </div>
                   </CardContent>
                 </Card>
-                <Card className="bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200">
-                  <CardContent className="p-3">
-                    <Typography variant="body1" className="font-bold text-blue-800 mb-1">
-                      Weekend Special
-                    </Typography>
-                    <Typography variant="body2" className="text-blue-700">
-                      Get 20% off on all weekend rides
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </CardContent>
-            </Card>
+              </Grid>
+            ))}
           </Grid>
-        </Grid>
-      </div>
+        </Container>
+      </Box>
+
+      {/* Final CTA Section */}
+      <Box className="py-20 px-4 bg-gradient-to-r from-yellow-500 to-orange-500">
+        <Container maxWidth="md">
+          <Box className="text-center">
+            <Typography 
+              variant="h3" 
+              className="font-bold mb-6 text-gray-900"
+              sx={{ 
+                fontSize: { xs: '2rem', md: '2.5rem' }
+              }}
+            >
+              Ready to Start Your Journey?
+            </Typography>
+            
+            <Typography 
+              variant="h6" 
+              className="mb-10 text-gray-900 max-w-2xl mx-auto"
+              sx={{ 
+                fontSize: { xs: '1.1rem', md: '1.2rem' },
+                lineHeight: 1.7
+              }}
+            >
+              Join millions of satisfied riders who've discovered the Rapido difference. Your next adventure is just a few taps away!
+            </Typography>
+            
+            <Button
+              variant="contained"
+              className="px-12 py-4 bg-white hover:bg-gray-100 text-gray-900 font-bold rounded-full text-lg shadow-xl transition-all transform hover:scale-105"
+              onClick={handleBookRide}
+              sx={{
+                fontWeight: 700,
+                fontSize: '1.2rem',
+                py: 2,
+                px: 8,
+                borderRadius: '50px',
+                boxShadow: '0 6px 20px rgba(0, 0, 0, 0.15)'
+              }}
+            >
+              Start Booking Now
+            </Button>
+          </Box>
+        </Container>
+      </Box>
     </div>
   );
 }

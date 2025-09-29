@@ -1,0 +1,44 @@
+.profile-dropdown-enter {
+  opacity: 0;
+  transform: translateY(-10px) scale(0.98);
+}
+.profile-dropdown-enter-active {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  transition: opacity 200ms, transform 200ms;
+}
+.profile-dropdown-exit {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+.profile-dropdown-exit-active {
+  opacity: 0;
+  transform: translateY(-10px) scale(0.98);
+  transition: opacity 200ms, transform 200ms;
+}
+
+/* Reduce dropdown height and padding for a more compact look */
+.profile-dropdown {
+  width: 320px !important;
+  height: 320px !important;
+  min-width: 320px !important;
+  min-height: 320px !important;
+  max-width: 320px !important;
+  max-height: 320px !important;
+  padding: 0 !important;
+  border-radius: 1rem !important;
+  box-shadow: 0 4px 24px 0 rgba(0,0,0,0.10);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* Highlight effect for edit modal */
+.animate-pulse-fast {
+  animation: pulse-fast 0.7s cubic-bezier(0.4, 0, 0.6, 1);
+}
+@keyframes pulse-fast {
+  0% { box-shadow: 0 0 0 0 #ffe082; }
+  70% { box-shadow: 0 0 0 8px #ffe08244; }
+  100% { box-shadow: 0 0 0 0 #ffe082; }
+}
