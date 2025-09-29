@@ -4,7 +4,48 @@ import Button from '../../components/common/Button';
 import { Typography, Box, Grid, Card, CardContent, Container, Divider } from '@mui/material';
 import Lottie from 'lottie-react';
 import animationData from '../../assets/ride-3d.json';
-import { features, testimonials } from '../../data/mockData.js';
+
+// Features and testimonials arrays defined locally to fix import error
+const features = [
+  {
+    title: "Lightning-Fast Pickups",
+    description: "Get a ride within minutes, not hours. Our extensive network ensures minimal wait times.",
+    icon: "⚡"
+  },
+  {
+    title: "Affordable Pricing",
+    description: "Transparent fares with no hidden charges. Save up to 30% compared to traditional taxis.",
+    icon: "💰"
+  },
+  {
+    title: "Top-Notch Safety",
+    description: "Verified drivers, real-time tracking, and SOS emergency buttons for your peace of mind.",
+    icon: "🛡️"
+  },
+  {
+    title: "Eco-Friendly Rides",
+    description: "Choose from our fleet of electric and hybrid vehicles to reduce your carbon footprint.",
+    icon: "🌱"
+  }
+];
+
+const testimonials = [
+  {
+    name: "Priya Sharma",
+    role: "Daily Commuter",
+    text: "Rapido has transformed my daily commute. I save time and money every single day!"
+  },
+  {
+    name: "Raj Patel",
+    role: "Business Traveler",
+    text: "The reliability and comfort of Rapido rides are unmatched. My go-to for all business trips."
+  },
+  {
+    name: "Ananya Reddy",
+    role: "Student",
+    text: "As a student, I love the affordable pricing and safety features. Highly recommended!"
+  }
+];
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 
 
