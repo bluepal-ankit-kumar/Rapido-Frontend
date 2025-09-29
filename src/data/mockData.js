@@ -17,7 +17,7 @@ export const mockUsers = [
     password: 'user123',
     email: 'user@rapido.com',
     phone: '8888888888',
-    user_type: 'RIDER',
+    user_type: 'CUSTOMER',
     rating: 4.7,
     created_at: '2025-09-01T10:00:00',
     updated_at: '2025-09-01T10:00:00'
@@ -28,7 +28,7 @@ export const mockUsers = [
     password: 'rider123',
     email: 'rider@rapido.com',
     phone: '7777777777',
-    user_type: 'DRIVER',
+    user_type: 'RIDER',
     rating: 4.8,
     created_at: '2025-09-01T10:00:00',
     updated_at: '2025-09-01T10:00:00'
