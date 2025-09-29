@@ -37,9 +37,9 @@ export default function UserManagement() {
 
   // Filter users based on search and filters
   const filteredUsers = usersData.filter(user => {
-    const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                         user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.phone.includes(searchTerm);
+    const matchesSearch = (user.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) || 
+                         (user.email?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+                         (user.phone || '').includes(searchTerm);
     const matchesStatus = filterStatus === 'All' || user.status === filterStatus;
     const matchesRole = filterRole === 'All' || user.role === filterRole;
     return matchesSearch && matchesStatus && matchesRole;

@@ -11,9 +11,17 @@ import {
   Apple
 } from '@mui/icons-material';
 
-export default function Footer() {
+export default function Footer({ sidebarOpen }) {
+  // Sidebar width is 256px (w-64) on desktop
+  // Slide footer horizontally when sidebar is open (desktop only)
   return (
-    <footer className="bg-gray-900 text-white w-full mt-8">
+    <footer
+      className={`bg-gray-900 text-white w-full mt-8 transition-all duration-300`}
+      style={{
+        transform: sidebarOpen ? 'translateX(256px)' : 'translateX(0)',
+        transition: 'transform 0.3s',
+      }}
+    >
       <div className="max-w-screen-xl mx-auto px-4 py-12">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Brand Section */}

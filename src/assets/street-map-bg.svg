@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1920" height="1080" viewBox="0 0 1920 1080" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1920" height="1080" fill="#fff"/>
+  <g opacity="0.7">
+    <rect x="100" y="200" width="1720" height="680" rx="80" fill="#f3f4f6"/>
+    <rect x="300" y="400" width="1320" height="280" rx="60" fill="#e5e7eb"/>
+    <rect x="600" y="600" width="720" height="80" rx="40" fill="#facc15"/>
+    <rect x="900" y="300" width="120" height="480" rx="60" fill="#facc15"/>
+    <rect x="400" y="500" width="1120" height="40" rx="20" fill="#d1d5db"/>
+    <rect x="800" y="700" width="320" height="40" rx="20" fill="#fef08a"/>
+    <rect x="1100" y="350" width="200" height="40" rx="20" fill="#facc15"/>
+    <rect x="700" y="350" width="200" height="40" rx="20" fill="#facc15"/>
+  </g>
+  <g opacity="0.5">
+    <rect x="200" y="250" width="1520" height="40" rx="20" fill="#d1d5db"/>
+    <rect x="200" y="790" width="1520" height="40" rx="20" fill="#d1d5db"/>
+    <rect x="300" y="350" width="1320" height="20" rx="10" fill="#e5e7eb"/>
+    <rect x="300" y="710" width="1320" height="20" rx="10" fill="#e5e7eb"/>
+  </g>
+  <g opacity="0.3">
+    <rect x="0" y="0" width="1920" height="1080" fill="#facc15"/>
+  </g>
+</svg>

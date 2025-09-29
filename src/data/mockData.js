@@ -17,7 +17,7 @@ export const mockUsers = [
     password: 'user123',
     email: 'user@rapido.com',
     phone: '8888888888',
-    user_type: 'RIDER',
+    user_type: 'CUSTOMER',
     rating: 4.7,
     created_at: '2025-09-01T10:00:00',
     updated_at: '2025-09-01T10:00:00'
@@ -28,7 +28,8 @@ export const mockUsers = [
     password: 'rider123',
     email: 'rider@rapido.com',
     phone: '7777777777',
-    user_type: 'DRIVER',
+    user_type: 'RIDER',
+
     rating: 4.8,
     created_at: '2025-09-01T10:00:00',
     updated_at: '2025-09-01T10:00:00'
@@ -138,4 +139,45 @@ export const mockRiders = [
   { id: 102, name: 'Rider Two', type: 'Auto', rating: 4.6, location: [12.9750, 77.5990], distance: 3.5, eta: 7 },
   { id: 103, name: 'Rider Three', type: 'Car', rating: 4.9, location: [12.9700, 77.5900], distance: 1.2, eta: 4 },
   { id: 104, name: 'Rider Four', type: 'Bike', rating: 4.7, location: [12.9735, 77.5955], distance: 2.8, eta: 6 },
+];
+
+export const features = [
+  {
+    title: "Lightning-Fast Pickups",
+    description: "Get a ride within minutes, not hours. Our extensive network ensures minimal wait times.",
+    icon: "⚡"
+  },
+  {
+    title: "Affordable Pricing",
+    description: "Transparent fares with no hidden charges. Save up to 30% compared to traditional taxis.",
+    icon: "💰"
+  },
+  {
+    title: "Top-Notch Safety",
+    description: "Verified drivers, real-time tracking, and SOS emergency buttons for your peace of mind.",
+    icon: "🛡️"
+  },
+  {
+    title: "Eco-Friendly Rides",
+    description: "Choose from our fleet of electric and hybrid vehicles to reduce your carbon footprint.",
+    icon: "🌱"
+  }
+];
+
+export const testimonials = [
+  {
+    name: "Priya Sharma",
+    role: "Daily Commuter",
+    text: "Rapido has transformed my daily commute. I save time and money every single day!"
+  },
+  {
+    name: "Raj Patel",
+    role: "Business Traveler",
+    text: "The reliability and comfort of Rapido rides are unmatched. My go-to for all business trips."
+  },
+  {
+    name: "Ananya Reddy",
+    role: "Student",
+    text: "As a student, I love the affordable pricing and safety features. Highly recommended!"
+  }
 ];

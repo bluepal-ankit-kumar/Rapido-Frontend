@@ -148,19 +148,19 @@ export default function RideTracking() {
   }
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      <div className="max-w-6xl mx-auto">
+    <div className="flex justify-center items-center min-h-screen bg-gray-50">
+      <div className="max-w-6xl w-full">
         {/* Header */}
         <Box className="mb-8">
           <Typography variant="h4" className="font-bold text-gray-800">Track Your Ride</Typography>
           <Typography variant="body1" className="text-gray-600">Real-time tracking of your ride status and location</Typography>
         </Box>
 
-        <Grid container spacing={4}>
+        <Grid container spacing={4} style={{ minHeight: '70vh' }}>
           {/* Left Column - Map and Status */}
-          <Grid>
+          <Grid item xs={12} md={6} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', flexBasis: '45%', maxWidth: '45%' }}>
             {/* Status Card */}
-            <Card className="shadow-md rounded-xl mb-4">
+            <Card className="shadow-md rounded-xl mb-4" style={{ maxHeight: 340, overflow: 'auto' }}>
               <CardContent className="p-6">
                 <Box className="flex justify-between items-center mb-6">
                   <Typography variant="h6" className="font-bold text-gray-800">Ride Status</Typography>
@@ -215,7 +215,7 @@ export default function RideTracking() {
             </Card>
             
             {/* Map */}
-            <Card className="shadow-md rounded-xl">
+            <Card className="shadow-md rounded-xl flex-1">
               <CardContent className="p-0">
                 <Typography variant="h6" className="font-bold text-gray-800 p-4 pb-2">Live Tracking</Typography>
                 <Divider />
@@ -232,9 +232,9 @@ export default function RideTracking() {
           </Grid>
 
           {/* Right Column - Driver Info and Actions */}
-          <Grid>
+          <Grid item xs={12} md={6} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', flexBasis: '40%', maxWidth: '40%' }}>
             {/* Driver Info */}
-            <Card className="shadow-md rounded-xl mb-4">
+            <Card className="shadow-md rounded-xl mb-4" style={{ maxHeight: 340, overflow: 'auto' }}>
               <CardContent className="p-6">
                 <Typography variant="h6" className="font-bold text-gray-800 mb-4">Driver Information</Typography>
                 
@@ -283,7 +283,7 @@ export default function RideTracking() {
             </Card>
             
             {/* Tracking Progress */}
-            <Card className="shadow-md rounded-xl">
+            <Card className="shadow-md rounded-xl flex-1">
               <CardContent className="p-6">
                 <Typography variant="h6" className="font-bold text-gray-800 mb-4">Ride Progress</Typography>
                 
