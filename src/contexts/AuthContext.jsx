@@ -24,12 +24,22 @@ export const AuthProvider = ({ children }) => {
   const signIn = async (email, password) => {
     const { user } = await login(email, password);
     setUser(user);
-    // Set role based on email for demo
-    if (email.includes('rider')) setUserRole('rider');
-    else if (email.includes('admin')) setUserRole('admin');
-    else setUserRole('customer');
+    let role = 'customer';
+    if (user) {
+      if (user.user_type) {
+        if (user.user_type.toLowerCase() === 'driver' || user.user_type.toLowerCase() === 'rider') role = 'rider';
+        else if (user.user_type.toLowerCase() === 'admin') role = 'admin';
+        else role = 'customer';
+      } else if (user.role) {
+        if (user.role.toLowerCase() === 'rider') role = 'rider';
+        else if (user.role.toLowerCase() === 'admin') role = 'admin';
+        else role = 'customer';
+      }
+    }
+    setUserRole(role);
     localStorage.setItem('user', JSON.stringify(user));
-    localStorage.setItem('userRole', userRole);
+    localStorage.setItem('userRole', role);
+    return { user };
   };
 
   const signUp = async (email, password) => {

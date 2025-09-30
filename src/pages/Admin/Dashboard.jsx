@@ -1,6 +1,7 @@
 import React from 'react';
 import { Card, CardContent, Typography, Grid, Box, Chip, IconButton } from '@mui/material';
 import { Link } from 'react-router-dom';
+import RideStatisticsChart from './RideStatisticsChart.jsx';
 import { 
   People, 
   DirectionsBike, 
@@ -16,18 +17,18 @@ const summary = [
   { 
     title: 'Users', 
     value: 1200, 
-    link: '/admin/usermanagement',
-    icon: <People />,
-    color: '#4CAF50',
+    link: '/admin/user-management',
+    icon: <People />, 
+    color: '#FACC15',
     trend: 12,
     description: 'Active users'
   },
   { 
     title: 'Rides', 
     value: 350, 
-    link: '/admin/ridemanagement',
-    icon: <DirectionsBike />,
-    color: '#2196F3',
+    link: '/admin/ride-management',
+    icon: <DirectionsBike />, 
+    color: '#FACC15',
     trend: 8,
     description: 'Completed rides'
   },
@@ -35,26 +36,26 @@ const summary = [
     title: 'Reports', 
     value: 15, 
     link: '/admin/reports',
-    icon: <Assessment />,
-    color: '#FF9800',
+    icon: <Assessment />, 
+    color: '#FACC15',
     trend: -3,
     description: 'Pending review'
   },
   { 
     title: 'Ratings', 
     value: 98, 
-    link: '/admin/ratingsreview',
-    icon: <StarRate />,
-    color: '#9C27B0',
+    link: '/admin/ratings-review',
+    icon: <StarRate />, 
+    color: '#FACC15',
     trend: 5,
     description: 'Average rating'
   },
   { 
     title: 'Help', 
     value: 22, 
-    link: '/admin/helpmanagement',
-    icon: <Help />,
-    color: '#F44336',
+    link: '/admin/help-management',
+    icon: <Help />, 
+    color: '#FACC15',
     trend: 15,
     description: 'Open tickets'
   },
@@ -151,7 +152,7 @@ export default function Dashboard() {
       {/* Charts and Recent Activities */}
       <Grid container spacing={3}>
         {/* Chart Section */}
-        <Grid item xs={12} lg={8}>
+        <Grid item xs={12} lg={8} width={600}>
           <Card 
             className="h-full border-0"
             sx={{ 
@@ -168,23 +169,19 @@ export default function Dashboard() {
                 <Chip label="Last 7 days" size="small" />
               </div>
               
-              {/* Chart Placeholder */}
+              {/* Chart with mock data */}
               <div className="bg-gray-100 rounded-lg h-64 flex items-center justify-center">
-                <div className="text-center">
-                  <Typography variant="body1" className="text-gray-500 mb-2">
-                    Ride Statistics Chart
-                  </Typography>
-                  <Typography variant="body2" className="text-gray-400">
-                    Visual representation of ride data
-                  </Typography>
+                <div className="w-full h-full">
+                  <RideStatisticsChart />
                 </div>
               </div>
+
             </CardContent>
           </Card>
         </Grid>
 
         {/* Recent Activities */}
-        <Grid item xs={12} lg={4}>
+        <Grid item xs={12} lg={4} width={600}>
           <Card 
             className="h-full border-0"
             sx={{ 

@@ -143,18 +143,18 @@ export default function UserManagement() {
       {/* Statistics Cards */}
       <Grid container spacing={3} className="mb-6">
         <Grid item xs={12} sm={6} md={3}>
-          <Card className="border-l-4 border-blue-500">
+          <Card className="border-l-4 border-yellow-500">
             <CardContent>
               <Typography variant="h6" className="text-gray-600">Total Users</Typography>
-              <Typography variant="h4" className="font-bold text-blue-500">{totalUsers}</Typography>
+              <Typography variant="h4" className="font-bold text-yellow-500">{totalUsers}</Typography>
             </CardContent>
           </Card>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <Card className="border-l-4 border-green-500">
+          <Card className="border-l-4 border-yellow-500">
             <CardContent>
               <Typography variant="h6" className="text-gray-600">Active Users</Typography>
-              <Typography variant="h4" className="font-bold text-green-500">{activeUsers}</Typography>
+              <Typography variant="h4" className="font-bold text-yellow-500">{activeUsers}</Typography>
             </CardContent>
           </Card>
         </Grid>
@@ -167,10 +167,10 @@ export default function UserManagement() {
           </Card>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <Card className="border-l-4 border-purple-500">
+          <Card className="border-l-4 border-yellow-500">
             <CardContent>
               <Typography variant="h6" className="text-gray-600">Customers</Typography>
-              <Typography variant="h4" className="font-bold text-purple-500">{customerUsers}</Typography>
+              <Typography variant="h4" className="font-bold text-yellow-500">{customerUsers}</Typography>
             </CardContent>
           </Card>
         </Grid>
@@ -249,14 +249,16 @@ export default function UserManagement() {
                   </TableCell>
                   <TableCell>
                     <Box className="flex flex-col">
-                      <Box className="flex items-center">
-                        <Phone className="text-gray-500 mr-1" fontSize="small" />
-                        <Typography variant="body2">{user.phone}</Typography>
-                      </Box>
-                      <Box className="flex items-center">
-                        <Email className="text-gray-500 mr-1" fontSize="small" />
-                        <Typography variant="body2">{user.email}</Typography>
-                      </Box>
+                      {[{ type: 'phone', value: user.phone }, { type: 'email', value: user.email }].map((item) => (
+                        <Box className="flex items-center" key={item.type}>
+                          {item.type === 'phone' ? (
+                            <Phone className="text-gray-500 mr-1" fontSize="small" />
+                          ) : (
+                            <Email className="text-gray-500 mr-1" fontSize="small" />
+                          )}
+                          <Typography variant="body2">{item.value}</Typography>
+                        </Box>
+                      ))}
                     </Box>
                   </TableCell>
                   <TableCell>
@@ -285,8 +287,14 @@ export default function UserManagement() {
                   </TableCell>
                   <TableCell>
                     <Box className="flex flex-col">
-                      <Typography variant="body2"><span className="font-medium">{user.totalRides}</span> rides</Typography>
-                      <Typography variant="body2"><span className="font-medium">₹{user.totalSpent}</span> spent</Typography>
+                      {[
+                        { key: 'rides', label: 'rides', value: user.totalRides },
+                        { key: 'spent', label: 'spent', value: `₹${user.totalSpent}` }
+                      ].map((item) => (
+                        <Typography variant="body2" key={item.key}>
+                          <span className="font-medium">{item.value}</span> {item.label}
+                        </Typography>
+                      ))}
                     </Box>
                   </TableCell>
                   <TableCell>

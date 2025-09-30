@@ -114,14 +114,14 @@ export default function Dashboard() {
           </Box>
 
           {/* Full-width Map View */}
-          <Box className="mb-8 w-full" sx={{ width: '100%' }}>
+          <Box className="mb-8 w-full" sx={{ width: '100%', mt: { xs: 10, md: 12 } }}>
             <Typography variant="body2" className="mb-2">Current Location</Typography>
-            <Box sx={{ width: '100%', height: { xs: 300, md: 400 }, borderRadius: 3, overflow: 'hidden', boxShadow: 2 }}>
+            <Box sx={{ width: '100%', height: '100%', borderRadius: 1, overflow: 'hidden', boxShadow: 2, position: 'relative', zIndex: 1 }}>
               <MapDisplay userLocation={geo && geo.latitude && geo.longitude ? [geo.latitude, geo.longitude] : [28.6139, 77.2090]} nearbyRiders={[]} />
             </Box>
           </Box>
 
-          <Grid container spacing={4}>
+          <Grid container spacing={8}>
             {/* Left: Tabs and Panels */}
             <Grid item xs={12} md={8}>
               {/* Tabs */}
@@ -134,38 +134,38 @@ export default function Dashboard() {
 
               {/* Tab Panels */}
               <TabPanel value={tabValue} index={0}>
-                <Card className="shadow-md rounded-xl">
-                  <CardContent className="p-0">
+                <Card className="shadow-md rounded-xl" sx={{ minHeight: 400, minWidth: 500, width: '100%' }}>
+                  <CardContent className="p-0" sx={{ minHeight: 500, display: 'flex', flexDirection: 'column' }}>
                     <Typography variant="h6" className="font-bold text-gray-800 p-4 pb-2">Recent Rides</Typography>
                     <Divider />
-                    <List>
+                    <List sx={{ flex: 1, minHeight: 200, maxHeight: 400, overflowY: 'auto', px: 2 }}>
                       {recentRides.map((ride) => (
                         <React.Fragment key={ride.id}>
-                          <ListItem alignItems="flex-start">
+                          <ListItem alignItems="flex-start" sx={{ minHeight: 80 }}>
                             <ListItemAvatar>
-                              <Avatar>
+                              <Avatar sx={{ width: 48, height: 48 }}>
                                 <TwoWheeler className="text-yellow-500" />
                               </Avatar>
                             </ListItemAvatar>
                             <ListItemText
                               primary={
-                                <Box className="flex justify-between">
-                                  <Typography variant="h6" className="font-medium">
+                                <Box className="flex justify-between items-center" sx={{ minWidth: 300 }}>
+                                  <Typography variant="h6" className="font-medium" sx={{ fontSize: 18 }}>
                                     {ride.pickup} → {ride.drop}
                                   </Typography>
                                   <Chip 
                                     label={`₹${ride.fare}`} 
-                                    size="small"
-                                    style={{ backgroundColor: '#FFF8E1' }}
+                                    size="medium"
+                                    style={{ backgroundColor: '#FFF8E1', fontSize: 16, height: 32 }}
                                   />
                                 </Box>
                               }
                               secondary={
-                                <span style={{ display: 'flex', alignItems: 'center', marginTop: 4 }}>
+                                <span style={{ display: 'flex', alignItems: 'center', marginTop: 4, fontSize: 15 }}>
                                   <CalendarToday className="text-gray-500 mr-1" fontSize="small" />
-                                  <span style={{ fontSize: '0.875rem', color: 'rgba(0,0,0,0.6)' }}>{ride.date}</span>
-                                  <span className="mx-2" style={{ fontSize: '0.875rem', color: 'rgba(0,0,0,0.6)' }}>•</span>
-                                  <span style={{ fontSize: '0.875rem', color: 'rgba(0,0,0,0.6)' }}>{ride.time}</span>
+                                  <span style={{ fontSize: '0.95rem', color: 'rgba(0,0,0,0.6)' }}>{ride.date}</span>
+                                  <span className="mx-2" style={{ fontSize: '0.95rem', color: 'rgba(0,0,0,0.6)' }}>•</span>
+                                  <span style={{ fontSize: '0.95rem', color: 'rgba(0,0,0,0.6)' }}>{ride.time}</span>
                                 </span>
                               }
                             />
@@ -175,7 +175,7 @@ export default function Dashboard() {
                       ))}
                     </List>
                     <Box className="p-4 text-center">
-                      <Button variant="outlined" className="w-full">
+                      <Button variant="outlined" className="w-full" sx={{ fontSize: 18, py: 2 }}>
                         View All Rides
                       </Button>
                     </Box>
@@ -184,8 +184,8 @@ export default function Dashboard() {
               </TabPanel>
 
               <TabPanel value={tabValue} index={1}>
-                <Card className="shadow-md rounded-xl">
-                  <CardContent className="p-4">
+                <Card className="shadow-md rounded-xl" sx={{ minHeight: 500, minWidth: 500, width: '100%' }}>
+                  <CardContent className="p-4" sx={{ minHeight: 400, display: 'flex', flexDirection: 'column' }}>
                     <Typography variant="h6" className="font-bold text-gray-800 mb-4">Weekly Earnings</Typography>
                     <Box className="h-64 flex items-end justify-center">
                       <div className="flex items-end h-48 w-full">
@@ -211,9 +211,9 @@ export default function Dashboard() {
             </Grid>
 
             {/* Right Column - Quick Actions and Status */}
-            <Grid item xs={12} md={4}>
+            <Grid item xs={12} md={4} mt={11}>
               {/* Status Card */}
-              <Card className="shadow-md rounded-xl mb-4">
+              <Card className="shadow-md rounded-xl mb-7">
                 <CardContent className="p-4">
                   <Typography variant="h6" className="font-bold text-gray-800 mb-4">Current Status</Typography>
                   <Box className="flex items-center mb-4">

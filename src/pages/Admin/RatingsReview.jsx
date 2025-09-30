@@ -202,11 +202,11 @@ export default function RatingsReview() {
       {/* Statistics Cards */}
       <Grid container spacing={3} className="mb-6">
         <Grid item xs={12} sm={6} md={3}>
-          <Card className="border-l-4 border-blue-500">
+          <Card className="border-l-4 border-yellow-500">
             <CardContent>
               <Typography variant="h6" className="text-gray-600">Average Rating</Typography>
               <Box className="flex items-center">
-                <Typography variant="h4" className="font-bold text-blue-500 mr-2">
+                <Typography variant="h4" className="font-bold text-yellow-500 mr-2">
                   {averageRating.toFixed(1)}
                 </Typography>
                 {renderStars(Math.round(averageRating))}
@@ -215,10 +215,10 @@ export default function RatingsReview() {
           </Card>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <Card className="border-l-4 border-green-500">
+          <Card className="border-l-4 border-yellow-500">
             <CardContent>
               <Typography variant="h6" className="text-gray-600">Total Reviews</Typography>
-              <Typography variant="h4" className="font-bold text-green-500">
+              <Typography variant="h4" className="font-bold text-yellow-500">
                 {totalRatings}
               </Typography>
             </CardContent>
@@ -235,10 +235,10 @@ export default function RatingsReview() {
           </Card>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <Card className="border-l-4 border-red-500">
+          <Card className="border-l-4 border-yellow-500">
             <CardContent>
               <Typography variant="h6" className="text-gray-600">Pending</Typography>
-              <Typography variant="h4" className="font-bold text-red-500">
+              <Typography variant="h4" className="font-bold text-yellow-500">
                 {pendingRatings}
               </Typography>
             </CardContent>

@@ -26,6 +26,7 @@ function ScrollArrow({ direction, onClick }) {
   );
 }
 import { useNavigate } from "react-router-dom";
+import useAuth from '../../hooks/useAuth';
 import Button from "../../components/common/Button";
 import {
   Typography,
@@ -93,6 +94,7 @@ const initialTestimonials = [
 ];
 
 export default function HomePage() {
+  const { user } = useAuth();
   // Refs for scrollable containers
   const featuresRef = useRef(null);
   const testimonialsRef = useRef(null);
@@ -148,6 +150,10 @@ export default function HomePage() {
   }, []);
 
   const handleBookRide = () => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
     navigate("/ride-booking");
   };
 
@@ -214,11 +220,17 @@ export default function HomePage() {
             </Typography>
             <Typography
               variant="h6"
-              className="text-gray-600 max-w-3xl mx-auto"
-              sx={{ fontSize: { xs: "1rem", md: "1.1rem" }, lineHeight: 1.6 }}
+              className="text-gray-600 "
+              sx={{
+                fontSize: { xs: "1rem", md: "1.1rem" },
+                lineHeight: 1.7,
+                px: { xs: 2, md: 4 },
+                py: { xs: 1, md: 2 },
+                textAlign: 'center'
+              }}
             >
-              We're not just another ride-hailing service. We're your travel
-              partner committed to making every journey exceptional.
+              We're not just another ride-hailing service. We're your travel partner committed to making every journey exceptional.
+              
             </Typography>
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>

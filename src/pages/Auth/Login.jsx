@@ -22,19 +22,19 @@ export default function Login() {
     }
   }, [user, userRole, navigate]);
 
-  const handleSubmit = e => {
+  const handleSubmit = async e => {
     e.preventDefault();
+    setFormError('');
     if (Object.keys(errors).length === 0 && values.email && values.password) {
-      const user = mockUsers.find(u => u.email === values.email && u.password === values.password);
-      if (!user) {
+      const result = await signIn(values.email, values.password);
+      if (!result || !result.user) {
         setFormError('Invalid credentials');
         return;
       }
-      if (user.role === 'rider' && user.verified === false) {
+      if (result.user.role === 'rider' && result.user.verified === false) {
         setFormError('Your profile verification is pending. Please try after some time.');
         return;
       }
-      signIn(values.email, values.password);
     } else {
       setFormError('Please fill all fields correctly');
     }
@@ -120,9 +120,13 @@ export default function Login() {
         <Box className="text-center mt-6 pt-4 border-t border-gray-200">
           <Typography variant="body2" className="text-gray-600">
             Don't have an account?{' '}
-            <Link href="/register" className="text-yellow-600 hover:text-yellow-700 font-medium">
+            <span
+              className="text-yellow-600 hover:text-yellow-700 font-medium cursor-pointer"
+              onClick={() => navigate('/customer-register')}
+              style={{ textDecoration: 'underline' }}
+            >
               Sign up
-            </Link>
+            </span>
           </Typography>
         </Box>
 

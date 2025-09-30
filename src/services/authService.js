@@ -2,8 +2,8 @@
 import { mockUsers } from '../data/mockData.js';
 
 export function login(email, password) {
-	// Check credentials against mockUsers
-	const user = mockUsers.find(u => u.email === email && u.password === password);
+	// Check credentials against mockUsers (passwords are stored as btoa hashes)
+	const user = mockUsers.find(u => u.email === email && u.password === btoa(password));
 	if (user) {
 		return { user };
 	}

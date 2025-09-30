@@ -16,13 +16,16 @@ const navLinks = [
   { to: '/help', label: 'Help', icon: <Help /> },
 ];
 
-export default function Navbar() {
+export default function Navbar({ showHelp }) {
   const location = useLocation();
-  
+  let links = navLinks;
+  if (!showHelp) {
+    links = navLinks.filter(l => l.label !== 'Help');
+  }
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-2 py-3 shadow-lg z-50">
       <ul className="flex justify-between w-full max-w-md mx-auto">
-        {navLinks.map(link => (
+        {links.map(link => (
           <li key={link.to} className="flex-1">
             <Link
               to={link.to}

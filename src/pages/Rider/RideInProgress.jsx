@@ -1,4 +1,6 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import MapDisplay from '../../components/shared/MapDisplay';
 import { 
   Typography, 
   Paper, 
@@ -26,6 +28,7 @@ import {
 import useRideTracking from '../../hooks/useRideTracking.js';
 
 export default function RideInProgress() {
+  const navigate = useNavigate();
   // Simulate rideId for demo
   const rideId = 201;
   const { ride, location } = useRideTracking(rideId);
@@ -36,11 +39,41 @@ export default function RideInProgress() {
     rating: 4.8,
     vehicle: "Toyota Innova",
     licensePlate: "KA-01-AB-1234",
-    phone: "+91 98765 43210"
+    phone: "+91 98765 43210",
+    location: [12.9750, 77.5900] // Rider's mock location (lat, lng)
   };
+
+  // Mock user (customer) data
+  const user = {
+    name: "John Doe",
+    location: [12.9716, 77.5946] // User's mock location (lat, lng)
+  };
+
+  // Mock route points for polyline (simulate a path)
+  const routePoints = [
+    driver.location,
+    [12.9730, 77.5920],
+    [12.9720, 77.5930],
+    [12.9716, 77.5946], // user location
+  ];
 
   // Mock trip progress
   const progress = 65; // percentage
+
+  // Handler for cancel ride
+  const handleCancel = () => {
+    // Optionally reset ride state here
+    navigate('/rider/dashboard');
+  };
+
+  // Handler for complete ride
+  const handleComplete = () => {
+    // Optionally update ride status here
+    navigate('/rider/dashboard');
+  };
+
+  // Polyline points for route (mock: from rider to user)
+  // (already declared above with more points)
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
@@ -48,6 +81,22 @@ export default function RideInProgress() {
         Ride In Progress
       </Typography>
       
+      {/* Map View */}
+      <Card elevation={3} className="mb-6">
+        <CardContent className="p-0">
+          <div className="w-full h-80 rounded-xl overflow-hidden">
+            <MapDisplay
+              userLocation={user.location}
+              nearbyRiders={[
+                { id: 1, name: driver.name, location: driver.location, distance: '0.5', eta: '3' }
+              ]}
+              routePoints={routePoints}
+              riderLocation={driver.location}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Status Card */}
       <Card elevation={3} className="mb-6">
         <CardContent className="p-4">
@@ -181,12 +230,18 @@ export default function RideInProgress() {
       </Card>
       
       {/* Action Buttons */}
-      <Box className="flex justify-between mt-6">
+      <Box className="flex flex-wrap gap-4 justify-between mt-6">
         <Button variant="outlined" color="primary" size="large">
           Share Trip Status
         </Button>
         <Button variant="contained" color="primary" size="large">
           Emergency Help
+        </Button>
+        <Button variant="outlined" color="error" size="large" onClick={handleCancel}>
+          Cancel Ride
+        </Button>
+        <Button variant="contained" color="success" size="large" onClick={handleComplete}>
+          Ride Completed
         </Button>
       </Box>
     </div>

@@ -1,11 +1,12 @@
 // App.jsx
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext.jsx';
 import { RideProvider } from './contexts/RideContext.jsx';
 import Header from './components/layout/Header.jsx';
 import Footer from './components/layout/Footer.jsx';
 import Sidebar from './components/layout/Sidebar.jsx';
+import useAuth from './hooks/useAuth';
 import Navbar from './components/layout/Navbar.jsx';
 
 // Customer pages
@@ -20,7 +21,9 @@ import About from './pages/About.jsx';
 
 // Auth pages
 import Login from './pages/Auth/Login.jsx';
-import Register from './pages/Auth/Register.jsx';
+import CustomerRegister from './pages/Auth/CustomerRegister.jsx';
+import RiderRegister from './pages/Auth/RiderRegister.jsx';
+import RiderVerification from './pages/Auth/RiderVerification.jsx';
 import OTPVerification from './pages/Auth/OTPVerification.jsx';
 
 // Rider pages
@@ -48,52 +51,79 @@ function App() {
     <AuthProvider>
       <RideProvider>
         <Router>
-          <div className="flex flex-col min-h-screen bg-gray-50">
-            <Header onSidebarToggle={() => setSidebarOpen((open) => !open)} />
-            <Navbar />
-            <div className="flex flex-1">
-              {/* Responsive Sidebar: hidden by default, toggled open on all screens */}
-              <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-              <main className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'md:ml-64' : ''}`}>
-                <Routes>
-                  {/* Customer routes */}
-                  <Route path="/" element={<HomePage />} />
-                  <Route path="/ride-booking" element={<RideBooking />} />
-                  <Route path="/ride-tracking" element={<RideTracking />} />
-                  <Route path="/ride-history" element={<RideHistory />} />
-                  <Route path="/profile" element={<Profile />} />
-                  <Route path="/rating" element={<RatingPage />} />
-                  <Route path="/help" element={<HelpPage />} />
-                  <Route path="/about" element={<About />} />
-                  {/* Auth routes */}
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/register" element={<Register />} />
-                  <Route path="/otp-verification" element={<OTPVerification />} />
-                  {/* Rider routes */}
-                  <Route path="/rider/dashboard" element={<RiderDashboard />} />
-                  <Route path="/rider/accept-ride" element={<AcceptRide />} />
-                  <Route path="/rider/ride-in-progress" element={<RideInProgress />} />
-                  <Route path="/rider/ride-history" element={<RiderRideHistory />} />
-                  <Route path="/rider/profile" element={<RiderProfile />} />
-                  <Route path="/rider/help" element={<RiderHelpPage />} />
-                  {/* Admin routes */}
-                  <Route path="/admin/dashboard" element={<AdminDashboard />} />
-                  <Route path="/admin/user-management" element={<UserManagement />} />
-                  <Route path="/admin/ride-management" element={<RideManagement />} />
-                  <Route path="/admin/reports" element={<Reports />} />
-                  <Route path="/admin/ratings-review" element={<RatingsReview />} />
-                  <Route path="/admin/help-management" element={<HelpManagement />} />
-                  {/* Not Found */}
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </main>
-            </div>
-            <Footer />
-          </div>
+          <AuthWrapper>
+            <AppLayout sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+          </AuthWrapper>
         </Router>
       </RideProvider>
     </AuthProvider>
   );
+}
+
+function AuthWrapper({ children }) {
+  // This wrapper is needed to use useAuth inside App
+  return children;
+}
+
+function AppLayout({ sidebarOpen, setSidebarOpen }) {
+  const { user } = useAuth();
+  return (
+    <div className="flex flex-col min-h-screen bg-gray-50">
+      <Header onSidebarToggle={() => setSidebarOpen((open) => !open)} />
+      <Navbar showHelp={!!user} />
+      <div className="flex flex-1">
+        {/* Sidebar only if logged in */}
+        {user && <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />}
+        <main className={`flex-1 transition-all duration-300 ${sidebarOpen && user ? 'md:ml-64' : ''}`}>
+          <Routes>
+                  {/* Customer routes */}
+                  <Route path="/" element={<HomePage />} />
+                  <Route path="/ride-booking" element={<RequireAuth><RideBooking /></RequireAuth>} />
+                  <Route path="/ride-tracking" element={<RequireAuth><RideTracking /></RequireAuth>} />
+                  <Route path="/ride-history" element={<RequireAuth><RideHistory /></RequireAuth>} />
+                  <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
+                  <Route path="/rating" element={<RequireAuth><RatingPage /></RequireAuth>} />
+                  <Route path="/help" element={<RequireAuth><HelpPage /></RequireAuth>} />
+                  <Route path="/about" element={<About />} />
+                  {/* Auth routes */}
+                  <Route path="/login" element={<Login />} />
+                  {/* Registration routes */}
+                  <Route path="/customer-register" element={<CustomerRegister />} />
+                  <Route path="/rider-register" element={<RiderRegister />} />
+                  <Route path="/rider-verification" element={<RiderVerification />} />
+                  <Route path="/otp-verification" element={<OTPVerification />} />
+                  {/* Rider routes */}
+                  <Route path="/rider/dashboard" element={<RequireAuth><RiderDashboard /></RequireAuth>} />
+                  <Route path="/rider/accept-ride" element={<RequireAuth><AcceptRide /></RequireAuth>} />
+                  <Route path="/rider/ride-in-progress" element={<RequireAuth><RideInProgress /></RequireAuth>} />
+                  <Route path="/rider/ride-history" element={<RequireAuth><RiderRideHistory /></RequireAuth>} />
+                  <Route path="/rider/profile" element={<RequireAuth><RiderProfile /></RequireAuth>} />
+                  <Route path="/rider/help" element={<RequireAuth><RiderHelpPage /></RequireAuth>} />
+                  {/* Admin routes */}
+                  <Route path="/admin/dashboard" element={<RequireAuth><AdminDashboard /></RequireAuth>} />
+                  <Route path="/admin/user-management" element={<RequireAuth><UserManagement /></RequireAuth>} />
+                  <Route path="/admin/ride-management" element={<RequireAuth><RideManagement /></RequireAuth>} />
+                  <Route path="/admin/reports" element={<RequireAuth><Reports /></RequireAuth>} />
+                  <Route path="/admin/ratings-review" element={<RequireAuth><RatingsReview /></RequireAuth>} />
+                  <Route path="/admin/help-management" element={<RequireAuth><HelpManagement /></RequireAuth>} />
+                  {/* Not Found */}
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+          </main>
+        </div>
+        <Footer />
+      </div>
+  );
+}
+
+function RequireAuth({ children }) {
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (!loading && !user) navigate('/login');
+  }, [user, loading, navigate]);
+  if (!user) return null;
+  return children;
 }
 
 export default App;

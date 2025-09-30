@@ -4,7 +4,7 @@ import L from 'leaflet';
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
-import { MapContainer, Marker, Popup, TileLayer, ZoomControl } from 'react-leaflet';
+import { MapContainer, Marker, Popup, TileLayer, ZoomControl, Polyline } from 'react-leaflet';
 
 // Fix for default markers not showing
 delete L.Icon.Default.prototype._getIconUrl;
@@ -33,7 +33,7 @@ const riderIcon = new L.Icon({
   shadowSize: [41, 41]
 });
 
-export default function MapDisplay({ userLocation, nearbyRiders }) {
+export default function MapDisplay({ userLocation, nearbyRiders, routePoints = [], riderLocation }) {
   const [map, setMap] = useState(null);
   const [center, setCenter] = useState([28.6139, 77.2090]); // Default to Delhi
   
@@ -68,7 +68,7 @@ export default function MapDisplay({ userLocation, nearbyRiders }) {
             <Marker position={userLocation} icon={userIcon}>
               <Popup>
                 <div className="text-center p-1">
-                  <p className="font-semibold text-blue-600">Your Location</p>
+                  <p className="font-semibold text-blue-600">User Location</p>
                   <p className="text-xs text-gray-600">
                     Lat: {userLocation[0].toFixed(4)}
                   </p>
@@ -79,8 +79,26 @@ export default function MapDisplay({ userLocation, nearbyRiders }) {
               </Popup>
             </Marker>
         )}
+
+        {/* Rider location pointer (tracked) */}
+        {riderLocation && Array.isArray(riderLocation) && riderLocation.length === 2 &&
+          typeof riderLocation[0] === 'number' && typeof riderLocation[1] === 'number' && (
+            <Marker position={riderLocation} icon={riderIcon}>
+              <Popup>
+                <div className="text-center p-1">
+                  <p className="font-semibold text-yellow-600">Rider Location</p>
+                  <p className="text-xs text-gray-600">
+                    Lat: {riderLocation[0].toFixed(4)}
+                  </p>
+                  <p className="text-xs text-gray-600">
+                    Lng: {riderLocation[1].toFixed(4)}
+                  </p>
+                </div>
+              </Popup>
+            </Marker>
+        )}
         
-        {nearbyRiders && nearbyRiders.map((rider) => (
+  {nearbyRiders && nearbyRiders.map((rider) => (
           Array.isArray(rider.location) && rider.location.length === 2 &&
           typeof rider.location[0] === 'number' && typeof rider.location[1] === 'number' ? (
             <Marker key={rider.id} position={rider.location} icon={riderIcon}>
@@ -105,6 +123,10 @@ export default function MapDisplay({ userLocation, nearbyRiders }) {
             </Marker>
           ) : null
         ))}
+        {/* Polyline for route */}
+        {routePoints && Array.isArray(routePoints) && routePoints.length > 1 && (
+          <Polyline positions={routePoints} color="#1976d2" weight={5} opacity={0.7} />
+        )}
       </MapContainer>
       
       {/* Location info card */}

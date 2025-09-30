@@ -1,37 +1,37 @@
 // Mock users array for registration and login
 export const mockUsers = [
   {
-    id: 1,
-    username: 'admin',
-    password: 'admin123',
-    email: 'admin@rapido.com',
+    fullName: 'Admin User',
     phone: '9999999999',
-    user_type: 'ADMIN',
-    rating: 0,
+    email: 'admin@rapido.com',
+    password: btoa('admin123'),
+    role: 'admin',
+    verified: true,
     created_at: '2025-09-01T10:00:00',
-    updated_at: '2025-09-01T10:00:00'
   },
   {
-    id: 2,
-    username: 'testuser',
-    password: 'user123',
-    email: 'user@rapido.com',
+    fullName: 'Test Customer',
     phone: '8888888888',
-    user_type: 'CUSTOMER',
-    rating: 4.7,
+    email: 'user@rapido.com',
+    password: btoa('user123'),
+    role: 'customer',
+    verified: true,
     created_at: '2025-09-01T10:00:00',
-    updated_at: '2025-09-01T10:00:00'
   },
   {
-    id: 3,
-    username: 'testrider',
-    password: 'rider123',
-    email: 'rider@rapido.com',
+    fullName: 'Test Rider',
     phone: '7777777777',
-    user_type: 'DRIVER',
-    rating: 4.8,
+    email: 'rider@rapido.com',
+    password: btoa('rider123'),
+    role: 'rider',
+    verified: true,
+    dob: '1990-01-01',
+    pan: 'ABCDE1234F',
+    license: 'DL1234567890',
+    licenseFile: 'license.pdf',
+    vehicleType: 'Bike',
+    vehicleReg: 'KA01AB1234',
     created_at: '2025-09-01T10:00:00',
-    updated_at: '2025-09-01T10:00:00'
   }
 ];
 

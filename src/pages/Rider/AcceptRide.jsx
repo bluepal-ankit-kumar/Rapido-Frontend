@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Typography, 
   Paper, 
@@ -58,6 +59,7 @@ const mockNearbyRiders = [
 ];
 
 export default function AcceptRide() {
+  const navigate = useNavigate();
   const [accepted, setAccepted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [countdown, setCountdown] = useState(30); // 30 seconds to accept
@@ -78,11 +80,12 @@ export default function AcceptRide() {
 
   const handleAccept = () => {
     setLoading(true);
-    
     // Simulate API call
     setTimeout(() => {
       setAccepted(true);
       setLoading(false);
+      // Redirect to Ride In Progress after accepting
+      navigate('/rider/ride-in-progress');
     }, 1000);
   };
 
@@ -99,38 +102,16 @@ export default function AcceptRide() {
     }
   };
 
+  // No need for accepted state UI, as we redirect to RideInProgress
   if (accepted) {
-    return (
-      <div className="p-6 bg-gray-50 min-h-screen flex items-center justify-center">
-        <Card className="w-full max-w-md shadow-lg rounded-xl">
-          <CardContent className="text-center p-8">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <CheckCircle className="text-green-500" fontSize="large" />
-            </div>
-            <Typography variant="h5" className="font-bold text-gray-800 mb-2">
-              {countdown > 0 ? 'Ride Accepted!' : 'Request Expired'}
-            </Typography>
-            <Typography variant="body1" className="text-gray-600 mb-6">
-              {countdown > 0 
-                ? 'Proceed to the pickup location. Customer is waiting for you.' 
-                : 'The ride request has expired. You will receive new requests soon.'
-              }
-            </Typography>
-            <Button 
-              variant="contained" 
-              className="bg-yellow-500 hover:bg-yellow-600 text-white"
-              onClick={() => window.location.href = '/rider/dashboard'}
-            >
-              Go to Dashboard
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
+    return null;
   }
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
+    <div 
+      className="p-6 bg-gray-50 min-h-screen"
+      style={{ marginTop: 'clamp(64px, 8vw, 88px)', zIndex: 1, position: 'relative' }}
+    >
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <Box className="mb-8">
@@ -138,13 +119,13 @@ export default function AcceptRide() {
           <Typography variant="body1" className="text-gray-600">Accept or reject the ride request within the time limit</Typography>
         </Box>
 
-        <Grid container spacing={4}>
+        <Grid container spacing={3}>
           {/* Left Column - Request Details */}
-          <Grid item xs={12} md={5}>
-            <Card className="shadow-md rounded-xl">
+          <Grid item xs={12} md={5} >
+            <Card className="shadow-md rounded-xl" style={{ height: '100%' }}>
               <CardContent className="p-6">
-                <Box className="flex justify-between items-center mb-6">
-                  <Typography variant="h6" className="font-bold text-gray-800">Ride Details</Typography>
+                <Box className="flex justify-between items-center mb-30 ">
+                  <Typography variant="h6" className="font-bold text-gray-800 ">Ride Details</Typography>
                   <Chip 
                     label={`${countdown}s`} 
                     color={countdown < 10 ? "error" : "primary"}
@@ -152,14 +133,15 @@ export default function AcceptRide() {
                   />
                 </Box>
                 
-                <Box className="mb-6">
-                  <Typography variant="body2" className="text-gray-600 mb-2">Customer</Typography>
+                <Box className="mb-10">
+                  <Typography variant="body2" className="text-gray-600 mb-3">Customer</Typography>
                   <Box className="flex items-center">
                     <Avatar className="mr-3" src={`https://i.pravatar.cc/150?u=${rideRequest.customer.name}`} />
                     <Box>
                       <Typography variant="h6" className="font-medium">{rideRequest.customer.name}</Typography>
                       <Box className="flex items-center">
                         <Star className="text-yellow-500 mr-1" fontSize="small" />
+        
                         <Typography variant="body2">{rideRequest.customer.rating}</Typography>
                         <Typography variant="body2" className="mx-2">•</Typography>
                         <Typography variant="body2">{rideRequest.customer.totalRides} rides</Typography>
@@ -170,7 +152,7 @@ export default function AcceptRide() {
                 
                 <Divider className="my-4" />
                 
-                <Box className="space-y-4 mb-6">
+                <Box className="space-y-4 mb-6 mt-6">
                   <Box className="flex items-center">
                     <LocationOn className="text-gray-500 mr-3" />
                     <Box>
@@ -179,7 +161,7 @@ export default function AcceptRide() {
                     </Box>
                   </Box>
                   
-                  <Box className="flex items-center">
+                  <Box className="flex items-center mt-6">
                     <Directions className="text-gray-500 mr-3" />
                     <Box>
                       <Typography variant="body2" className="text-gray-600">Destination</Typography>
@@ -190,7 +172,8 @@ export default function AcceptRide() {
                 
                 <Divider className="my-4" />
                 
-                <Grid container spacing={2}>
+                <Grid container spacing={2} className="mt-6">
+
                   <Grid item xs={6}>
                     <Box className="flex items-center">
                       <AttachMoney className="text-gray-500 mr-2" />
@@ -230,8 +213,8 @@ export default function AcceptRide() {
                 </Grid>
                 
                 <Box className="mt-6 pt-4 border-t border-gray-200">
-                  <Typography variant="body2" className="text-gray-600 mb-3">Customer Contact</Typography>
-                  <Box className="flex gap-2">
+                  <Typography variant="body2" className="text-gray-600 mb-3 mt-6">Customer Contact</Typography>
+                  <Box className="flex gap-2 mt-6">
                     <Button 
                       variant="outlined" 
                       startIcon={<Phone />}
@@ -253,9 +236,9 @@ export default function AcceptRide() {
           </Grid>
 
           {/* Right Column - Map and Action */}
-          <Grid item xs={12} md={7}>
+          <Grid item xs={12} md={7} minWidth={600} height={200}>
             {/* Map */}
-            <Card className="shadow-md rounded-xl mb-4">
+            <Card className="shadow-md rounded-xl mb-4" >
               <CardContent className="p-0">
                 <Typography variant="h6" className="font-bold text-gray-800 p-4 pb-2">Route Map</Typography>
                 <Divider />

@@ -211,40 +211,40 @@ export default function RideManagement() {
       {/* Statistics Cards */}
       <Grid container spacing={3} className="mb-6">
         <Grid item xs={12} sm={6} md={3}>
-          <Card className="border-l-4 border-blue-500">
+          <Card className="border-l-4 border-yellow-500">
             <CardContent>
               <Typography variant="h6" className="text-gray-600">Total Rides</Typography>
-              <Typography variant="h4" className="font-bold text-blue-500">
+              <Typography variant="h4" className="font-bold text-yellow-500">
                 {totalRides}
               </Typography>
             </CardContent>
           </Card>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <Card className="border-l-4 border-green-500">
+          <Card className="border-l-4 border-yellow-500">
             <CardContent>
               <Typography variant="h6" className="text-gray-600">Completed</Typography>
-              <Typography variant="h4" className="font-bold text-green-500">
+              <Typography variant="h4" className="font-bold text-yellow-500">
                 {completedRides}
               </Typography>
             </CardContent>
           </Card>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <Card className="border-l-4 border-orange-500">
+          <Card className="border-l-4 border-yellow-500">
             <CardContent>
               <Typography variant="h6" className="text-gray-600">Ongoing</Typography>
-              <Typography variant="h4" className="font-bold text-orange-500">
+              <Typography variant="h4" className="font-bold text-yellow-500">
                 {ongoingRides}
               </Typography>
             </CardContent>
           </Card>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <Card className="border-l-4 border-purple-500">
+          <Card className="border-l-4 border-yellow-500">
             <CardContent>
               <Typography variant="h6" className="text-gray-600">Revenue</Typography>
-              <Typography variant="h4" className="font-bold text-purple-500">
+              <Typography variant="h4" className="font-bold text-yellow-500">
                 ₹{totalRevenue}
               </Typography>
             </CardContent>

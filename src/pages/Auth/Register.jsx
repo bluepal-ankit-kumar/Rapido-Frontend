@@ -1,3 +1,4 @@
+// File removed as registration is now handled by CustomerRegister.jsx and RiderRegister.jsx
 import React, { useState } from 'react';
 import { TextField, Button, Typography, Paper, Box, Alert, Checkbox, Link, CircularProgress } from '@mui/material';
 import useFormValidation from '../../hooks/useFormValidation.js';

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { WeeklyRideTrendsChart, RevenuePieChart } from './ReportCharts.jsx';
 import { 
   Typography, 
   Paper, 
@@ -220,13 +221,13 @@ export default function Reports() {
         {/* Statistics Cards */}
         <Grid container spacing={3} className="mb-6">
           <Grid item xs={12} sm={6} md={3}>
-            <Card className="border-l-4 border-blue-500">
+            <Card className="border-l-4 border-yellow-500">
               <CardContent>
                 <Box className="flex items-center">
-                  <DirectionsBike className="text-blue-500 mr-2" />
+                  <DirectionsBike className="text-yellow-500 mr-2" />
                   <Typography variant="h6" className="text-gray-600">Total Rides</Typography>
                 </Box>
-                <Typography variant="h4" className="font-bold text-blue-500">
+                <Typography variant="h4" className="font-bold text-yellow-500">
                   {stats.totalRides}
                 </Typography>
                 <Box className="flex items-center mt-1">
@@ -237,13 +238,13 @@ export default function Reports() {
             </Card>
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
-            <Card className="border-l-4 border-green-500">
+            <Card className="border-l-4 border-yellow-500">
               <CardContent>
                 <Box className="flex items-center">
-                  <AttachMoney className="text-green-500 mr-2" />
+                  <AttachMoney className="text-yellow-500 mr-2" />
                   <Typography variant="h6" className="text-gray-600">Revenue</Typography>
                 </Box>
-                <Typography variant="h4" className="font-bold text-green-500">
+                <Typography variant="h4" className="font-bold text-yellow-500">
                   ₹{stats.revenue.toLocaleString()}
                 </Typography>
                 <Box className="flex items-center mt-1">
@@ -254,13 +255,13 @@ export default function Reports() {
             </Card>
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
-            <Card className="border-l-4 border-purple-500">
+            <Card className="border-l-4 border-yellow-500">
               <CardContent>
                 <Box className="flex items-center">
-                  <People className="text-purple-500 mr-2" />
+                  <People className="text-yellow-500 mr-2" />
                   <Typography variant="h6" className="text-gray-600">Active Users</Typography>
                 </Box>
-                <Typography variant="h4" className="font-bold text-purple-500">
+                <Typography variant="h4" className="font-bold text-yellow-500">
                   {stats.activeUsers}
                 </Typography>
                 <Box className="flex items-center mt-1">
@@ -291,41 +292,31 @@ export default function Reports() {
 
         {/* Charts Section */}
         <Grid container spacing={3} className="mb-6">
-          <Grid item xs={12} md={8}>
+          <Grid item xs={12} md={8} width={800} height={550}>
             <Card className="h-full">
               <CardContent>
                 <Typography variant="h6" className="font-bold text-gray-800 mb-4">
                   Weekly Ride Trends
                 </Typography>
-                {/* Chart Placeholder */}
-                <Box className="bg-gray-100 rounded-lg h-64 flex items-center justify-center">
-                  <div className="text-center">
-                    <Typography variant="body1" className="text-gray-500 mb-2">
-                      Weekly Ride Trends Chart
-                    </Typography>
-                    <Typography variant="body2" className="text-gray-400">
-                      Visual representation of ride data over time
-                    </Typography>
+                {/* Weekly Ride Trends Chart */}
+                <Box className="bg-gray-100 rounded-lg h-full flex items-center justify-center mt-10">
+                  <div className="w-full h-full">
+                    <WeeklyRideTrendsChart />
                   </div>
                 </Box>
               </CardContent>
             </Card>
           </Grid>
-          <Grid item xs={12} md={4}>
+          <Grid item xs={12} md={4} width={500} height={550}>
             <Card className="h-full">
               <CardContent>
                 <Typography variant="h6" className="font-bold text-gray-800 mb-4">
                   Revenue by Vehicle Type
                 </Typography>
-                {/* Chart Placeholder */}
-                <Box className="bg-gray-100 rounded-lg h-64 flex items-center justify-center">
-                  <div className="text-center">
-                    <Typography variant="body1" className="text-gray-500 mb-2">
-                      Revenue Distribution
-                    </Typography>
-                    <Typography variant="body2" className="text-gray-400">
-                      Pie chart of revenue by vehicle type
-                    </Typography>
+                {/* Revenue by Vehicle Type Pie Chart */}
+                <Box className="bg-gray-100 rounded-lg h-70 flex items-center justify-center">
+                  <div className="w-full h-full">
+                    <RevenuePieChart />
                   </div>
                 </Box>
               </CardContent>
