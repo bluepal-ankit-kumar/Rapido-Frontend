@@ -187,7 +187,7 @@ export default function RideBooking() {
                   </Card>
                 )}
                 <Box sx={{ mt: 'auto', width: '100%', display: 'flex', justifyContent: 'center' }}>
-                  <Button variant="contained" className="w-full max-w-md py-3.5 text-gray-600 font-medium rounded-xl shadow-lg" sx={{ background: 'linear-gradient(90deg, #6366f1, #8b5cf6)', fontSize: '1rem', fontWeight: 600, letterSpacing: '0.025em', boxShadow: '0 10px 15px -3px rgba(99, 102, 241, 0.3)', '&:hover': { background: 'linear-gradient(90deg, #4f46e5, #7c3aed)', boxShadow: '0 20px 25px -5px rgba(99, 102, 241, 0.4)' }, borderRadius: '12px' }} onClick={handleBook} disabled={loading} startIcon={loading ? <CircularProgress size={20} color="inherit" /> : null} endIcon={!loading ? <ArrowForward /> : null}>{loading ? 'Processing...' : 'Confirm Booking'}</Button>
+                  <Button variant="contained" className="w-full max-w-md py-3.5 bg-gradient-to-r from-yellow-400 to-yellow-400 hover:from-yellow-600 hover:to-yellow-600 text-gray-900 font-medium rounded-xl shadow-lg" sx={{ background: 'linear-gradient(90deg, #6366f1, #8b5cf6)', fontSize: '1rem', fontWeight: 600, letterSpacing: '0.025em', boxShadow: '0 10px 15px -3px rgba(99, 102, 241, 0.3)', '&:hover': { background: 'linear-gradient(90deg, #4f46e5, #7c3aed)', boxShadow: '0 20px 25px -5px rgba(99, 102, 241, 0.4)' }, borderRadius: '12px' }} onClick={handleBook} disabled={loading} startIcon={loading ? <CircularProgress size={20} color="inherit" /> : null} endIcon={!loading ? <ArrowForward /> : null}>{loading ? 'Processing...' : 'Confirm Booking'}</Button>
                 </Box>
               </CardContent>
             </Card>
