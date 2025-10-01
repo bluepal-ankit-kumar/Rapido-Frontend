@@ -3,6 +3,7 @@ import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext.jsx';
 import { RideProvider } from './contexts/RideContext.jsx';
+import { GlobalProvider } from './context/GlobalStore.jsx';
 import Header from './components/layout/Header.jsx';
 import Footer from './components/layout/Footer.jsx';
 import Sidebar from './components/layout/Sidebar.jsx';
@@ -30,9 +31,11 @@ import OTPVerification from './pages/Auth/OTPVerification.jsx';
 import RiderDashboard from './pages/Rider/Dashboard.jsx';
 import AcceptRide from './pages/Rider/AcceptRide.jsx';
 import RideInProgress from './pages/Rider/RideInProgress.jsx';
+import RideToDestination from './pages/Rider/RideToDestination.jsx';
 import RiderRideHistory from './pages/Rider/RideHistory.jsx';
 import RiderProfile from './pages/Rider/RiderProfile.jsx';
 import RiderHelpPage from './pages/Rider/HelpPage.jsx';
+import Wallet from './pages/Rider/Wallet.jsx';
 
 // Admin pages
 import AdminDashboard from './pages/Admin/Dashboard.jsx';
@@ -50,11 +53,13 @@ function App() {
   return (
     <AuthProvider>
       <RideProvider>
-        <Router>
-          <AuthWrapper>
-            <AppLayout sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
-          </AuthWrapper>
-        </Router>
+        <GlobalProvider>
+          <Router>
+            <AuthWrapper>
+              <AppLayout sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+            </AuthWrapper>
+          </Router>
+        </GlobalProvider>
       </RideProvider>
     </AuthProvider>
   );
@@ -96,9 +101,11 @@ function AppLayout({ sidebarOpen, setSidebarOpen }) {
                   <Route path="/rider/dashboard" element={<RequireAuth><RiderDashboard /></RequireAuth>} />
                   <Route path="/rider/accept-ride" element={<RequireAuth><AcceptRide /></RequireAuth>} />
                   <Route path="/rider/ride-in-progress" element={<RequireAuth><RideInProgress /></RequireAuth>} />
+                  <Route path="/rider/ride-to-destination" element={<RequireAuth><RideToDestination /></RequireAuth>} />
                   <Route path="/rider/ride-history" element={<RequireAuth><RiderRideHistory /></RequireAuth>} />
                   <Route path="/rider/profile" element={<RequireAuth><RiderProfile /></RequireAuth>} />
                   <Route path="/rider/help" element={<RequireAuth><RiderHelpPage /></RequireAuth>} />
+                  <Route path="/rider/wallet" element={<RequireAuth><Wallet /></RequireAuth>} />
                   {/* Admin routes */}
                   <Route path="/admin/dashboard" element={<RequireAuth><AdminDashboard /></RequireAuth>} />
                   <Route path="/admin/user-management" element={<RequireAuth><UserManagement /></RequireAuth>} />

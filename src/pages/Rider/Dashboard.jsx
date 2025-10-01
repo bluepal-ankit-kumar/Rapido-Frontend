@@ -20,8 +20,12 @@ import {
   MenuItem,
   Tabs,
   Tab,
-  Badge
+  Badge,
+  Dialog,
+  DialogTitle,
+  DialogContent
 } from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
 import { 
   Person, 
   TwoWheeler, 
@@ -40,6 +44,8 @@ import {
 } from '@mui/icons-material';
 import MapDisplay from '../../components/shared/MapDisplay';
 import { mockRides, mockUsers } from '../../data/mockData';
+import { useNavigate } from 'react-router-dom';
+import Wallet from './Wallet.jsx';
 
 const riderId = 3; // Example Rider user id
 const completedRides = mockRides.filter(r => r.driver_id === riderId && r.status === 'COMPLETED');
@@ -93,6 +99,11 @@ export default function Dashboard() {
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
 
+  // new: navigation + wallet dialog + online toggle
+  const navigate = useNavigate();
+  const [walletOpen, setWalletOpen] = useState(false);
+  const [online, setOnline] = useState(true);
+
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
   };
@@ -105,16 +116,18 @@ export default function Dashboard() {
     setAnchorEl(null);
   };
 
-    return (
+  return (
+    <>
       <div className="p-6 bg-gray-50 min-h-screen">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
           <Box className="mb-8 flex justify-between items-center">
             <Typography variant="h4" className="font-bold text-gray-800">Rider Dashboard</Typography>
           </Box>
+      
 
           {/* Full-width Map View */}
-          <Box className="mb-8 w-full" sx={{ width: '100%', mt: { xs: 10, md: 12 } }}>
+          <Box className="mb-8 w-full" sx={{ width: '100%' }}>
             <Typography variant="body2" className="mb-2">Current Location</Typography>
             <Box sx={{ width: '100%', height: '100%', borderRadius: 1, overflow: 'hidden', boxShadow: 2, position: 'relative', zIndex: 1 }}>
               <MapDisplay userLocation={geo && geo.latitude && geo.longitude ? [geo.latitude, geo.longitude] : [28.6139, 77.2090]} nearbyRiders={[]} />
@@ -135,7 +148,7 @@ export default function Dashboard() {
               {/* Tab Panels */}
               <TabPanel value={tabValue} index={0}>
                 <Card className="shadow-md rounded-xl" sx={{ minHeight: 400, minWidth: 500, width: '100%' }}>
-                  <CardContent className="p-0" sx={{ minHeight: 500, display: 'flex', flexDirection: 'column' }}>
+                  <CardContent className="p-0" sx={{ minHeight: 437, display: 'flex', flexDirection: 'column' }}>
                     <Typography variant="h6" className="font-bold text-gray-800 p-4 pb-2">Recent Rides</Typography>
                     <Divider />
                     <List sx={{ flex: 1, minHeight: 200, maxHeight: 400, overflowY: 'auto', px: 2 }}>
@@ -184,7 +197,7 @@ export default function Dashboard() {
               </TabPanel>
 
               <TabPanel value={tabValue} index={1}>
-                <Card className="shadow-md rounded-xl" sx={{ minHeight: 500, minWidth: 500, width: '100%' }}>
+                <Card className="shadow-md rounded-xl" sx={{ minHeight: 437, minWidth: 500, width: '100%' }}>
                   <CardContent className="p-4" sx={{ minHeight: 400, display: 'flex', flexDirection: 'column' }}>
                     <Typography variant="h6" className="font-bold text-gray-800 mb-4">Weekly Earnings</Typography>
                     <Box className="h-64 flex items-end justify-center">
@@ -217,8 +230,8 @@ export default function Dashboard() {
                 <CardContent className="p-4">
                   <Typography variant="h6" className="font-bold text-gray-800 mb-4">Current Status</Typography>
                   <Box className="flex items-center mb-4">
-                    <div className="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
-                    <Typography variant="body1" className="font-medium">Online</Typography>
+                    <div className={`w-3 h-3 rounded-full mr-2 ${online ? 'bg-green-500' : 'bg-gray-400'}`}></div>
+                    <Typography variant="body1" className="font-medium">{online ? 'Online' : 'Offline'}</Typography>
                   </Box>
                   <Box className="flex items-center mb-4">
                     <LocationOn className="text-gray-500 mr-2" />
@@ -240,30 +253,40 @@ export default function Dashboard() {
                       variant="contained" 
                       className="w-full bg-yellow-500 hover:bg-yellow-600 text-white"
                       startIcon={<TwoWheeler />}
+                      onClick={() => {
+                        setOnline(prev => !prev);
+                        alert(`You are now ${!online ? 'Online' : 'Offline'}`);
+                      }}
                     >
-                      Go Online
+                      {online ? 'Go Offline' : 'Go Online'}
                     </Button>
+
                     <Button 
                       variant="outlined" 
                       className="w-full"
                       startIcon={<AccountBalanceWallet />}
+                      onClick={() => setWalletOpen(true)}
                     >
                       Wallet
                     </Button>
+
                     <Button 
                       variant="outlined" 
                       className="w-full"
                       startIcon={<History />}
+                      onClick={() => navigate('/rider/ride-history')}
                     >
                       Ride History
                     </Button>
-                    <Button 
+
+                    {/* <Button 
                       variant="outlined" 
                       className="w-full"
                       startIcon={<Settings />}
+                      onClick={() => navigate('/rider/settings')}
                     >
                       Settings
-                    </Button>
+                    </Button> */}
                   </Box>
                 </CardContent>
               </Card>
@@ -271,5 +294,23 @@ export default function Dashboard() {
           </Grid>
         </div>
       </div>
+
+      {/* Wallet Dialog (popup) */}
+      <Dialog open={walletOpen} onClose={() => setWalletOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>
+          Wallet
+          <IconButton
+            aria-label="close"
+            onClick={() => setWalletOpen(false)}
+            sx={{ position: 'absolute', right: 8, top: 8 }}
+          >
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent dividers>
+          <Wallet />
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

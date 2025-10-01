@@ -121,7 +121,7 @@ export default function AcceptRide() {
 
         <Grid container spacing={3}>
           {/* Left Column - Request Details */}
-          <Grid item xs={12} md={5} >
+          <Grid item xs={12} md={5} minHeight={610}>
             <Card className="shadow-md rounded-xl" style={{ height: '100%' }}>
               <CardContent className="p-6">
                 <Box className="flex justify-between items-center mb-30 ">
@@ -238,9 +238,9 @@ export default function AcceptRide() {
           {/* Right Column - Map and Action */}
           <Grid item xs={12} md={7} minWidth={600} height={200}>
             {/* Map */}
-            <Card className="shadow-md rounded-xl mb-4" >
+            <Card className="shadow-md rounded-xl mb-2">
               <CardContent className="p-0">
-                <Typography variant="h6" className="font-bold text-gray-800 p-4 pb-2">Route Map</Typography>
+                <Typography variant="h6" className="font-bold text-gray-800 p-4 pb-2 ">Route Map</Typography>
                 <Divider />
                 <MapDisplay 
                   userLocation={rideRequest.pickupLocation} 

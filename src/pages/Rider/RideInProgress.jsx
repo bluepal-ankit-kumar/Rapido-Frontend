@@ -1,19 +1,22 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MapDisplay from '../../components/shared/MapDisplay';
 import { 
   Typography, 
-  Paper, 
-  Box, 
   Card, 
   CardContent, 
   Avatar, 
   LinearProgress, 
   Divider,
   Chip,
-  Grid,
+  Box,
   Button,
-  IconButton
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField
 } from '@mui/material';
 import { 
   LocationOn, 
@@ -25,84 +28,84 @@ import {
   Message,
   Navigation
 } from '@mui/icons-material';
-import useRideTracking from '../../hooks/useRideTracking.js';
+import { useGlobalStore } from '../../context/GlobalStore.jsx';
 
 export default function RideInProgress() {
   const navigate = useNavigate();
+  const { getRide, cancelRide, reachCustomer } = useGlobalStore();
+
   // Simulate rideId for demo
   const rideId = 201;
-  const { ride, location } = useRideTracking(rideId);
+  const ride = getRide(rideId);
 
-  // Mock driver data (would normally come from the ride object)
-  const driver = {
-    name: "Rajesh Kumar",
-    rating: 4.8,
-    vehicle: "Toyota Innova",
-    licensePlate: "KA-01-AB-1234",
-    phone: "+91 98765 43210",
-    location: [12.9750, 77.5900] // Rider's mock location (lat, lng)
-  };
+  // Local UI state
+  const [otpOpen, setOtpOpen] = useState(false);
+  const [otpValue, setOtpValue] = useState('');
+  const [otpError, setOtpError] = useState('');
 
-  // Mock user (customer) data
-  const user = {
-    name: "John Doe",
-    location: [12.9716, 77.5946] // User's mock location (lat, lng)
-  };
+  if (!ride) {
+    return <div className="p-6">Ride not found</div>;
+  }
 
-  // Mock route points for polyline (simulate a path)
+  // Map route points: driver -> customer
   const routePoints = [
-    driver.location,
-    [12.9730, 77.5920],
-    [12.9720, 77.5930],
-    [12.9716, 77.5946], // user location
+    ride.driver.location,
+    [ (ride.driver.location[0] + ride.customer.location[0]) / 2, (ride.driver.location[1] + ride.customer.location[1]) / 2 ],
+    ride.customer.location
   ];
 
-  // Mock trip progress
-  const progress = 65; // percentage
-
-  // Handler for cancel ride
   const handleCancel = () => {
-    // Optionally reset ride state here
+    cancelRide(rideId);
+    // Simple feedback then redirect
+    alert('Ride cancelled');
     navigate('/rider/dashboard');
   };
 
-  // Handler for complete ride
-  const handleComplete = () => {
-    // Optionally update ride status here
-    navigate('/rider/dashboard');
+  const handleReachedCustomer = () => {
+    setOtpValue('');
+    setOtpError('');
+    setOtpOpen(true);
   };
 
-  // Polyline points for route (mock: from rider to user)
-  // (already declared above with more points)
+  const validateOtpAndProceed = () => {
+    if (otpValue.trim() === ride.otp) {
+      setOtpOpen(false);
+      // mark stage and navigate to to-destination page
+      reachCustomer(rideId);
+      navigate('/rider/ride-to-destination', { state: { rideId } });
+    } else {
+      setOtpError('Invalid OTP');
+    }
+  };
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
       <Typography variant="h4" fontWeight="bold" gutterBottom>
         Ride In Progress
       </Typography>
-      
-      {/* Map View */}
+
+      {/* Map View: Rider -> Customer */}
       <Card elevation={3} className="mb-6">
         <CardContent className="p-0">
           <div className="w-full h-80 rounded-xl overflow-hidden">
             <MapDisplay
-              userLocation={user.location}
+              userLocation={ride.customer.location}
               nearbyRiders={[
-                { id: 1, name: driver.name, location: driver.location, distance: '0.5', eta: '3' }
+                { id: ride.driver.name, name: ride.driver.name, location: ride.driver.location, distance: '0.5', eta: '3' }
               ]}
               routePoints={routePoints}
-              riderLocation={driver.location}
+              riderLocation={ride.driver.location}
             />
           </div>
         </CardContent>
       </Card>
 
-      {/* Status Card */}
+      {/* Customer Card + actions */}
       <Card elevation={3} className="mb-6">
         <CardContent className="p-4">
           <Box className="flex justify-between items-center mb-4">
             <Typography variant="h6" fontWeight="medium">
-              Ride Status
+              Customer Details
             </Typography>
             <Chip 
               label={ride ? ride.status : 'Loading...'} 
@@ -110,53 +113,55 @@ export default function RideInProgress() {
               size="medium"
             />
           </Box>
-          
-          <Box className="mb-4">
-            <Typography variant="body2" color="textSecondary" className="mb-1">
-              Current Location
-            </Typography>
-            <Box className="flex items-center">
-              <LocationOn className="text-blue-500 mr-1" />
-              <Typography>
-                {location ? `${location.latitude}, ${location.longitude}` : 'Fetching...'}
+
+          <Box className="flex items-center mb-3">
+            <Avatar className="bg-blue-100 text-blue-600 mr-3">
+              <Person />
+            </Avatar>
+            <Box>
+              <Typography variant="subtitle1" fontWeight="medium">
+                {ride.customer.name}
+              </Typography>
+              <Typography variant="body2" color="textSecondary">
+                Pickup: {ride.pickup} • Drop: {ride.drop}
               </Typography>
             </Box>
           </Box>
-          
-          <Box className="mt-4">
-            <Typography variant="body2" color="textSecondary" className="mb-1">
-              Trip Progress
-            </Typography>
-            <LinearProgress variant="determinate" value={progress} className="h-3" />
-            <Box className="flex justify-between mt-1">
-              <Typography variant="caption">{progress}% completed</Typography>
-              <Typography variant="caption">ETA: 15 min</Typography>
-            </Box>
+
+          <Divider className="my-3" />
+
+          <Box className="flex justify-between">
+            <Button variant="outlined" color="error" size="large" onClick={handleCancel}>
+              Cancel Ride
+            </Button>
+            <Button variant="contained" color="primary" size="large" onClick={handleReachedCustomer}>
+              Reached Customer
+            </Button>
           </Box>
         </CardContent>
       </Card>
-      
-      {/* Driver and Vehicle Info */}
+
+      {/* Driver Info summary */}
       <Card elevation={2} className="mb-6">
         <CardContent className="p-4">
           <Typography variant="h6" fontWeight="medium" className="mb-4">
             Driver & Vehicle Details
           </Typography>
-          
+
           <Box className="flex items-center mb-4">
             <Avatar className="bg-blue-100 text-blue-600 mr-3">
               <Person />
             </Avatar>
             <Box className="flex-1">
               <Typography variant="subtitle1" fontWeight="medium">
-                {driver.name}
+                {ride.driver.name}
               </Typography>
               <Box className="flex items-center">
                 <Star className="text-yellow-500 mr-1" fontSize="small" />
-                <Typography variant="body2">{driver.rating}</Typography>
+                <Typography variant="body2">{ride.driver.rating}</Typography>
               </Box>
             </Box>
-            
+
             <Box className="flex space-x-2">
               <IconButton color="primary" aria-label="call driver">
                 <Phone />
@@ -166,84 +171,40 @@ export default function RideInProgress() {
               </IconButton>
             </Box>
           </Box>
-          
+
           <Divider className="my-3" />
-          
+
           <Box className="flex items-center">
             <DirectionsCar className="text-gray-500 mr-3" />
             <Box>
-              <Typography variant="subtitle1">{driver.vehicle}</Typography>
+              <Typography variant="subtitle1">{ride.driver.vehicle}</Typography>
               <Typography variant="body2" color="textSecondary">
-                {driver.licensePlate}
+                {ride.driver.licensePlate}
               </Typography>
             </Box>
           </Box>
         </CardContent>
       </Card>
-      
-      {/* Trip Details */}
-      <Card elevation={2} className="mb-6">
-        <CardContent className="p-4">
-          <Typography variant="h6" fontWeight="medium" className="mb-4">
-            Trip Details
-          </Typography>
-          
-          <Box className="mb-4">
-            <Box className="flex items-start mb-3">
-              <Box className="flex flex-col items-center mr-3">
-                <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                <div className="w-0.5 h-12 bg-gray-300"></div>
-                <div className="w-3 h-3 rounded-full bg-red-500"></div>
-              </Box>
-              <Box className="flex-1">
-                <Typography variant="body1" fontWeight="medium">
-                  MG Road
-                </Typography>
-                <Typography variant="body2" color="textSecondary" className="mb-3">
-                  Pickup Location
-                </Typography>
-                <Typography variant="body1" fontWeight="medium">
-                  Koramangala
-                </Typography>
-                <Typography variant="body2" color="textSecondary">
-                  Drop Location
-                </Typography>
-              </Box>
-            </Box>
-          </Box>
-          
-          <Box className="flex justify-between">
-            <Box className="flex items-center">
-              <AccessTime className="text-gray-500 mr-1" />
-              <Typography variant="body2">
-                Started: 10:30 AM
-              </Typography>
-            </Box>
-            <Box className="flex items-center">
-              <Navigation className="text-gray-500 mr-1" />
-              <Typography variant="body2">
-                Distance: 8.5 km
-              </Typography>
-            </Box>
-          </Box>
-        </CardContent>
-      </Card>
-      
-      {/* Action Buttons */}
-      <Box className="flex flex-wrap gap-4 justify-between mt-6">
-        <Button variant="outlined" color="primary" size="large">
-          Share Trip Status
-        </Button>
-        <Button variant="contained" color="primary" size="large">
-          Emergency Help
-        </Button>
-        <Button variant="outlined" color="error" size="large" onClick={handleCancel}>
-          Cancel Ride
-        </Button>
-        <Button variant="contained" color="success" size="large" onClick={handleComplete}>
-          Ride Completed
-        </Button>
-      </Box>
+
+      {/* OTP Dialog */}
+      <Dialog open={otpOpen} onClose={() => setOtpOpen(false)}>
+        <DialogTitle>Enter 4-digit OTP</DialogTitle>
+        <DialogContent>
+          <TextField
+            value={otpValue}
+            onChange={(e) => { setOtpValue(e.target.value); setOtpError(''); }}
+            label="OTP"
+            fullWidth
+            inputProps={{ maxLength: 4 }}
+            helperText={otpError || 'Ask customer for the 4-digit OTP'}
+            error={!!otpError}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOtpOpen(false)}>Cancel</Button>
+          <Button onClick={validateOtpAndProceed} variant="contained">Verify</Button>
+        </DialogActions>
+      </Dialog>
     </div>
   );
 }
