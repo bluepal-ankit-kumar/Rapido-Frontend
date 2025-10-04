@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { TextField, Button, Typography, Paper, Box, Alert, Checkbox, Link, CircularProgress } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import AuthService from '../../services/AuthService';
+import AuthService from '../../services/authService';
 
 export default function Register() {
   const [name, setName] = useState('');

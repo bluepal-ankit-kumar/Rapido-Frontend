@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import AuthService, { clearAuthToken } from '../services/AuthService';
+import AuthService, { clearAuthToken } from '../services/authService';
 import { useNavigate } from 'react-router-dom';
 
 export const AuthContext = createContext();

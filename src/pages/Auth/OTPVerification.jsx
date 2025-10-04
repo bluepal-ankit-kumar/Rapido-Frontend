@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { TextField, Button, Typography, Paper, Box, Alert, CircularProgress } from '@mui/material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import useOTPValidation from '../../hooks/useOTPValidation';
-import AuthService from '../../services/AuthService';
+import AuthService from '../../services/authService';
 
 export default function OTPVerification() {
   const { otp, error: otpError, handleChange, validateOTP } = useOTPValidation(6);

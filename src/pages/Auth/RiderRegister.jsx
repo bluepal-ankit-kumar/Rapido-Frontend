@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { TextField, Button, Typography, Paper, Box, Alert, CircularProgress } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import AuthService from '../../services/AuthService';
+import AuthService from '../../services/authService';
 
 export default function RiderRegister() {
   const [fullName, setFullName] = useState('');
