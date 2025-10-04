@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Paper, Typography, TextField, Button, Checkbox, Link, Box, Alert, CircularProgress } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import useFormValidation from '../../hooks/useFormValidation';
 import { validate } from '../../utils/validators';
 import { useAuth } from '../../contexts/AuthContext';
@@ -101,17 +101,14 @@ export default function Login() {
               />
               <Typography variant="body2" className="text-gray-600">Remember me</Typography>
             </Box>
-            <Link
-              href="#"
-              variant="body2"
+            <Button
+              component={RouterLink}
+              to="/forgot-password"
+              variant="text"
               className="text-yellow-600 hover:text-yellow-700"
-              onClick={(e) => {
-                e.preventDefault();
-                navigate('/forgot-password');
-              }}
             >
               Forgot password?
-            </Link>
+            </Button>
           </Box>
 
           {formError && (

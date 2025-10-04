@@ -25,6 +25,8 @@ import CustomerRegister from './pages/Auth/CustomerRegister.jsx';
 import RiderRegister from './pages/Auth/RiderRegister.jsx';
 import RiderVerification from './pages/Auth/RiderVerification.jsx';
 import OTPVerification from './pages/Auth/OTPVerification.jsx';
+import ForgotPassword from './pages/Auth/ForgotPassword.jsx';
+import ResetPassword from './pages/Auth/ResetPassword.jsx';
 
 // Rider pages
 import RiderDashboard from './pages/Rider/Dashboard.jsx';
@@ -88,6 +90,8 @@ function AppLayout({ sidebarOpen, setSidebarOpen }) {
             <Route path="/rider-register" element={<RiderRegister />} />
             <Route path="/rider-verification" element={<RiderVerification />} />
             <Route path="/otp-verification" element={<OTPVerification />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             {/* Rider routes */}
             <Route path="/rider/dashboard" element={<RequireAuth><RiderDashboard /></RequireAuth>} />
             <Route path="/rider/accept-ride" element={<RequireAuth><AcceptRide /></RequireAuth>} />
