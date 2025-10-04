@@ -1,11 +1,21 @@
-import { mockRiders } from '../data/mockData';
+import api from './api';
 
-export function getNearbyRiders(userLocation, vehicleType) {
-  // Filter by vehicleType (mock proximity)
-  return mockRiders.filter(r => r.type === vehicleType);
-}
+const LocationService = {
+  updateLocation: async (request) => {
+    return api.post('/locations/update', request);
+  },
 
-export function sendRiderLocation(riderId, location) {
-  // Simulate sending location
-  return { success: true };
-}
+  bookRide: async (request) => {
+    return api.post('/locations/book-ride', request);
+  },
+
+  trackRide: async (rideId) => {
+    return api.get(`/locations/track/${rideId}`);
+  },
+
+  updateLocationRideId: async (locationId, rideId) => {
+    return api.put(`/locations/${locationId}/ride/${rideId}`);
+  },
+};
+
+export default LocationService;

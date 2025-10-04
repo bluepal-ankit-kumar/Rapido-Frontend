@@ -1,24 +1,47 @@
+import api, { setAuthToken, clearAuthToken } from './api';
 
-import { mockUsers } from '../data/mockData.js';
+const AuthService = {
+  signup: async (userRequest) => {
+    const response = await api.post('/auth/signup', userRequest);
+    const { id, username, email, phone, userType, message } = response.data; // Match UserResponseDto
+    const user = {
+      id,
+      email,
+      name: username,
+      role: userType,
+      verified: userType === 'RIDER' ? false : true,
+    };
+    return { user, status: true, message };
+  },
 
-export function login(email, password) {
-	// Check credentials against mockUsers (passwords are stored as btoa hashes)
-	const user = mockUsers.find(u => u.email === email && u.password === btoa(password));
-	if (user) {
-		return { user };
-	}
-	return { user: null };
-}
+  signin: async (loginRequest) => {
+    console.log('Sending signin request:', loginRequest);
+    try {
+      const response = await api.post('/auth/signin', loginRequest);
+      const { jwt, role, status, message } = response.data;
+      if (jwt) {
+        setAuthToken(jwt);
+      }
+      const user = {
+        email: loginRequest.email,
+        role: role,
+        verified: role === 'RIDER' ? false : true,
+      };
+      return { user, jwt, status, message };
+    } catch (error) {
+      console.error('Signin error:', error.response?.data || error);
+      throw new Error(error.response?.data?.message || 'Failed to sign in');
+    }
+  },
 
-export function register(name, email, password) {
-	// Simulate registration
-	if (name && email && password) {
-		return { user: { name, email, role: 'customer' } };
-	}
-	return { user: null };
-}
+  forgotPassword: async (email) => {
+    return api.post('/auth/forgot-password', { email });
+  },
 
-export function logout() {
-	// Simulate logout
-	return { success: true };
-}
+  resetPassword: async (resetRequest) => {
+    return api.post('/auth/reset-password', resetRequest);
+  },
+};
+
+export { clearAuthToken };
+export default AuthService;

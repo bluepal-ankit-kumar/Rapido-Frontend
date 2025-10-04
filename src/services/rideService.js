@@ -1,20 +1,17 @@
-const rides = [
-	{ id: 1, user: 'John Doe', pickup: 'MG Road', drop: 'Koramangala', date: '2025-09-20', status: 'Completed' },
-	{ id: 2, user: 'Jane Smith', pickup: 'Indiranagar', drop: 'HSR Layout', date: '2025-09-22', status: 'Completed' },
-];
+import api from './api';
 
-export function getRides() {
-	return rides;
-}
+const RideService = {
+  bookRide: async (request) => {
+    return api.post('/rides/book', request);
+  },
 
-export function bookRide(user, pickup, drop, type) {
-	const newRide = { id: rides.length + 1, user, pickup, drop, type, date: new Date().toISOString().slice(0,10), status: 'Confirmed' };
-	rides.push(newRide);
-	return newRide;
-}
+  updateRideStatus: async (request) => {
+    return api.post('/rides/status', request);
+  },
 
-export function updateRideStatus(id, status) {
-	const ride = rides.find(r => r.id === id);
-	if (ride) ride.status = status;
-	return ride;
-}
+  getRide: async (rideId) => {
+    return api.get(`/rides/${rideId}`);
+  },
+};
+
+export default RideService;

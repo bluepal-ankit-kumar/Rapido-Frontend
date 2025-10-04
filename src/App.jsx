@@ -1,4 +1,3 @@
-// App.jsx
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext.jsx';
@@ -47,27 +46,19 @@ import HelpManagement from './pages/Admin/HelpManagement.jsx';
 
 import NotFound from './pages/NotFound.jsx';
 
-
 function App() {
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
   return (
-    <AuthProvider>
-      <RideProvider>
-        <GlobalProvider>
-          <Router>
-            <AuthWrapper>
-              <AppLayout sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
-            </AuthWrapper>
-          </Router>
-        </GlobalProvider>
-      </RideProvider>
-    </AuthProvider>
+    <Router> {/* Move Router to the top */}
+      <AuthProvider>
+        <RideProvider>
+          <GlobalProvider>
+            <AppLayout sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+          </GlobalProvider>
+        </RideProvider>
+      </AuthProvider>
+    </Router>
   );
-}
-
-function AuthWrapper({ children }) {
-  // This wrapper is needed to use useAuth inside App
-  return children;
 }
 
 function AppLayout({ sidebarOpen, setSidebarOpen }) {
@@ -81,45 +72,45 @@ function AppLayout({ sidebarOpen, setSidebarOpen }) {
         {user && <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />}
         <main className={`flex-1 transition-all duration-300 ${sidebarOpen && user ? 'md:ml-64' : ''}`}>
           <Routes>
-                  {/* Customer routes */}
-                  <Route path="/" element={<HomePage />} />
-                  <Route path="/ride-booking" element={<RequireAuth><RideBooking /></RequireAuth>} />
-                  <Route path="/ride-tracking" element={<RequireAuth><RideTracking /></RequireAuth>} />
-                  <Route path="/ride-history" element={<RequireAuth><RideHistory /></RequireAuth>} />
-                  <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
-                  <Route path="/rating" element={<RequireAuth><RatingPage /></RequireAuth>} />
-                  <Route path="/help" element={<RequireAuth><HelpPage /></RequireAuth>} />
-                  <Route path="/about" element={<About />} />
-                  {/* Auth routes */}
-                  <Route path="/login" element={<Login />} />
-                  {/* Registration routes */}
-                  <Route path="/customer-register" element={<CustomerRegister />} />
-                  <Route path="/rider-register" element={<RiderRegister />} />
-                  <Route path="/rider-verification" element={<RiderVerification />} />
-                  <Route path="/otp-verification" element={<OTPVerification />} />
-                  {/* Rider routes */}
-                  <Route path="/rider/dashboard" element={<RequireAuth><RiderDashboard /></RequireAuth>} />
-                  <Route path="/rider/accept-ride" element={<RequireAuth><AcceptRide /></RequireAuth>} />
-                  <Route path="/rider/ride-in-progress" element={<RequireAuth><RideInProgress /></RequireAuth>} />
-                  <Route path="/rider/ride-to-destination" element={<RequireAuth><RideToDestination /></RequireAuth>} />
-                  <Route path="/rider/ride-history" element={<RequireAuth><RiderRideHistory /></RequireAuth>} />
-                  <Route path="/rider/profile" element={<RequireAuth><RiderProfile /></RequireAuth>} />
-                  <Route path="/rider/help" element={<RequireAuth><RiderHelpPage /></RequireAuth>} />
-                  <Route path="/rider/wallet" element={<RequireAuth><Wallet /></RequireAuth>} />
-                  {/* Admin routes */}
-                  <Route path="/admin/dashboard" element={<RequireAuth><AdminDashboard /></RequireAuth>} />
-                  <Route path="/admin/user-management" element={<RequireAuth><UserManagement /></RequireAuth>} />
-                  <Route path="/admin/ride-management" element={<RequireAuth><RideManagement /></RequireAuth>} />
-                  <Route path="/admin/reports" element={<RequireAuth><Reports /></RequireAuth>} />
-                  <Route path="/admin/ratings-review" element={<RequireAuth><RatingsReview /></RequireAuth>} />
-                  <Route path="/admin/help-management" element={<RequireAuth><HelpManagement /></RequireAuth>} />
-                  {/* Not Found */}
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-          </main>
-        </div>
-        <Footer />
+            {/* Customer routes */}
+            <Route path="/" element={<HomePage />} />
+            <Route path="/ride-booking" element={<RequireAuth><RideBooking /></RequireAuth>} />
+            <Route path="/ride-tracking" element={<RequireAuth><RideTracking /></RequireAuth>} />
+            <Route path="/ride-history" element={<RequireAuth><RideHistory /></RequireAuth>} />
+            <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
+            <Route path="/rating" element={<RequireAuth><RatingPage /></RequireAuth>} />
+            <Route path="/help" element={<RequireAuth><HelpPage /></RequireAuth>} />
+            <Route path="/about" element={<About />} />
+            {/* Auth routes */}
+            <Route path="/login" element={<Login />} />
+            {/* Registration routes */}
+            <Route path="/customer-register" element={<CustomerRegister />} />
+            <Route path="/rider-register" element={<RiderRegister />} />
+            <Route path="/rider-verification" element={<RiderVerification />} />
+            <Route path="/otp-verification" element={<OTPVerification />} />
+            {/* Rider routes */}
+            <Route path="/rider/dashboard" element={<RequireAuth><RiderDashboard /></RequireAuth>} />
+            <Route path="/rider/accept-ride" element={<RequireAuth><AcceptRide /></RequireAuth>} />
+            <Route path="/rider/ride-in-progress" element={<RequireAuth><RideInProgress /></RequireAuth>} />
+            <Route path="/rider/ride-to-destination" element={<RequireAuth><RideToDestination /></RequireAuth>} />
+            <Route path="/rider/ride-history" element={<RequireAuth><RiderRideHistory /></RequireAuth>} />
+            <Route path="/rider/profile" element={<RequireAuth><RiderProfile /></RequireAuth>} />
+            <Route path="/rider/help" element={<RequireAuth><RiderHelpPage /></RequireAuth>} />
+            <Route path="/rider/wallet" element={<RequireAuth><Wallet /></RequireAuth>} />
+            {/* Admin routes */}
+            <Route path="/admin/dashboard" element={<RequireAuth><AdminDashboard /></RequireAuth>} />
+            <Route path="/admin/user-management" element={<RequireAuth><UserManagement /></RequireAuth>} />
+            <Route path="/admin/ride-management" element={<RequireAuth><RideManagement /></RequireAuth>} />
+            <Route path="/admin/reports" element={<RequireAuth><Reports /></RequireAuth>} />
+            <Route path="/admin/ratings-review" element={<RequireAuth><RatingsReview /></RequireAuth>} />
+            <Route path="/admin/help-management" element={<RequireAuth><HelpManagement /></RequireAuth>} />
+            {/* Not Found */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </main>
       </div>
+      <Footer />
+    </div>
   );
 }
 

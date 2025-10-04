@@ -1,42 +1,75 @@
-// File removed as registration is now handled by CustomerRegister.jsx and RiderRegister.jsx
 import React, { useState } from 'react';
 import { TextField, Button, Typography, Paper, Box, Alert, Checkbox, Link, CircularProgress } from '@mui/material';
-import useFormValidation from '../../hooks/useFormValidation.js';
-import useAuth from '../../hooks/useAuth';
-
-const validate = values => {
-  const errors = {};
-  if (!values.name) errors.name = 'Name is required';
-  if (!values.email) errors.email = 'Email is required';
-  else if (!/\S+@\S+\.\S+/.test(values.email)) errors.email = 'Email is invalid';
-  if (!values.password) errors.password = 'Password is required';
-  else if (values.password.length < 6) errors.password = 'Password must be at least 6 characters';
-  return errors;
-};
+import { useNavigate } from 'react-router-dom';
+import AuthService from '../../services/AuthService';
 
 export default function Register() {
-  const { register, loading, error: authError } = useAuth();
-  const { values, errors, handleChange } = useFormValidation({ name: '', email: '', password: '' }, validate);
-  const [formError, setFormError] = useState('');
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [agreeTerms, setAgreeTerms] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
-  const handleSubmit = e => {
+  const handleSubmit = async e => {
     e.preventDefault();
+    setError('');
+    setSuccess('');
+
     if (!agreeTerms) {
-      setFormError('You must agree to the terms and conditions');
+      setError('You must agree to the terms and conditions');
       return;
     }
-    if (Object.keys(errors).length === 0 && values.name && values.email && values.password) {
-      register(values.name, values.email, values.password);
-    } else {
-      setFormError('Please fill all fields correctly');
+    if (!name || !phone || !email || !password) {
+      setError('All fields are required');
+      return;
+    }
+    if (!/^\d{10}$/.test(phone)) {
+      setError('Phone number must be 10 digits');
+      return;
+    }
+    if (!/\S+@\S+\.\S+/.test(email)) {
+      setError('Invalid email address');
+      return;
+    }
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const userRequest = {
+        name,
+        phone,
+        email,
+        password,
+        userType: 'CUSTOMER',
+      };
+      const response = await AuthService.signup(userRequest);
+      setSuccess('Registration successful! Redirecting to login...');
+      setTimeout(() => navigate('/login'), 1500);
+    } catch (error) {
+      console.error('Customer registration error:', error);
+      if (error.response?.status === 400) {
+        setError(error.response.data || 'Invalid registration details');
+      } else if (error.response?.status === 409) {
+        setError('Email already registered. Please login.');
+        setTimeout(() => navigate('/login'), 1500);
+      } else {
+        setError('An unexpected error occurred. Please try again later.');
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <Paper className="p-8 w-full max-w-md rounded-xl shadow-lg">
-        {/* Logo and Brand */}
         <Box className="text-center mb-6">
           <div className="w-16 h-16 bg-yellow-400 rounded-full flex items-center justify-center mx-auto mb-3">
             <span className="text-white font-bold text-2xl">R</span>
@@ -45,47 +78,47 @@ export default function Register() {
           <Typography variant="body2" className="text-gray-600 mt-1">Join Rapido for quick and safe rides</Typography>
         </Box>
 
-        {/* Registration Form */}
         <form onSubmit={handleSubmit}>
           <TextField
             label="Full Name"
-            name="name"
-            value={values.name}
-            onChange={handleChange}
-            error={!!errors.name}
-            helperText={errors.name}
+            value={name}
+            onChange={e => setName(e.target.value)}
             fullWidth
             margin="normal"
+            variant="outlined"
+            size="small"
+          />
+          <TextField
+            label="Phone Number"
+            value={phone}
+            onChange={e => setPhone(e.target.value)}
+            fullWidth
+            margin="normal"
+            type="tel"
+            inputProps={{ maxLength: 10 }}
             variant="outlined"
             size="small"
           />
           <TextField
             label="Email Address"
-            name="email"
-            value={values.email}
-            onChange={handleChange}
-            error={!!errors.email}
-            helperText={errors.email}
+            value={email}
+            onChange={e => setEmail(e.target.value)}
             fullWidth
             margin="normal"
+            type="email"
             variant="outlined"
             size="small"
           />
           <TextField
             label="Password"
-            name="password"
-            type="password"
-            value={values.password}
-            onChange={handleChange}
-            error={!!errors.password}
-            helperText={errors.password}
+            value={password}
+            onChange={e => setPassword(e.target.value)}
             fullWidth
             margin="normal"
+            type="password"
             variant="outlined"
             size="small"
           />
-          
-          {/* Terms and Conditions */}
           <Box className="flex items-center mt-3 mb-2">
             <Checkbox
               checked={agreeTerms}
@@ -105,19 +138,9 @@ export default function Register() {
             </Typography>
           </Box>
 
-          {/* Error Messages */}
-          {formError && (
-            <Alert severity="error" className="mb-3" size="small">
-              {formError}
-            </Alert>
-          )}
-          {authError && (
-            <Alert severity="error" className="mb-3" size="small">
-              {authError}
-            </Alert>
-          )}
+          {error && <Alert severity="error" className="mb-3">{error}</Alert>}
+          {success && <Alert severity="success" className="mb-3">{success}</Alert>}
 
-          {/* Submit Button */}
           <Button
             type="submit"
             variant="contained"
@@ -130,13 +153,26 @@ export default function Register() {
           </Button>
         </form>
 
-        {/* Registration Role Selection */}
         <Box className="text-center mt-6 pt-4 border-t border-gray-200">
           <Typography variant="body2" className="text-gray-600 mb-2">
             Register as:
           </Typography>
-          <Button variant="outlined" color="primary" className="mx-2" href="/customer-register">Customer</Button>
-          <Button variant="outlined" color="primary" className="mx-2" href="/rider-register">Rider</Button>
+          <Button
+            variant="outlined"
+            color="primary"
+            className="mx-2"
+            onClick={() => navigate('/customer-register')}
+          >
+            Customer
+          </Button>
+          <Button
+            variant="outlined"
+            color="primary"
+            className="mx-2"
+            onClick={() => navigate('/rider-register')}
+          >
+            Rider
+          </Button>
           <Typography variant="body2" className="text-gray-600 mt-4">
             Already have an account?{' '}
             <Link href="/login" className="text-yellow-600 hover:text-yellow-700 font-medium">
@@ -145,7 +181,6 @@ export default function Register() {
           </Typography>
         </Box>
 
-        {/* Footer */}
         <Box className="text-center mt-6">
           <Typography variant="caption" className="text-gray-500">
             © 2023 Rapido. All rights reserved.

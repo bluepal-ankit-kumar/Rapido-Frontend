@@ -1,49 +1,61 @@
-
 import React, { useState, useEffect } from 'react';
 import { Paper, Typography, TextField, Button, Checkbox, Link, Box, Alert, CircularProgress } from '@mui/material';
-import useAuth from '../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import useFormValidation from '../../hooks/useFormValidation';
 import { validate } from '../../utils/validators';
-import { mockUsers } from '../../data/mockData';
+import { useAuth } from '../../contexts/AuthContext';
 
 export default function Login() {
-  const { signIn, loading, user, userRole } = useAuth();
+  const { signIn, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { values, errors, handleChange } = useFormValidation({ email: '', password: '' }, validate);
   const [formError, setFormError] = useState('');
-  const [rememberMe, setRememberMe] = useState(false);
+  const [rememberMe, setRememberMe] = useState(localStorage.getItem('rememberMe') === 'true');
+  const [localLoading, setLocalLoading] = useState(false);
 
   useEffect(() => {
-    if (user) {
-      if (userRole === 'rider') navigate('/rider/dashboard');
-      else if (userRole === 'admin') navigate('/admin/dashboard');
-      else navigate('/');
+    if (rememberMe) {
+      localStorage.setItem('rememberMe', 'true');
+    } else {
+      localStorage.removeItem('rememberMe');
     }
-  }, [user, userRole, navigate]);
+  }, [rememberMe]);
 
   const handleSubmit = async e => {
     e.preventDefault();
     setFormError('');
-    if (Object.keys(errors).length === 0 && values.email && values.password) {
-      const result = await signIn(values.email, values.password);
-      if (!result || !result.user) {
-        setFormError('Invalid credentials');
-        return;
-      }
-      if (result.user.role === 'rider' && result.user.verified === false) {
-        setFormError('Your profile verification is pending. Please try after some time.');
-        return;
-      }
-    } else {
+    setLocalLoading(true);
+
+    console.log('Form values:', values); // Log email and password
+
+    if (Object.keys(errors).length > 0 || !values.email || !values.password) {
       setFormError('Please fill all fields correctly');
+      setLocalLoading(false);
+      return;
+    }
+
+    try {
+      await signIn(values.email, values.password);
+    } catch (error) {
+      console.error('Login error:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+      });
+      if (error.message === 'Your profile verification is pending. Please try after some time.') {
+        setFormError(error.message);
+      } else if (error.response?.status === 401) {
+        setFormError(error.message || 'Invalid email or password. Please try again.');
+      } else {
+        setFormError('An unexpected error occurred. Please try again later.');
+      }
+      setLocalLoading(false);
     }
   };
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <Paper className="p-8 w-full max-w-md rounded-xl shadow-lg">
-        {/* Logo and Brand */}
         <Box className="text-center mb-6">
           <div className="w-16 h-16 bg-yellow-400 rounded-full flex items-center justify-center mx-auto mb-3">
             <span className="text-white font-bold text-2xl">R</span>
@@ -52,7 +64,6 @@ export default function Login() {
           <Typography variant="body2" className="text-gray-600 mt-1">Sign in to your account</Typography>
         </Box>
 
-        {/* Login Form */}
         <form onSubmit={handleSubmit}>
           <TextField
             label="Email Address"
@@ -80,7 +91,6 @@ export default function Login() {
             size="small"
           />
           
-          {/* Remember Me & Forgot Password */}
           <Box className="flex justify-between items-center mt-2 mb-4">
             <Box className="flex items-center">
               <Checkbox
@@ -91,32 +101,37 @@ export default function Login() {
               />
               <Typography variant="body2" className="text-gray-600">Remember me</Typography>
             </Box>
-            <Link href="#" variant="body2" className="text-yellow-600 hover:text-yellow-700">
+            <Link
+              href="#"
+              variant="body2"
+              className="text-yellow-600 hover:text-yellow-700"
+              onClick={(e) => {
+                e.preventDefault();
+                navigate('/forgot-password');
+              }}
+            >
               Forgot password?
             </Link>
           </Box>
 
-          {/* Error Message */}
           {formError && (
             <Alert severity="error" className="mb-3" size="small">
               {formError}
             </Alert>
           )}
 
-          {/* Submit Button */}
           <Button
             type="submit"
             variant="contained"
             fullWidth
             className="bg-yellow-500 hover:bg-yellow-600 text-white py-2.5 rounded-lg font-medium shadow-md"
-            disabled={loading}
-            startIcon={loading ? <CircularProgress size={20} color="inherit" /> : null}
+            disabled={localLoading || authLoading}
+            startIcon={localLoading || authLoading ? <CircularProgress size={20} color="inherit" /> : null}
           >
-            {loading ? 'Signing in...' : 'Sign In'}
+            {localLoading || authLoading ? 'Signing in...' : 'Sign In'}
           </Button>
         </form>
 
-        {/* Sign Up Link */}
         <Box className="text-center mt-6 pt-4 border-t border-gray-200">
           <Typography variant="body2" className="text-gray-600">
             Don't have an account?{' '}
@@ -130,7 +145,6 @@ export default function Login() {
           </Typography>
         </Box>
 
-        {/* Footer */}
         <Box className="text-center mt-6">
           <Typography variant="caption" className="text-gray-500">
             © 2023 Rapido. All rights reserved.

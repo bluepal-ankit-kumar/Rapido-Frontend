@@ -1,20 +1,28 @@
-const users = [
-	{ id: 1, name: 'John Doe', email: 'john@example.com', status: 'Active' },
-	{ id: 2, name: 'Jane Smith', email: 'jane@example.com', status: 'Inactive' },
-];
+import api from './api';
 
-export function getUsers() {
-	return users;
-}
+const UserService = {
+  getUserProfile: async () => {
+    return api.get('/users/profile');
+  },
 
-export function addUser(name, email) {
-	const newUser = { id: users.length + 1, name, email, status: 'Active' };
-	users.push(newUser);
-	return newUser;
-}
+  updateUserProfile: async (updateRequest) => {
+    return api.put('/users/profile', updateRequest);
+  },
 
-export function updateUserStatus(id, status) {
-	const user = users.find(u => u.id === id);
-	if (user) user.status = status;
-	return user;
-}
+  getAllUsers: async (page = 0, size = 10, userType = '') => {
+    return api.get('/users/admin', { params: { page, size, userType } });
+  },
+
+  deleteUser: async (userId) => {
+    return api.delete(`/users/admin/${userId}`);
+  },
+
+  downloadUsersPdf: async (userType = '') => {
+    return api.get('/users/admin/download-pdf', {
+      params: { userType },
+      responseType: 'blob', // For downloading PDF
+    });
+  },
+};
+
+export default UserService;
