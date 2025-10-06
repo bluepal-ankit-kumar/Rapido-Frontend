@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import AuthService from '../../services/AuthService';
+import AuthService from '../../services/authService';
 import { Box, TextField, Button, Typography, Alert } from '@mui/material';
 
 export default function ResetPassword() {

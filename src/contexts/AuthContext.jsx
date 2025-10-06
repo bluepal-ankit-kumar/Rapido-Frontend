@@ -23,11 +23,16 @@ export const AuthProvider = ({ children }) => {
     const token = localStorage.getItem('jwtToken');
     const storedUser = localStorage.getItem('user');
     const storedRole = localStorage.getItem('userRole');
+    const isRiderVerified = localStorage.getItem('isRiderVerified') === 'true';
     if (token && storedUser) {
       try {
         const parsedUser = JSON.parse(storedUser);
         setUser(parsedUser);
         setUserRole(storedRole);
+        // If rider and already verified previously, ensure landing is dashboard when app loads
+        if (parsedUser?.role === 'RIDER' && isRiderVerified && window.location.pathname === '/rider-verification') {
+          navigate('/rider/dashboard', { replace: true });
+        }
       } catch (error) {
         console.error('Invalid stored user data:', error);
         localStorage.removeItem('user');
@@ -41,8 +46,10 @@ export const AuthProvider = ({ children }) => {
   const signIn = async (email, password) => {
     try {
       const response = await AuthService.signin({ email, password });
-      const { jwt, message, status, role, userId } = response;
-      if (!status || !userId) {
+      const { jwt, message, status, user: responseUser } = response;
+      const userId = responseUser?.id;
+      const role = responseUser?.role;
+      if (!status || !userId || !role) {
         throw new Error(message || 'Invalid credentials');
       }
       const userData = { id: userId, email, role };
@@ -55,13 +62,12 @@ export const AuthProvider = ({ children }) => {
       if (role === 'RIDER') {
         try {
           const driverRes = await DriverService.getDriverByUserId(userId);
-          if (driverRes.data?.verificationStatus === 'APPROVED') {
-            navigate('/rider/dashboard', { replace: true });
-          } else {
-            navigate('/rider-verification', { replace: true });
-          }
+          const isApproved = driverRes?.verificationStatus === 'APPROVED';
+          localStorage.setItem('isRiderVerified', isApproved ? 'true' : 'false');
+          navigate(isApproved ? '/rider/dashboard' : '/rider-verification', { replace: true });
         } catch (err) {
           console.error('Driver fetch error:', err);
+          localStorage.setItem('isRiderVerified', 'false');
           navigate('/rider-verification', { replace: true });
         }
       } else if (role === 'ADMIN') {
@@ -114,6 +120,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('userRole');
     localStorage.removeItem('rememberMe');
     localStorage.removeItem('jwtToken');
+    localStorage.removeItem('isRiderVerified');
     clearAuthToken();
     navigate('/login', { replace: true });
   };

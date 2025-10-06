@@ -36,7 +36,11 @@ export default function RiderVerification() {
         const driverRes = await DriverService.getDriverByUserId(user.id);
         setDriverProfile(driverRes);
         if (driverRes.verificationStatus === 'APPROVED') {
+          // Persist verification so we don't show verification again on subsequent logins
+          localStorage.setItem('isRiderVerified', 'true');
           navigate('/rider/dashboard', { replace: true });
+        } else {
+          localStorage.setItem('isRiderVerified', 'false');
         }
       } catch (err) {
         // If no driver exists (e.g., 404), allow form to show
@@ -44,6 +48,12 @@ export default function RiderVerification() {
       } finally {
         setLoading(false);
       }
+    }
+
+    const isRiderVerified = localStorage.getItem('isRiderVerified') === 'true';
+    if (isRiderVerified) {
+      navigate('/rider/dashboard', { replace: true });
+      return;
     }
 
     if (!user) {
