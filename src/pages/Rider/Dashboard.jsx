@@ -1,315 +1,211 @@
-import useGeolocation from '../../hooks/useGeolocation';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
-  Typography, 
-  Card, 
-  CardContent, 
-  Grid, 
-  Button, 
-  Box, 
-  Avatar, 
-  Divider,
-  Chip,
-  Paper,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemAvatar,
-  IconButton,
-  Menu,
-  MenuItem,
-  Tabs,
-  Tab,
-  Badge,
-  Dialog,
-  DialogTitle,
-  DialogContent
+  Typography, Card, CardContent, Grid, Button, Box, Avatar, Divider,
+  Chip, List, ListItem, ListItemText, ListItemAvatar, Tabs, Tab, Dialog,
+  DialogTitle, DialogContent, IconButton, CircularProgress, Alert
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { 
-  Person, 
-  TwoWheeler, 
-  CurrencyRupee, 
-  Star, 
-  History,
-  Settings,
-  Notifications,
-  AccountBalanceWallet,
-  TrendingUp,
-  CalendarToday,
-  AccessTime,
-  LocationOn,
-  Directions,
-  MoreVert
+  TwoWheeler, CurrencyRupee, Star, History, LocationOn, 
+  VerifiedUser, AccountBalanceWallet
 } from '@mui/icons-material';
 import MapDisplay from '../../components/shared/MapDisplay';
-import { mockRides, mockUsers } from '../../data/mockData';
-import { useNavigate } from 'react-router-dom';
+import RideService from '../../services/RideService';
+import UserService from '../../services/UserService';
+import DriverService from '../../services/DriverService';
+import useGeolocation from '../../hooks/useGeolocation';
+import useAuth from '../../hooks/useAuth';
 import Wallet from './Wallet.jsx';
 
-const riderId = 3; // Example Rider user id
-const completedRides = mockRides.filter(r => r.driver_id === riderId && r.status === 'COMPLETED');
-const totalEarnings = completedRides.reduce((sum, ride) => sum + ride.fare, 0);
-const riderUser = mockUsers.find(u => u.id === riderId);
-const riderRating = riderUser?.rating || 0;
-const summary = [
-  { title: 'Completed Rides', value: completedRides.length, icon: <TwoWheeler className="text-yellow-500" />, color: '#FFF8E1' },
-  { title: 'Earnings', value: `₹${totalEarnings}`, icon: <CurrencyRupee className="text-yellow-500" />, color: '#FFF8E1' },
-  { title: 'Rating', value: `${riderRating}/5`, icon: <Star className="text-yellow-500" />, color: '#FFF8E1' },
-];
-const recentRides = completedRides.slice(-3).map(ride => ({
-  id: ride.id,
-  pickup: ride.pickup_location.name,
-  drop: ride.dropoff_location.name,
-  date: ride.start_time.split('T')[0],
-  time: ride.start_time.split('T')[1],
-  fare: ride.fare
-}));
-
-const earningsData = [
-  { day: 'Mon', amount: 1200 },
-  { day: 'Tue', amount: 1500 },
-  { day: 'Wed', amount: 900 },
-  { day: 'Thu', amount: 1800 },
-  { day: 'Fri', amount: 2000 },
-  { day: 'Sat', amount: 1700 },
-  { day: 'Sun', amount: 1300 },
-];
-
+// Helper component for Tab Panels
 function TabPanel(props) {
   const { children, value, index, ...other } = props;
-
   return (
-    <div
-      role="tabpanel"
-      hidden={value !== index}
-      id={`simple-tabpanel-${index}`}
-      aria-labelledby={`simple-tab-${index}`}
-      {...other}
-    >
-      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
+    <div role="tabpanel" hidden={value !== index} id={`tabpanel-${index}`} {...other}>
+      {value === index && <Box sx={{ p: { xs: 1, sm: 3 } }}>{children}</Box>}
     </div>
   );
 }
 
 export default function Dashboard() {
+  const { user } = useAuth();
   const geo = useGeolocation();
-  const [tabValue, setTabValue] = useState(0);
-  // Optionally, you can display or use geo location in the dashboard if needed
-  const [anchorEl, setAnchorEl] = useState(null);
-  const open = Boolean(anchorEl);
-
-  // new: navigation + wallet dialog + online toggle
   const navigate = useNavigate();
+
+  // UI State
+  const [tabValue, setTabValue] = useState(0);
   const [walletOpen, setWalletOpen] = useState(false);
   const [online, setOnline] = useState(true);
+  
+  // Data & Loading State
+  const [driverProfile, setDriverProfile] = useState(null);
+  const [summary, setSummary] = useState([]);
+  const [recentRides, setRecentRides] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  const handleTabChange = (event, newValue) => {
-    setTabValue(newValue);
-  };
+  useEffect(() => {
+    async function fetchDashboardData() {
+      if (!user?.id) {
+        setLoading(false);
+        return;
+      }
+      setLoading(true);
+      setError('');
+      try {
+        // Fetch driver details using DriverService and correct DTO
+        const driverRes = await DriverService.getDriverByUserId(user.id);
+        setDriverProfile(driverRes);
+        // Only fetch ride and earnings data if the driver is fully approved
+        if (driverRes.verificationStatus === 'APPROVED') {
+          const ridesRes = await RideService.getAllRidesForRider(user.id); 
+          const completedRides = ridesRes.data.data.filter(r => r.status === 'COMPLETED');
+          const totalEarnings = completedRides.reduce((sum, ride) => sum + (ride.fare || 0), 0);
+          setSummary([
+            { title: 'Completed Rides', value: completedRides.length, icon: <TwoWheeler color="primary" /> },
+            { title: 'Earnings', value: `₹${totalEarnings.toFixed(2)}`, icon: <CurrencyRupee color="primary" /> },
+            { title: 'Rating', value: `${driverRes.rating?.toFixed(1) || 'N/A'}/5`, icon: <Star color="primary" /> },
+          ]);
+          setRecentRides(completedRides.slice(0, 5));
+        }
+      } catch (err) {
+        setError('Failed to load dashboard data. Please refresh the page.');
+        console.error("Dashboard fetch error:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchDashboardData();
+  }, [user]);
 
-  const handleMenuClick = (event) => {
-    setAnchorEl(event.currentTarget);
-  };
+  // Handler for changing tabs
+  const handleTabChange = (event, newValue) => setTabValue(newValue);
 
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-  };
+  // Show a loading spinner while fetching initial data
+  if (loading) {
+    return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}><CircularProgress /></Box>;
+  }
 
+  // --- Conditional Rendering based on Verification Status ---
+  if (!driverProfile || driverProfile.verificationStatus !== 'APPROVED') {
+    return (
+      <Box sx={{ p: 4, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
+        <Card sx={{ maxWidth: 500, textAlign: 'center', p: 3, boxShadow: 4, borderRadius: 3 }}>
+          <CardContent>
+            <Avatar sx={{ mx: 'auto', mb: 2, bgcolor: 'primary.main', width: 60, height: 60 }}>
+              <VerifiedUser sx={{ fontSize: 30 }} />
+            </Avatar>
+            <Typography variant="h5" fontWeight="bold" gutterBottom>
+              {driverProfile?.verificationStatus === 'PENDING' ? 'Application Under Review' : 'Verification Required'}
+            </Typography>
+            <Typography color="text.secondary" sx={{ mb: 3 }}>
+              {driverProfile?.verificationStatus === 'PENDING'
+                ? "Your application has been submitted and is currently being reviewed by our team. We will notify you once it's approved."
+                : "To start accepting rides and earning money, you need to complete your driver verification process."
+              }
+            </Typography>
+            {driverProfile?.verificationStatus !== 'PENDING' && (
+              <Button 
+                variant="contained" 
+                size="large"
+                onClick={() => navigate('/rider-verification')}
+              >
+                Start Verification
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      </Box>
+    );
+  }
+
+  // --- Render the Full Dashboard if Approved ---
   return (
     <>
-      <div className="p-6 bg-gray-50 min-h-screen">
-        <div className="max-w-6xl mx-auto">
-          {/* Header */}
-          <Box className="mb-8 flex justify-between items-center">
+      <div className="p-4 sm:p-6 bg-gray-50 min-h-screen">
+        <Box className="max-w-7xl mx-auto">
+          <Box className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center">
             <Typography variant="h4" className="font-bold text-gray-800">Rider Dashboard</Typography>
+            {error && <Alert severity="error" sx={{ mt: { xs: 2, sm: 0 } }}>{error}</Alert>}
           </Box>
-      
+          
+          <Grid container spacing={3}>
+            {/* Summary Cards */}
+            {summary.map(item => (
+              <Grid item xs={12} sm={4} key={item.title}>
+                <Card sx={{ borderRadius: 3, boxShadow: 2 }}>
+                  <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Avatar sx={{ bgcolor: 'primary.light' }}>{item.icon}</Avatar>
+                    <Box>
+                      <Typography variant="h6" fontWeight="bold">{item.value}</Typography>
+                      <Typography color="text.secondary">{item.title}</Typography>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
+            ))}
 
-          {/* Full-width Map View */}
-          <Box className="mb-8 w-full" sx={{ width: '100%' }}>
-            <Typography variant="body2" className="mb-2">Current Location</Typography>
-            <Box sx={{ width: '100%', height: '100%', borderRadius: 1, overflow: 'hidden', boxShadow: 2, position: 'relative', zIndex: 1 }}>
-              <MapDisplay userLocation={geo && geo.latitude && geo.longitude ? [geo.latitude, geo.longitude] : [28.6139, 77.2090]} nearbyRiders={[]} />
-            </Box>
-          </Box>
-
-          <Grid container spacing={8}>
-            {/* Left: Tabs and Panels */}
+            {/* Main Content Area */}
             <Grid item xs={12} md={8}>
-              {/* Tabs */}
-              <Box className="mb-4">
-                <Tabs value={tabValue} onChange={handleTabChange} aria-label="dashboard tabs">
-                  <Tab label="Recent Rides" id="tab-0" />
-                  <Tab label="Earnings" id="tab-1" />
+              <Card sx={{ borderRadius: 3, boxShadow: 2 }}>
+                <Tabs value={tabValue} onChange={handleTabChange}>
+                  <Tab label="Recent Rides" />
+                  <Tab label="Earnings" />
                 </Tabs>
-              </Box>
-
-              {/* Tab Panels */}
-              <TabPanel value={tabValue} index={0}>
-                <Card className="shadow-md rounded-xl" sx={{ minHeight: 400, minWidth: 500, width: '100%' }}>
-                  <CardContent className="p-0" sx={{ minHeight: 437, display: 'flex', flexDirection: 'column' }}>
-                    <Typography variant="h6" className="font-bold text-gray-800 p-4 pb-2">Recent Rides</Typography>
-                    <Divider />
-                    <List sx={{ flex: 1, minHeight: 200, maxHeight: 400, overflowY: 'auto', px: 2 }}>
-                      {recentRides.map((ride) => (
-                        <React.Fragment key={ride.id}>
-                          <ListItem alignItems="flex-start" sx={{ minHeight: 80 }}>
-                            <ListItemAvatar>
-                              <Avatar sx={{ width: 48, height: 48 }}>
-                                <TwoWheeler className="text-yellow-500" />
-                              </Avatar>
-                            </ListItemAvatar>
-                            <ListItemText
-                              primary={
-                                <Box className="flex justify-between items-center" sx={{ minWidth: 300 }}>
-                                  <Typography variant="h6" className="font-medium" sx={{ fontSize: 18 }}>
-                                    {ride.pickup} → {ride.drop}
-                                  </Typography>
-                                  <Chip 
-                                    label={`₹${ride.fare}`} 
-                                    size="medium"
-                                    style={{ backgroundColor: '#FFF8E1', fontSize: 16, height: 32 }}
-                                  />
-                                </Box>
-                              }
-                              secondary={
-                                <span style={{ display: 'flex', alignItems: 'center', marginTop: 4, fontSize: 15 }}>
-                                  <CalendarToday className="text-gray-500 mr-1" fontSize="small" />
-                                  <span style={{ fontSize: '0.95rem', color: 'rgba(0,0,0,0.6)' }}>{ride.date}</span>
-                                  <span className="mx-2" style={{ fontSize: '0.95rem', color: 'rgba(0,0,0,0.6)' }}>•</span>
-                                  <span style={{ fontSize: '0.95rem', color: 'rgba(0,0,0,0.6)' }}>{ride.time}</span>
-                                </span>
-                              }
-                            />
-                          </ListItem>
-                          <Divider component="li" />
-                        </React.Fragment>
-                      ))}
-                    </List>
-                    <Box className="p-4 text-center">
-                      <Button variant="outlined" className="w-full" sx={{ fontSize: 18, py: 2 }}>
-                        View All Rides
-                      </Button>
-                    </Box>
-                  </CardContent>
-                </Card>
-              </TabPanel>
-
-              <TabPanel value={tabValue} index={1}>
-                <Card className="shadow-md rounded-xl" sx={{ minHeight: 437, minWidth: 500, width: '100%' }}>
-                  <CardContent className="p-4" sx={{ minHeight: 400, display: 'flex', flexDirection: 'column' }}>
-                    <Typography variant="h6" className="font-bold text-gray-800 mb-4">Weekly Earnings</Typography>
-                    <Box className="h-64 flex items-end justify-center">
-                      <div className="flex items-end h-48 w-full">
-                        {earningsData.map((day, index) => (
-                          <Box key={day.day} className="flex-1 flex flex-col items-center">
-                            <Typography variant="body2" className="text-gray-600 mb-1">{day.day}</Typography>
-                            <Box 
-                              className="w-full bg-yellow-400 rounded-t" 
-                              style={{ height: `${(day.amount / 2000) * 100}%` }}
-                            ></Box>
-                            <Typography variant="body2" className="font-medium mt-1">₹{day.amount}</Typography>
-                          </Box>
-                        ))}
-                      </div>
-                    </Box>
-                    <Box className="flex justify-between mt-4">
-                      <Typography variant="h6" className="text-gray-600">Total Earnings</Typography>
-                      <Typography variant="h5" className="font-bold text-gray-800">₹10,400</Typography>
-                    </Box>
-                  </CardContent>
-                </Card>
-              </TabPanel>
+                <Divider />
+                <TabPanel value={tabValue} index={0}>
+                  <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>Your Latest Rides</Typography>
+                  <List>
+                    {recentRides.length > 0 ? recentRides.map(ride => (
+                      <ListItem key={ride.id} divider>
+                        <ListItemAvatar><Avatar><TwoWheeler /></Avatar></ListItemAvatar>
+                        <ListItemText 
+                          primary={`${ride.pickup_location?.name || 'Start'} to ${ride.dropoff_location?.name || 'End'}`}
+                          secondary={`Date: ${new Date(ride.start_time).toLocaleDateString()}`}
+                        />
+                        <Chip label={`₹${ride.fare?.toFixed(2)}`} color="primary" />
+                      </ListItem>
+                    )) : <Typography>No completed rides yet.</Typography>}
+                  </List>
+                </TabPanel>
+                <TabPanel value={tabValue} index={1}>
+                  <Typography variant="h6" fontWeight="bold">Earnings Overview (Coming Soon)</Typography>
+                </TabPanel>
+              </Card>
             </Grid>
 
-            {/* Right Column - Quick Actions and Status */}
-            <Grid item xs={12} md={4} mt={11}>
-              {/* Status Card */}
-              <Card className="shadow-md rounded-xl mb-7">
-                <CardContent className="p-4">
-                  <Typography variant="h6" className="font-bold text-gray-800 mb-4">Current Status</Typography>
-                  <Box className="flex items-center mb-4">
-                    <div className={`w-3 h-3 rounded-full mr-2 ${online ? 'bg-green-500' : 'bg-gray-400'}`}></div>
-                    <Typography variant="body1" className="font-medium">{online ? 'Online' : 'Offline'}</Typography>
-                  </Box>
-                  <Box className="flex items-center mb-4">
-                    <LocationOn className="text-gray-500 mr-2" />
-                    <Typography variant="body2">MG Road, Bangalore</Typography>
-                  </Box>
-                  <Box className="flex items-center">
-                    <TwoWheeler className="text-gray-500 mr-2" />
-                    <Typography variant="body2">Honda Activa</Typography>
+            {/* Right Sidebar: Status & Actions */}
+            <Grid item xs={12} md={4}>
+              <Card sx={{ borderRadius: 3, boxShadow: 2, mb: 3 }}>
+                <CardContent>
+                  <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>Current Status</Typography>
+                  <Chip icon={<Box className={`w-3 h-3 rounded-full ${online ? 'bg-green-500' : 'bg-gray-400'}`} />} label={online ? 'Online' : 'Offline'} sx={{ mb: 2 }} />
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <LocationOn color="action" />
+                    <Typography color="text.secondary">Current location: {geo.latitude ? `${geo.latitude.toFixed(4)}, ${geo.longitude.toFixed(4)}` : "Unavailable"}</Typography>
                   </Box>
                 </CardContent>
               </Card>
 
-              {/* Quick Actions */}
-              <Card className="shadow-md rounded-xl">
-                <CardContent className="p-4">
-                  <Typography variant="h6" className="font-bold text-gray-800 mb-4">Quick Actions</Typography>
-                  <Box className="space-y-3">
-                    <Button 
-                      variant="contained" 
-                      className="w-full bg-yellow-500 hover:bg-yellow-600 text-white"
-                      startIcon={<TwoWheeler />}
-                      onClick={() => {
-                        setOnline(prev => !prev);
-                        alert(`You are now ${!online ? 'Online' : 'Offline'}`);
-                      }}
-                    >
-                      {online ? 'Go Offline' : 'Go Online'}
-                    </Button>
-
-                    <Button 
-                      variant="outlined" 
-                      className="w-full"
-                      startIcon={<AccountBalanceWallet />}
-                      onClick={() => setWalletOpen(true)}
-                    >
-                      Wallet
-                    </Button>
-
-                    <Button 
-                      variant="outlined" 
-                      className="w-full"
-                      startIcon={<History />}
-                      onClick={() => navigate('/rider/ride-history')}
-                    >
-                      Ride History
-                    </Button>
-
-                    {/* <Button 
-                      variant="outlined" 
-                      className="w-full"
-                      startIcon={<Settings />}
-                      onClick={() => navigate('/rider/settings')}
-                    >
-                      Settings
-                    </Button> */}
+              <Card sx={{ borderRadius: 3, boxShadow: 2 }}>
+                <CardContent>
+                  <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>Quick Actions</Typography>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                    <Button variant="contained" onClick={() => setOnline(p => !p)}>{online ? 'Go Offline' : 'Go Online'}</Button>
+                    <Button variant="outlined" onClick={() => setWalletOpen(true)} startIcon={<AccountBalanceWallet />}>Wallet</Button>
+                    <Button variant="outlined" onClick={() => navigate('/rider/ride-history')} startIcon={<History />}>Ride History</Button>
                   </Box>
                 </CardContent>
               </Card>
             </Grid>
           </Grid>
-        </div>
+        </Box>
       </div>
 
-      {/* Wallet Dialog (popup) */}
       <Dialog open={walletOpen} onClose={() => setWalletOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>
-          Wallet
-          <IconButton
-            aria-label="close"
-            onClick={() => setWalletOpen(false)}
-            sx={{ position: 'absolute', right: 8, top: 8 }}
-          >
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent dividers>
-          <Wallet />
-        </DialogContent>
+        <DialogTitle>Wallet<IconButton onClick={() => setWalletOpen(false)} sx={{ position: 'absolute', right: 8, top: 8 }}><CloseIcon /></IconButton></DialogTitle>
+        <DialogContent dividers><Wallet /></DialogContent>
       </Dialog>
     </>
   );

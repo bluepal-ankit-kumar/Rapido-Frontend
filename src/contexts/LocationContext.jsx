@@ -1,11 +1,11 @@
 import React, { createContext, useContext, useState } from 'react';
-import { mockUsers, mockRiders } from '../data/mockData';
+// import LocationService or Rider API if needed
 
 const LocationContext = createContext();
 
 export function LocationProvider({ children }) {
   const [userLocation, setUserLocation] = useState(mockUsers[0].location);
-  const [nearbyRiders, setNearbyRiders] = useState(mockRiders);
+  const [nearbyRiders, setNearbyRiders] = useState([]);
 
   // Simulate location update
   const updateUserLocation = (location) => setUserLocation(location);

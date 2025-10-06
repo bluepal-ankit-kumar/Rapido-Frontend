@@ -74,14 +74,14 @@ function AppLayout({ sidebarOpen, setSidebarOpen }) {
         {user && <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />}
         <main className={`flex-1 transition-all duration-300 ${sidebarOpen && user ? 'md:ml-64' : ''}`}>
           <Routes>
-            {/* Customer routes */}
-            <Route path="/" element={<HomePage />} />
-            <Route path="/ride-booking" element={<RequireAuth><RideBooking /></RequireAuth>} />
-            <Route path="/ride-tracking" element={<RequireAuth><RideTracking /></RequireAuth>} />
-            <Route path="/ride-history" element={<RequireAuth><RideHistory /></RequireAuth>} />
-            <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
-            <Route path="/rating" element={<RequireAuth><RatingPage /></RequireAuth>} />
-            <Route path="/help" element={<RequireAuth><HelpPage /></RequireAuth>} />
+            {/* Customer routes - restrict to CUSTOMER role */}
+            <Route path="/" element={<RequireCustomerAuth><HomePage /></RequireCustomerAuth>} />
+            <Route path="/ride-booking" element={<RequireCustomerAuth><RideBooking /></RequireCustomerAuth>} />
+            <Route path="/ride-tracking" element={<RequireCustomerAuth><RideTracking /></RequireCustomerAuth>} />
+            <Route path="/ride-history" element={<RequireCustomerAuth><RideHistory /></RequireCustomerAuth>} />
+            <Route path="/profile" element={<RequireCustomerAuth><Profile /></RequireCustomerAuth>} />
+            <Route path="/rating" element={<RequireCustomerAuth><RatingPage /></RequireCustomerAuth>} />
+            <Route path="/help" element={<RequireCustomerAuth><HelpPage /></RequireCustomerAuth>} />
             <Route path="/about" element={<About />} />
             {/* Auth routes */}
             <Route path="/login" element={<Login />} />
@@ -117,14 +117,40 @@ function AppLayout({ sidebarOpen, setSidebarOpen }) {
     </div>
   );
 }
+// Restrict customer pages to CUSTOMER role only
+function RequireCustomerAuth({ children }) {
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate('/login');
+    } else if (!loading && user && user.role !== 'CUSTOMER') {
+      // Redirect riders to their dashboard, admins to admin dashboard
+      if (user.role === 'RIDER') {
+        navigate('/rider/dashboard');
+      } else if (user.role === 'ADMIN') {
+        navigate('/admin/dashboard');
+      } else {
+        navigate('/login');
+      }
+    }
+  }, [user, loading, navigate]);
+  if (!user || user.role !== 'CUSTOMER') return null;
+  return children;
+}
 
 function RequireAuth({ children }) {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   useEffect(() => {
-    if (!loading && !user) navigate('/login');
+    if (!loading && !user) {
+      navigate('/login');
+    } else if (!loading && user && window.location.pathname.startsWith('/ride-booking') && user.role !== 'CUSTOMER') {
+      navigate('/'); // Redirect non-customers to home
+    }
   }, [user, loading, navigate]);
   if (!user) return null;
+  if (window.location.pathname.startsWith('/ride-booking') && user.role !== 'CUSTOMER') return null;
   return children;
 }
 

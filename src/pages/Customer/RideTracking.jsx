@@ -39,35 +39,7 @@ import MapDisplay from '../../components/shared/MapDisplay';
 import { useGlobalStore } from '../../context/GlobalStore.jsx';
 
 // Mock data for demonstration
-const mockRide = {
-  id: 101,
-  status: 'In Progress',
-  driver: {
-    name: 'Rahul Kumar',
-    phone: '+91 9876543210',
-    rating: 4.8,
-    vehicle: 'Honda Activa',
-    licensePlate: 'DL-01-AB-1234'
-  },
-  pickup: 'MG Road, Bangalore',
-  destination: 'Koramangala, Bangalore',
-  fare: 120,
-  estimatedTime: '15 min',
-  distance: '5.2 km'
-};
-
-const mockTrackingData = [
-  { id: 1, status: 'Driver Assigned', time: '10:25 AM', completed: true },
-  { id: 2, status: 'Driver Arriving', time: '10:30 AM', completed: true },
-  { id: 3, status: 'Ride Started', time: '10:35 AM', completed: true },
-  { id: 4, status: 'In Progress', time: '10:40 AM', completed: false },
-  { id: 5, status: 'Completed', time: '10:50 AM', completed: false }
-];
-
-const mockLocation = {
-  latitude: 12.9716,
-  longitude: 77.5946
-};
+import RideService from '../../services/RideService.js';
 
 export default function RideTracking() {
   const geo = useGeolocation();

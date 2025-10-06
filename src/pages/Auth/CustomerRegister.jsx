@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { TextField, Button, Typography, Box, Alert } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import { mockUsers } from '../../data/mockData';
+import AuthService from '../../services/authService';
 
 function hashPassword(password) {
   // Simple hash for demo (not secure for production)
@@ -18,8 +18,10 @@ export default function CustomerRegister() {
   const [success, setSuccess] = useState(false);
   const navigate = useNavigate();
 
-  const handleSubmit = e => {
+  const handleSubmit = async e => {
     e.preventDefault();
+    setError('');
+    setSuccess(false);
     if (!fullName || !phone || !email || !password) {
       setError('All fields are required');
       return;
@@ -28,24 +30,20 @@ export default function CustomerRegister() {
       setError('Phone number must be 10 digits');
       return;
     }
-    // Check if already registered
-    const exists = mockUsers.find(u => u.email === email);
-    if (exists) {
-      setError('Email already registered. Please login.');
+    try {
+      const userRequest = {
+        username: fullName,
+        phone,
+        email,
+        password,
+        userType: 'CUSTOMER',
+      };
+      await AuthService.signup(userRequest);
+      setSuccess(true);
       setTimeout(() => navigate('/login'), 1500);
-      return;
+    } catch (err) {
+      setError(err.message || 'Registration failed');
     }
-    // Register user
-    mockUsers.push({
-      fullName,
-      phone,
-      email,
-      password: hashPassword(password),
-      role: 'customer',
-      created_at: new Date().toISOString(),
-    });
-    setSuccess(true);
-    setTimeout(() => navigate('/login'), 1500);
   };
 
   return (

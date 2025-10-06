@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { 
   Facebook, 
   Twitter, 
@@ -34,16 +35,17 @@ export default function Footer({ sidebarOpen }) {
             </div>
             <p className="text-gray-400 mb-4">Fast, safe, and affordable rides at your fingertips.</p>
             <div className="flex space-x-4">
-              <a href="#" className="text-gray-400 hover:text-yellow-400 transition-colors">
+              {/* Social links can remain as <a> if they point to external URLs */}
+              <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-yellow-400 transition-colors">
                 <Facebook />
               </a>
-              <a href="#" className="text-gray-400 hover:text-yellow-400 transition-colors">
+              <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-yellow-400 transition-colors">
                 <Twitter />
               </a>
-              <a href="#" className="text-gray-400 hover:text-yellow-400 transition-colors">
+              <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-yellow-400 transition-colors">
                 <Instagram />
               </a>
-              <a href="#" className="text-gray-400 hover:text-yellow-400 transition-colors">
+              <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-yellow-400 transition-colors">
                 <LinkedIn />
               </a>
             </div>
@@ -54,22 +56,22 @@ export default function Footer({ sidebarOpen }) {
             <h3 className="font-bold text-lg mb-4 text-yellow-400">Company</h3>
             <ul className="space-y-2">
               <li>
-                <a href="#" className="text-gray-400 hover:text-white transition-colors flex items-center">
+                <Link to="/about" className="text-gray-400 hover:text-white transition-colors flex items-center">
                   <span className="mr-2">›</span> About Us
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="text-gray-400 hover:text-white transition-colors flex items-center">
+                <a href="https://rapido.bike/careers" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white transition-colors flex items-center">
                   <span className="mr-2">›</span> Careers
                 </a>
               </li>
               <li>
-                <a href="#" className="text-gray-400 hover:text-white transition-colors flex items-center">
+                <a href="https://rapido.bike/blog" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white transition-colors flex items-center">
                   <span className="mr-2">›</span> Blog
                 </a>
               </li>
               <li>
-                <a href="#" className="text-gray-400 hover:text-white transition-colors flex items-center">
+                <a href="https://rapido.bike/press" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white transition-colors flex items-center">
                   <span className="mr-2">›</span> Press
                 </a>
               </li>
@@ -81,22 +83,22 @@ export default function Footer({ sidebarOpen }) {
             <h3 className="font-bold text-lg mb-4 text-yellow-400">Support</h3>
             <ul className="space-y-2">
               <li>
-                <a href="#" className="text-gray-400 hover:text-white transition-colors flex items-center">
+                <Link to="/help" className="text-gray-400 hover:text-white transition-colors flex items-center">
                   <span className="mr-2">›</span> Contact Us
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="text-gray-400 hover:text-white transition-colors flex items-center">
+                <a href="https://rapido.bike/faqs" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white transition-colors flex items-center">
                   <span className="mr-2">›</span> FAQs
                 </a>
               </li>
               <li>
-                <a href="#" className="text-gray-400 hover:text-white transition-colors flex items-center">
+                <a href="https://rapido.bike/safety" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white transition-colors flex items-center">
                   <span className="mr-2">›</span> Safety
                 </a>
               </li>
               <li>
-                <a href="#" className="text-gray-400 hover:text-white transition-colors flex items-center">
+                <a href="https://rapido.bike/support" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white transition-colors flex items-center">
                   <span className="mr-2">›</span> Support Center
                 </a>
               </li>
@@ -124,14 +126,14 @@ export default function Footer({ sidebarOpen }) {
             <div className="space-y-3">
               <h4 className="font-medium text-gray-300">Download Our App</h4>
               <div className="flex flex-col space-y-2">
-                <a href="#" className="flex items-center justify-center bg-gray-800 hover:bg-gray-700 rounded-lg p-2 transition-colors">
+                <a href="https://apple.com/app-store" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center bg-gray-800 hover:bg-gray-700 rounded-lg p-2 transition-colors">
                   <Apple className="mr-2" />
                   <div className="text-left">
                     <div className="text-xs text-gray-400">Download on the</div>
                     <div className="text-sm font-medium">App Store</div>
                   </div>
                 </a>
-                <a href="#" className="flex items-center justify-center bg-gray-800 hover:bg-gray-700 rounded-lg p-2 transition-colors">
+                <a href="https://play.google.com/store" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center bg-gray-800 hover:bg-gray-700 rounded-lg p-2 transition-colors">
                   <PlayArrow className="mr-2" />
                   <div className="text-left">
                     <div className="text-xs text-gray-400">Get it on</div>
@@ -150,10 +152,10 @@ export default function Footer({ sidebarOpen }) {
             © {new Date().getFullYear()} Rapido. All rights reserved.
           </div>
           <div className="flex flex-wrap justify-center gap-4 text-sm">
-            <a href="#" className="text-gray-500 hover:text-yellow-400 transition-colors">Privacy Policy</a>
-            <a href="#" className="text-gray-500 hover:text-yellow-400 transition-colors">Terms of Service</a>
-            <a href="#" className="text-gray-500 hover:text-yellow-400 transition-colors">Cookie Policy</a>
-            <a href="#" className="text-gray-500 hover:text-yellow-400 transition-colors">Sitemap</a>
+            <Link to="/privacy-policy" className="text-gray-500 hover:text-yellow-400 transition-colors">Privacy Policy</Link>
+            <Link to="/terms-of-service" className="text-gray-500 hover:text-yellow-400 transition-colors">Terms of Service</Link>
+            <Link to="/cookie-policy" className="text-gray-500 hover:text-yellow-400 transition-colors">Cookie Policy</Link>
+            <Link to="/sitemap" className="text-gray-500 hover:text-yellow-400 transition-colors">Sitemap</Link>
           </div>
         </div>
       </div>

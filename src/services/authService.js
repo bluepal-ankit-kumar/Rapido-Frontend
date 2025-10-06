@@ -22,15 +22,18 @@ const AuthService = {
     console.log('Sending signin request:', loginRequest);
     try {
       const response = await api.post('/auth/signin', loginRequest);
-      const { jwt, role, status, message } = response.data;
+      const { jwt, role, status, message, userId } = response.data;
       if (jwt) {
         setAuthToken(jwt);
       }
       const user = {
+        id: userId,
         email: loginRequest.email,
-        role: role,
+        role: role, // 'CUSTOMER', 'RIDER', 'ADMIN' from backend
         verified: role === 'RIDER' ? false : true,
       };
+      localStorage.setItem('userRole', role);
+      localStorage.setItem('user', JSON.stringify(user));
       return { user, jwt, status, message };
     } catch (error) {
       console.error('Signin error:', error.response?.data || error);

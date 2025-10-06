@@ -40,72 +40,8 @@ import {
   Cancel,
   Directions
 } from '@mui/icons-material';
-  import { mockRides } from '../../data/mockData';
-const rides = [
-  { 
-    id: 101, 
- 
-    user: 'John Doe', 
-    email: 'john@example.com',
-    phone: '+91 9876543210',
-    status: 'Completed', 
-    fare: 120,
-    date: '2023-06-15',
-    time: '10:30 AM',
-    vehicleType: 'Bike',
-    driver: 'Rahul Kumar',
-    pickup: '123 Main Street',
-    destination: '456 Park Avenue',
-    distance: '5.2 km',
-    duration: '15 min'
-  },
-  { 
-    id: 102, 
-    user: 'Jane Smith', 
-    email: 'jane@example.com',
-    phone: '+91 8765432109',
-    status: 'Ongoing', 
-    fare: 80,
-    date: '2023-06-15',
-    time: '11:45 AM',
-    vehicleType: 'Auto',
-    driver: 'Vikram Singh',
-    pickup: '789 Market Road',
-    destination: '321 Office Complex',
-    distance: '3.8 km',
-    duration: '12 min'
-  },
-  { 
-    id: 103, 
-    user: 'Robert Brown', 
-    email: 'robert@example.com',
-    phone: '+91 7654321098',
-    status: 'Cancelled', 
-    fare: 0,
-    date: '2023-06-14',
-    time: '09:15 AM',
-    vehicleType: 'Cab',
-    driver: 'Amit Sharma',
-    pickup: '555 Residential Area',
-    destination: '777 Commercial Hub',
-    distance: '8.1 km',
-    duration: '22 min'
-  },
-  { 
-    id: 104, 
-    user: 'Emily Davis', 
-    email: 'emily@example.com',
-    phone: '+91 6543210987',
-    status: 'Completed', 
-    fare: 150,
-    date: '2023-06-14',
- 
-    pickup: 'Home Address',
-    destination: 'Railway Station',
-    distance: '4.3 km',
-    duration: '18 min'
-  }
-];
+// TODO: Replace with RideService API call
+
 
 const statusColors = {
   'Completed': '#4CAF50',
@@ -197,9 +133,9 @@ export default function RideManagement() {
   };
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
+  <Box sx={{ p: { xs: 2, sm: 4, md: 6 }, bgcolor: 'grey.50', minHeight: '100vh' }}>
       {/* Header */}
-      <Box className="mb-6">
+  <Box sx={{ mb: { xs: 2, sm: 4, md: 6 } }}>
         <Typography variant="h4" className="font-bold text-gray-800 mb-2">
           Ride Management
         </Typography>
@@ -209,9 +145,9 @@ export default function RideManagement() {
       </Box>
 
       {/* Statistics Cards */}
-      <Grid container spacing={3} className="mb-6">
-        <Grid item xs={12} sm={6} md={3}>
-          <Card className="border-l-4 border-yellow-500">
+  <Grid container spacing={{ xs: 2, sm: 3 }} sx={{ mb: { xs: 2, sm: 4, md: 6 } }}>
+  <Grid item xs={12} sm={6} md={3}>
+          <Card sx={{ borderLeft: 4, borderColor: 'yellow.500', mb: { xs: 2, sm: 0 } }}>
             <CardContent>
               <Typography variant="h6" className="text-gray-600">Total Rides</Typography>
               <Typography variant="h4" className="font-bold text-yellow-500">
@@ -253,12 +189,12 @@ export default function RideManagement() {
       </Grid>
 
       {/* Filters and Search */}
-      <Box className="mb-6 flex flex-col sm:flex-row gap-4">
+  <Box sx={{ mb: { xs: 2, sm: 4, md: 6 }, display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
         <TextField
           placeholder="Search rides..."
           variant="outlined"
           size="small"
-          className="flex-1"
+          sx={{ flex: 1, minWidth: 180 }}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           InputProps={{
@@ -269,7 +205,7 @@ export default function RideManagement() {
             ),
           }}
         />
-        <Box className="flex gap-2">
+  <Box sx={{ display: 'flex', gap: 2 }}>
           <TextField
             select
             label="Status"
@@ -277,7 +213,7 @@ export default function RideManagement() {
             size="small"
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="w-40"
+            sx={{ width: { xs: '100%', sm: 160 } }}
           >
             <MenuItem value="All">All</MenuItem>
             <MenuItem value="Completed">Completed</MenuItem>
@@ -292,7 +228,7 @@ export default function RideManagement() {
             size="small"
             value={filterVehicle}
             onChange={(e) => setFilterVehicle(e.target.value)}
-            className="w-32"
+            sx={{ width: { xs: '100%', sm: 120 } }}
           >
             <MenuItem value="All">All</MenuItem>
             <MenuItem value="Bike">Bike</MenuItem>
@@ -302,7 +238,7 @@ export default function RideManagement() {
           <Button 
             variant="outlined" 
             startIcon={<FilterList />}
-            className="whitespace-nowrap"
+            sx={{ whiteSpace: 'nowrap' }}
           >
             More Filters
           </Button>
@@ -310,10 +246,10 @@ export default function RideManagement() {
       </Box>
 
       {/* Table */}
-      <Paper className="overflow-hidden">
+  <Paper sx={{ overflow: 'hidden', width: '100%', mt: { xs: 2, sm: 0 } }}>
         <TableContainer>
           <Table>
-            <TableHead className="bg-gray-100">
+            <TableHead sx={{ bgcolor: 'grey.100' }}>
               <TableRow>
                 <TableCell>ID</TableCell>
                 <TableCell>User</TableCell>
@@ -331,61 +267,61 @@ export default function RideManagement() {
                 .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                 .map((ride) => (
                 <TableRow key={ride.id} hover>
-                  <TableCell className="font-medium">#{ride.id}</TableCell>
+                  <TableCell sx={{ fontWeight: 500 }}>#{ride.id}</TableCell>
                   <TableCell>
-                    <Box className="flex items-center">
-                      <Avatar className="mr-2" src={`https://i.pravatar.cc/150?u=${ride.id}`} />
-                      <div>
-                        <Typography variant="body2" className="font-medium">
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <Avatar sx={{ mr: 2 }} src={`https://i.pravatar.cc/150?u=${ride.id}`} />
+                      <Box>
+                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
                           {ride.user}
                         </Typography>
-                        <Typography variant="caption" className="text-gray-500">
+                        <Typography variant="caption" sx={{ color: 'grey.500' }}>
                           {ride.email}
                         </Typography>
-                      </div>
+                      </Box>
                     </Box>
                   </TableCell>
                   <TableCell>
-                    <Box className="flex items-center">
-                      <Avatar className="mr-2" src={`https://i.pravatar.cc/150?d=${ride.id}`} />
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <Avatar sx={{ mr: 2 }} src={`https://i.pravatar.cc/150?d=${ride.id}`} />
                       <Typography variant="body2">{ride.driver}</Typography>
                     </Box>
                   </TableCell>
                   <TableCell className="max-w-xs">
-                    <Box className="flex items-start">
-                      <div className="text-center mr-2">
-                        <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                        <div className="w-0.5 h-8 bg-gray-300 my-1 mx-auto"></div>
-                        <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                      </div>
-                      <div>
-                        <Typography variant="body2" className="font-medium truncate">
+                    <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
+                      <Box sx={{ textAlign: 'center', mr: 2 }}>
+                        <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: 'green.500', mb: 0.5 }}></Box>
+                        <Box sx={{ width: 2, height: 32, bgcolor: 'grey.300', my: 0.5, mx: 'auto' }}></Box>
+                        <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: 'red.500', mt: 0.5 }}></Box>
+                      </Box>
+                      <Box>
+                        <Typography variant="body2" sx={{ fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           {ride.pickup}
                         </Typography>
-                        <Typography variant="body2" className="font-medium truncate">
+                        <Typography variant="body2" sx={{ fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           {ride.destination}
                         </Typography>
-                        <Typography variant="caption" className="text-gray-500">
+                        <Typography variant="caption" sx={{ color: 'grey.500' }}>
                           {ride.distance} • {ride.duration}
                         </Typography>
-                      </div>
+                      </Box>
                     </Box>
                   </TableCell>
                   <TableCell>
-                    <Box className="flex items-center">
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
                       {vehicleIcons[ride.vehicleType]}
-                      <Typography variant="body2" className="ml-1">
+                      <Typography variant="body2" sx={{ ml: 1 }}>
                         {ride.vehicleType}
                       </Typography>
                     </Box>
                   </TableCell>
                   <TableCell>
                     <Box>
-                      <Box className="flex items-center">
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
                         <CalendarToday className="text-gray-500 mr-1" fontSize="small" />
                         <Typography variant="body2">{ride.date}</Typography>
                       </Box>
-                      <Box className="flex items-center">
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
                         <AccessTime className="text-gray-500 mr-1" fontSize="small" />
                         <Typography variant="body2">{ride.time}</Typography>
                       </Box>
@@ -395,23 +331,23 @@ export default function RideManagement() {
                     <Chip 
                       label={ride.status}
                       size="small"
-                      style={{ 
-                        backgroundColor: `${statusColors[ride.status]}20`,
+                      sx={{ 
+                        bgcolor: `${statusColors[ride.status]}20`,
                         color: statusColors[ride.status],
                         fontWeight: 'bold'
                       }}
                     />
                   </TableCell>
                   <TableCell>
-                    <Box className="flex items-center">
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
                       <AttachMoney className="text-gray-500 mr-1" fontSize="small" />
-                      <Typography variant="body2" className="font-medium">
+                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
                         ₹{ride.fare}
                       </Typography>
                     </Box>
                   </TableCell>
                   <TableCell>
-                    <Box className="flex gap-1">
+                    <Box sx={{ display: 'flex', gap: 1 }}>
                       <Button 
                         size="small" 
                         variant="outlined"
@@ -469,6 +405,6 @@ export default function RideManagement() {
           Track Ride
         </MenuItem>
       </Menu>
-    </div>
+  </Box>
   );
 }

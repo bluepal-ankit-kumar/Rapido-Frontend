@@ -39,7 +39,7 @@ export default function RiderRegister() {
     setLoading(true);
     try {
       const userRequest = {
-        name: fullName,
+        username: fullName,
         phone,
         email,
         password,

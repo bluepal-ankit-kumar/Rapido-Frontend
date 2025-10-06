@@ -1,68 +1,238 @@
-import React, { useState } from 'react';
-import { TextField, Button, Typography, Box, Alert } from '@mui/material';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { mockUsers } from '../../data/mockData';
+import { TextField, Button, Typography, Box, Alert, MenuItem, CircularProgress } from '@mui/material';
+import DriverService from '../../services/DriverService.js';
+import useAuth from '../../hooks/useAuth';
 
 export default function RiderVerification() {
-  const [dob, setDob] = useState('');
-  const [pan, setPan] = useState('');
-  const [license, setLicense] = useState('');
-  const [licenseFile, setLicenseFile] = useState(null);
-  const [vehicleType, setVehicleType] = useState('');
-  const [vehicleReg, setVehicleReg] = useState('');
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
+  const { user } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = e => {
-    e.preventDefault();
-    // Age validation
-    const age = dob ? Math.floor((Date.now() - new Date(dob)) / (365.25 * 24 * 60 * 60 * 1000)) : 0;
-    if (!dob || !pan || !license || !licenseFile || !vehicleType || !vehicleReg) {
-      setError('All fields are required');
-      return;
+  const [dob, setDob] = useState('');
+  const [pan, setPan] = useState('');
+  const [licenseNumber, setLicenseNumber] = useState('');
+  const [licenseFile, setLicenseFile] = useState(null);
+  const [vehicleModel, setVehicleModel] = useState('');
+  const [vehicleNumber, setVehicleNumber] = useState('');
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [driverProfile, setDriverProfile] = useState(null);
+
+  // Check driver status and redirect if approved
+  useEffect(() => {
+    async function fetchDriverStatus() {
+      if (!user?.id) {
+        setError('User data not available. Please log in again.');
+        setLoading(false);
+        navigate('/login', { state: { message: 'Please log in to continue.' } });
+        return;
+      }
+
+      setLoading(true);
+      setError('');
+      try {
+        const driverRes = await DriverService.getDriverByUserId(user.id);
+        setDriverProfile(driverRes);
+        if (driverRes.verificationStatus === 'APPROVED') {
+          navigate('/rider/dashboard', { replace: true });
+        }
+      } catch (err) {
+        // If no driver exists (e.g., 404), allow form to show
+        setDriverProfile(null);
+      } finally {
+        setLoading(false);
+      }
     }
-    if (age < 18) {
-      setError('You must be at least 18 years old');
-      return;
+
+    if (!user) {
+      navigate('/login', { state: { message: 'You must be logged in to register as a driver.' } });
+    } else if (user.role !== 'RIDER') {
+      navigate('/', { state: { message: 'Only riders can access this page.' } });
+    } else {
+      fetchDriverStatus();
     }
-    // Simulate verification and update mockUsers (in real app, update DB)
-    // Assume last registered rider is the one verifying
-    const lastRider = mockUsers.filter(u => u.role === 'rider' && !u.verified).slice(-1)[0];
-    if (lastRider) {
-      lastRider.verified = true;
-      lastRider.dob = dob;
-      lastRider.pan = pan;
-      lastRider.license = license;
-      lastRider.licenseFile = licenseFile.name;
-      lastRider.vehicleType = vehicleType;
-      lastRider.vehicleReg = vehicleReg;
+  }, [user, navigate]);
+
+  const handleFileChange = (e) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+      if (file.size > 5 * 1024 * 1024) {
+        setError('Image file must not exceed 5MB.');
+        setLicenseFile(null);
+        e.target.value = null;
+      } else {
+        setLicenseFile(file);
+        setError('');
+      }
     }
-    setSuccess(true);
-    setTimeout(() => navigate('/login'), 2000);
   };
 
-  return (
-    <Box className="max-w-md mx-auto p-6 bg-white rounded shadow mt-10">
-      <Typography variant="h5" className="mb-4 font-bold">Rider Verification</Typography>
-      {error && <Alert severity="error" className="mb-3">{error}</Alert>}
-      {success && <Alert severity="success" className="mb-3">Verification successful! Redirecting to login...</Alert>}
-      <form onSubmit={handleSubmit}>
-        <TextField label="Date of Birth" type="date" value={dob} onChange={e => setDob(e.target.value)} fullWidth margin="normal" InputLabelProps={{ shrink: true }} />
-        <TextField label="PAN Number" value={pan} onChange={e => setPan(e.target.value)} fullWidth margin="normal" />
-        <TextField label="Driver's License Number" value={license} onChange={e => setLicense(e.target.value)} fullWidth margin="normal" />
-        <Button variant="outlined" component="label" fullWidth className="my-2">
-          Upload License Scan
-          <input type="file" hidden onChange={e => setLicenseFile(e.target.files[0])} />
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+
+    if (!user || !user.id) {
+      setError('Your user data could not be loaded. Please try logging in again.');
+      return;
+    }
+
+    if (!dob || !pan || !licenseNumber || !licenseFile || !vehicleModel || !vehicleNumber) {
+      setError('All fields, including the license image, are required.');
+      return;
+    }
+
+    const age = Math.floor((new Date() - new Date(dob)) / 31557600000);
+    if (age < 18) {
+      setError('You must be at least 18 years old to register as a driver.');
+      return;
+    }
+
+    const driverRequest = {
+      userId: user.id,
+      pan,
+      dob,
+      licenseNumber,
+      vehicleModel,
+      vehicleNumber,
+      status: 'PENDING',
+    };
+
+    setIsSubmitting(true);
+    try {
+      const response = await DriverService.registerDriver(driverRequest, licenseFile);
+      if (response.success) {
+        setSuccess('Verification submitted successfully! An admin will review your application.');
+        setDriverProfile(response.data);
+      } else {
+        setError(response.message || 'An unknown error occurred.');
+      }
+    } catch (err) {
+      setError(err.message || 'Verification failed. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (!user || user.role !== 'RIDER') {
+    return null;
+  }
+
+  if (driverProfile?.verificationStatus === 'PENDING') {
+    return (
+      <Box sx={{ maxWidth: '500px', mx: 'auto', p: 3, my: 4, backgroundColor: 'white', borderRadius: 2, boxShadow: 3 }}>
+        <Typography variant="h5" sx={{ mb: 2, fontWeight: 'bold', textAlign: 'center' }}>
+          Application Under Review
+        </Typography>
+        <Typography color="text.secondary" sx={{ mb: 3, textAlign: 'center' }}>
+          Your application has been submitted and is currently being reviewed by our team. We will notify you once it's approved.
+        </Typography>
+        {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={() => navigate('/')}
+          sx={{ mt: 2, py: 1.5 }}
+          fullWidth
+        >
+          Back to Home
         </Button>
-        <TextField label="Vehicle Type" select SelectProps={{ native: true }} value={vehicleType} onChange={e => setVehicleType(e.target.value)} fullWidth margin="normal">
-          <option value="">Select Vehicle Type</option>
-          <option value="Bike">Bike</option>
-          <option value="Car">Car</option>
-          <option value="Auto">Auto</option>
+      </Box>
+    );
+  }
+
+  return (
+    <Box sx={{ maxWidth: '500px', mx: 'auto', p: 3, my: 4, backgroundColor: 'white', borderRadius: 2, boxShadow: 3 }}>
+      <Typography variant="h5" sx={{ mb: 2, fontWeight: 'bold', textAlign: 'center' }}>
+        Driver Verification
+      </Typography>
+
+      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+      {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
+
+      <form onSubmit={handleSubmit} noValidate>
+        <TextField
+          label="Date of Birth"
+          type="date"
+          value={dob}
+          onChange={(e) => setDob(e.target.value)}
+          fullWidth
+          margin="normal"
+          InputLabelProps={{ shrink: true }}
+          required
+        />
+        <TextField
+          label="PAN Number"
+          value={pan}
+          onChange={(e) => setPan(e.target.value)}
+          fullWidth
+          margin="normal"
+          required
+        />
+        <TextField
+          label="Driver's License Number"
+          value={licenseNumber}
+          onChange={(e) => setLicenseNumber(e.target.value)}
+          fullWidth
+          margin="normal"
+          required
+        />
+        <TextField
+          label="Vehicle Registration Number"
+          value={vehicleNumber}
+          onChange={(e) => setVehicleNumber(e.target.value)}
+          fullWidth
+          margin="normal"
+          required
+        />
+        <TextField
+          label="Vehicle Type"
+          select
+          value={vehicleModel}
+          onChange={(e) => setVehicleModel(e.target.value)}
+          fullWidth
+          margin="normal"
+          required
+        >
+          <MenuItem value=""><em>Select Vehicle Type</em></MenuItem>
+          <MenuItem value="Bike">Bike</MenuItem>
+          <MenuItem value="Car">Car</MenuItem>
+          <MenuItem value="Auto">Auto</MenuItem>
         </TextField>
-        <TextField label="Vehicle Registration Number" value={vehicleReg} onChange={e => setVehicleReg(e.target.value)} fullWidth margin="normal" />
-        <Button type="submit" variant="contained" color="primary" className="mt-4 w-full">Verify & Complete Registration</Button>
+        <Button
+          variant="outlined"
+          component="label"
+          fullWidth
+          sx={{ mt: 1, mb: 2 }}
+        >
+          {licenseFile ? `File: ${licenseFile.name}` : 'Upload License Image'}
+          <input
+            type="file"
+            hidden
+            accept="image/png, image/jpeg, image/jpg"
+            onChange={handleFileChange}
+          />
+        </Button>
+        <Button
+          type="submit"
+          variant="contained"
+          color="primary"
+          sx={{ mt: 2, py: 1.5 }}
+          fullWidth
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? 'Submitting...' : 'Submit for Verification'}
+        </Button>
       </form>
     </Box>
   );

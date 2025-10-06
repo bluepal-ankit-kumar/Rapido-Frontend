@@ -2,43 +2,93 @@ import api from './api';
 
 const PaymentService = {
   initiatePayment: async (request) => {
-    return api.post('/payments/initiate', request);
+    try {
+      const response = await api.post('/payments/initiate', request);
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Payment initiation failed');
+    }
   },
 
   verifyPayment: async (request) => {
-    return api.post('/payments/verify', request);
+    try {
+      const response = await api.post('/payments/verify', request);
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Payment verification failed');
+    }
   },
 
   validatePaymentSignature: async (orderId, paymentId, signature) => {
-    return api.get('/payments/validate-signature', { params: { orderId, paymentId, signature } });
+    try {
+      const response = await api.get('/payments/validate-signature', { params: { orderId, paymentId, signature } });
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Payment signature validation failed');
+    }
   },
 
   getPaymentById: async (paymentId) => {
-    return api.get(`/payments/${paymentId}`);
+    try {
+      const response = await api.get(`/payments/${paymentId}`);
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Failed to fetch payment');
+    }
   },
 
   getPaymentByRideId: async (rideId) => {
-    return api.get(`/payments/ride/${rideId}`);
+    try {
+      const response = await api.get(`/payments/ride/${rideId}`);
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Failed to fetch payment by ride');
+    }
   },
 
   getPaymentHistoryByUserId: async (userId) => {
-    return api.get(`/payments/user/${userId}`);
+    try {
+      const response = await api.get(`/payments/user/${userId}`);
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Failed to fetch payment history');
+    }
   },
 
   getAllPayments: async (pageable) => {
-    return api.get('/payments/all', { params: pageable });
+    try {
+      const response = await api.get('/payments/all', { params: pageable });
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Failed to fetch all payments');
+    }
   },
 
   getDriverEarnings: async (driverId) => {
-    return api.get(`/payments/driver/${driverId}/earnings`);
+    try {
+      const response = await api.get(`/payments/driver/${driverId}/earnings`);
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Failed to fetch driver earnings');
+    }
   },
 
   updatePaymentStatus: async (paymentId, status) => {
-    return api.put(`/payments/${paymentId}/status`, null, { params: { status } });
+    try {
+      const response = await api.put(`/payments/${paymentId}/status`, null, { params: { status } });
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Failed to update payment status');
+    }
   },
 
   processRefund: async (paymentId) => {
-    return api.post(`/payments/${paymentId}/refund`);
+    try {
+      const response = await api.post(`/payments/${paymentId}/refund`);
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Failed to process refund');
+    }
   },
 };
 

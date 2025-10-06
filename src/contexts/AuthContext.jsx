@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import AuthService, { clearAuthToken } from '../services/authService';
+import DriverService from '../services/DriverService';
 import { useNavigate } from 'react-router-dom';
 
 export const AuthContext = createContext();
@@ -27,13 +28,6 @@ export const AuthProvider = ({ children }) => {
         const parsedUser = JSON.parse(storedUser);
         setUser(parsedUser);
         setUserRole(storedRole);
-        if (storedRole === 'rider') {
-          navigate(parsedUser.verified ? '/rider/dashboard' : '/rider-verification');
-        } else if (storedRole === 'admin') {
-          navigate('/admin/dashboard');
-        } else if (storedRole === 'customer') {
-          navigate('/');
-        }
       } catch (error) {
         console.error('Invalid stored user data:', error);
         localStorage.removeItem('user');
@@ -42,34 +36,50 @@ export const AuthProvider = ({ children }) => {
       }
     }
     setLoading(false);
-  }, [navigate]);
+  }, []);
 
   const signIn = async (email, password) => {
     try {
       const response = await AuthService.signin({ email, password });
-      const { user, status, message } = response;
-      if (!user || !status) {
+      const { jwt, message, status, role, userId } = response;
+      if (!status || !userId) {
         throw new Error(message || 'Invalid credentials');
       }
-      setUser(user);
-      const role = user.role === 'RIDER' ? 'rider' : user.role === 'ADMIN' ? 'admin' : 'customer';
+      const userData = { id: userId, email, role };
+      setUser(userData);
       setUserRole(role);
-      localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('user', JSON.stringify(userData));
       localStorage.setItem('userRole', role);
-      if (role === 'rider') {
-        navigate(user.verified ? '/rider/dashboard' : '/rider-verification');
-      } else if (role === 'admin') {
-        navigate('/admin/dashboard');
+      localStorage.setItem('jwtToken', jwt);
+
+      if (role === 'RIDER') {
+        try {
+          const driverRes = await DriverService.getDriverByUserId(userId);
+          if (driverRes.data?.verificationStatus === 'APPROVED') {
+            navigate('/rider/dashboard', { replace: true });
+          } else {
+            navigate('/rider-verification', { replace: true });
+          }
+        } catch (err) {
+          console.error('Driver fetch error:', err);
+          navigate('/rider-verification', { replace: true });
+        }
+      } else if (role === 'ADMIN') {
+        navigate('/admin/dashboard', { replace: true });
+      } else if (role === 'CUSTOMER') {
+        navigate('/', { replace: true });
       } else {
-        navigate('/');
+        throw new Error('Invalid user role');
       }
-      return { user, role };
+      return { user: userData, role };
     } catch (error) {
+      console.error('signIn error:', error);
       setUser(null);
       setUserRole(null);
       localStorage.removeItem('user');
       localStorage.removeItem('userRole');
-      throw error;
+      localStorage.removeItem('jwtToken');
+      throw new Error(error.message || 'Failed to sign in');
     }
   };
 
@@ -87,13 +97,13 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('user', JSON.stringify(user));
       localStorage.setItem('userRole', role);
       if (role === 'rider') {
-        navigate('/rider-verification');
+        navigate('/rider-verification', { replace: true });
       } else {
-        navigate('/login');
+        navigate('/login', { replace: true });
       }
       return { user, role };
     } catch (error) {
-      throw error;
+      throw new Error(error.message || 'Registration failed');
     }
   };
 
@@ -103,8 +113,9 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('user');
     localStorage.removeItem('userRole');
     localStorage.removeItem('rememberMe');
+    localStorage.removeItem('jwtToken');
     clearAuthToken();
-    navigate('/login');
+    navigate('/login', { replace: true });
   };
 
   const value = {

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { mockRides } from '../../data/mockData';
+// import RideService if needed
 import { 
   Typography, 
   Paper, 
@@ -39,7 +39,8 @@ import {
   Directions
 } from '@mui/icons-material';
 
-const rides = mockRides;
+import { useEffect } from 'react';
+import RideService from '../../services/RideService.js';
 
 const statusColors = {
   'Completed': '#4CAF50',
@@ -71,6 +72,7 @@ function TabPanel(props) {
 }
 
 export default function RideHistory() {
+  const [rides, setRides] = useState([]);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [tabValue, setTabValue] = useState(0);
@@ -78,6 +80,18 @@ export default function RideHistory() {
   const [filterStatus, setFilterStatus] = useState('All');
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedRide, setSelectedRide] = useState(null);
+
+  useEffect(() => {
+    async function fetchRides() {
+      try {
+        const response = await RideService.getUserRides();
+        setRides(response.data);
+      } catch (error) {
+        setRides([]);
+      }
+    }
+    fetchRides();
+  }, []);
 
   // Filter rides based on search and filters
   const filteredRides = rides.filter(ride => {

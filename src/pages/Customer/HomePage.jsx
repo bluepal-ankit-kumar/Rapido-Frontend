@@ -41,57 +41,6 @@ import Lottie from "lottie-react";
 import animationData from "../../assets/ride-3d.json";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 
-// Features mock data
-const initialFeatures = [
-  {
-    title: "Lightning-Fast Pickups",
-    description:
-      "Get a ride within minutes, not hours. Our extensive network ensures minimal wait times.",
-    icon: "⚡",
-  },
-  {
-    title: "Affordable Pricing",
-    description:
-      "Transparent fares with no hidden charges. Save up to 30% compared to traditional taxis.",
-    icon: "💰",
-  },
-  {
-    title: "Top-Notch Safety",
-    description:
-      "Verified drivers, real-time tracking, and SOS emergency buttons for your peace of mind.",
-    icon: "🛡️",
-  },
-  {
-    title: "Eco-Friendly Rides",
-    description:
-      "Choose from our fleet of electric and hybrid vehicles to reduce your carbon footprint.",
-    icon: "🌱",
-  },
-];
-
-// Testimonials mock data
-const initialTestimonials = [
-  {
-    name: "Priya Sharma",
-    role: "Daily Commuter",
-    text: "Rapido has transformed my daily commute. I save time and money every single day!",
-  },
-  {
-    name: "Raj Patel",
-    role: "Business Traveler",
-    text: "The reliability and comfort of Rapido rides are unmatched. My go-to for all business trips.",
-  },
-  {
-    name: "Ananya Reddy",
-    role: "Student",
-    text: "As a student, I love the affordable pricing and safety features. Highly recommended!",
-  },
-  {
-    name: "Vikram Singh",
-    role: "Entrepreneur",
-    text: "Convenience and peace of mind every time I book. Rapido is my first choice always!",
-  },
-];
 
 export default function HomePage() {
   const { user } = useAuth();
@@ -99,48 +48,9 @@ export default function HomePage() {
   const featuresRef = useRef(null);
   const testimonialsRef = useRef(null);
 
-  // State for looping carousels
-  const [features, setFeatures] = useState(initialFeatures);
-  const [testimonials, setTestimonials] = useState(initialTestimonials);
+  // No features/testimonials state needed
 
-  const scrollByAmount = 340; // Card width + gap
-
-  // Looping scroll for carousel (infinite)
-  const scrollLoop = (ref, dir, items, setItems) => {
-    if (!ref.current) return;
-    const container = ref.current;
-    const maxScroll = container.scrollWidth - container.clientWidth;
-    const current = container.scrollLeft;
-    let next = current + dir * scrollByAmount;
-
-    // If scrolling right past end, move first item to end and reset scroll
-    if (dir > 0 && next > maxScroll - 10) {
-      setItems(prev => {
-        const arr = [...prev];
-        arr.push(arr.shift());
-        return arr;
-      });
-      container.scrollTo({ left: current, behavior: 'auto' });
-      setTimeout(() => {
-        container.scrollTo({ left: current, behavior: 'auto' });
-      }, 0);
-      return;
-    }
-    // If scrolling left past start, move last item to start and reset scroll
-    if (dir < 0 && next < 0) {
-      setItems(prev => {
-        const arr = [...prev];
-        arr.unshift(arr.pop());
-        return arr;
-      });
-      container.scrollTo({ left: current + scrollByAmount, behavior: 'auto' });
-      setTimeout(() => {
-        container.scrollTo({ left: current + scrollByAmount, behavior: 'auto' });
-      }, 0);
-      return;
-    }
-    container.scrollTo({ left: next, behavior: 'smooth' });
-  };
+  // ...existing code...
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
 
@@ -150,7 +60,7 @@ export default function HomePage() {
   }, []);
 
   const handleBookRide = () => {
-    if (!user) {
+    if (!user || user.role !== 'CUSTOMER') {
       navigate('/login');
       return;
     }
@@ -230,61 +140,25 @@ export default function HomePage() {
               }}
             >
               We're not just another ride-hailing service. We're your travel partner committed to making every journey exceptional.
-              
             </Typography>
-          </Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-            <ScrollArrow direction="left" onClick={() => scrollLoop(featuresRef, -1, features, setFeatures)} />
-            <Box
-              ref={featuresRef}
-              sx={{
-                display: 'flex',
-                flexDirection: 'row',
-                gap: 3,
-                overflowX: 'auto',
-                scrollBehavior: 'smooth',
-                width: '100%',
-                py: 2,
-                '::-webkit-scrollbar': { display: 'none' },
-                msOverflowStyle: 'none',
-                scrollbarWidth: 'none',
-              }}
-            >
-              {features.map((feature, index) => (
-                <Card
-                  key={index}
-                  className="shadow-md hover:shadow-lg transition-all duration-300 flex flex-row"
-                  sx={{
-                    borderRadius: "16px",
-                    display: "flex",
-                    flexDirection: "row",
-                    minHeight: 320,
-                    minWidth: 320,
-                    aspectRatio: '1/1',
-                    height: 320,
-                    width: 320,
-                    maxWidth: '100%',
-                    maxHeight: '100%'
-                  }}
-                >
-                  <Box className="bg-gradient-to-b from-yellow-400 to-yellow-400 flex items-center justify-center" sx={{ width: 80, minHeight: 320, height: '100%' }}>
-                    <span className="text-3xl">{feature.icon}</span>
-                  </Box>
-                  <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                    <Typography
-                      variant="h6"
-                      className="font-bold mb-3 text-gray-900"
-                    >
-                      {feature.title}
-                    </Typography>
-                    <Typography variant="body2" className="text-gray-600">
-                      {feature.description}
-                    </Typography>
-                  </CardContent>
-                </Card>
-              ))}
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 4, mt: 6 }}>
+              <Card sx={{ minWidth: 260, maxWidth: 320, p: 3, borderRadius: 3, boxShadow: 2 }}>
+                <Typography variant="h6" className="font-bold mb-2 text-gray-900">⚡ Lightning-Fast Pickups</Typography>
+                <Typography variant="body2" className="text-gray-600">Get a ride within minutes, not hours. Our extensive network ensures minimal wait times.</Typography>
+              </Card>
+              <Card sx={{ minWidth: 260, maxWidth: 320, p: 3, borderRadius: 3, boxShadow: 2 }}>
+                <Typography variant="h6" className="font-bold mb-2 text-gray-900">💰 Affordable Pricing</Typography>
+                <Typography variant="body2" className="text-gray-600">Transparent fares with no hidden charges. Save up to 30% compared to traditional taxis.</Typography>
+              </Card>
+              <Card sx={{ minWidth: 260, maxWidth: 320, p: 3, borderRadius: 3, boxShadow: 2 }}>
+                <Typography variant="h6" className="font-bold mb-2 text-gray-900">🛡️ Top-Notch Safety</Typography>
+                <Typography variant="body2" className="text-gray-600">Verified drivers, real-time tracking, and SOS emergency buttons for your peace of mind.</Typography>
+              </Card>
+              <Card sx={{ minWidth: 260, maxWidth: 320, p: 3, borderRadius: 3, boxShadow: 2 }}>
+                <Typography variant="h6" className="font-bold mb-2 text-gray-900">🌱 Eco-Friendly Rides</Typography>
+                <Typography variant="body2" className="text-gray-600">Choose from our fleet of electric and hybrid vehicles to reduce your carbon footprint.</Typography>
+              </Card>
             </Box>
-            <ScrollArrow direction="right" onClick={() => scrollLoop(featuresRef, 1, features, setFeatures)} />
           </Box>
         </Container>
       </Box>
@@ -292,7 +166,7 @@ export default function HomePage() {
       {/* Divider */}
       <Divider className="my-2" />
 
-      {/* Testimonials Section */}
+      {/* Testimonials Section (static) */}
       <Box className="py-16 px-4 bg-gray-50">
         <Container maxWidth="lg">
           <Box className="text-center mb-12">
@@ -304,63 +178,27 @@ export default function HomePage() {
               What Our Riders Say
             </Typography>
           </Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-            <ScrollArrow direction="left"  onClick={() => scrollLoop(testimonialsRef, -1, testimonials, setTestimonials)} />
-            <Box
-              ref={testimonialsRef}
-              sx={{
-                display: 'flex',
-                flexDirection: 'row',
-                gap: 3,
-                overflowX: 'auto',
-                scrollBehavior: 'smooth',
-                width: '100%',
-                py: 2,
-                '::-webkit-scrollbar': { display: 'none' },
-                msOverflowStyle: 'none',
-                scrollbarWidth: 'none',
-              }}
-            >
-              {testimonials.map((testimonial, index) => (
-                <Card
-                  key={index}
-                  className="shadow-md hover:shadow-lg transition-all duration-300 flex flex-col justify-between"
-                  sx={{
-                    borderRadius: "16px",
-                    minHeight: 320,
-                    minWidth: 320,
-                    aspectRatio: '1/1',
-                    height: 320,
-                    width: 320,
-                    maxWidth: '100%',
-                    maxHeight: '100%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'center',
-                    p: 3
-                  }}
-                >
-                  <Typography
-                    variant="body1"
-                    className="italic mb-6 text-gray-700 text-center"
-                  >
-                    "{testimonial.text}"
-                  </Typography>
-                  <Box className="text-center mt-auto">
-                    <Typography
-                      variant="h6"
-                      className="font-bold text-gray-900"
-                    >
-                      {testimonial.name}
-                    </Typography>
-                    <Typography variant="body2" className="text-gray-600">
-                      {testimonial.role}
-                    </Typography>
-                  </Box>
-                </Card>
-              ))}
-            </Box>
-            <ScrollArrow direction="right" onClick={() => scrollLoop(testimonialsRef, 1, testimonials, setTestimonials)} />
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 4 }}>
+            <Card sx={{ minWidth: 260, maxWidth: 320, p: 3, borderRadius: 3, boxShadow: 2 }}>
+              <Typography variant="body1" className="italic mb-4 text-gray-700 text-center">"Rapido has transformed my daily commute. I save time and money every single day!"</Typography>
+              <Typography variant="h6" className="font-bold text-gray-900 text-center">Priya Sharma</Typography>
+              <Typography variant="body2" className="text-gray-600 text-center">Daily Commuter</Typography>
+            </Card>
+            <Card sx={{ minWidth: 260, maxWidth: 320, p: 3, borderRadius: 3, boxShadow: 2 }}>
+              <Typography variant="body1" className="italic mb-4 text-gray-700 text-center">"The reliability and comfort of Rapido rides are unmatched. My go-to for all business trips."</Typography>
+              <Typography variant="h6" className="font-bold text-gray-900 text-center">Raj Patel</Typography>
+              <Typography variant="body2" className="text-gray-600 text-center">Business Traveler</Typography>
+            </Card>
+            <Card sx={{ minWidth: 260, maxWidth: 320, p: 3, borderRadius: 3, boxShadow: 2 }}>
+              <Typography variant="body1" className="italic mb-4 text-gray-700 text-center">"As a student, I love the affordable pricing and safety features. Highly recommended!"</Typography>
+              <Typography variant="h6" className="font-bold text-gray-900 text-center">Ananya Reddy</Typography>
+              <Typography variant="body2" className="text-gray-600 text-center">Student</Typography>
+            </Card>
+            <Card sx={{ minWidth: 260, maxWidth: 320, p: 3, borderRadius: 3, boxShadow: 2 }}>
+              <Typography variant="body1" className="italic mb-4 text-gray-700 text-center">"Convenience and peace of mind every time I book. Rapido is my first choice always!"</Typography>
+              <Typography variant="h6" className="font-bold text-gray-900 text-center">Vikram Singh</Typography>
+              <Typography variant="body2" className="text-gray-600 text-center">Entrepreneur</Typography>
+            </Card>
           </Box>
         </Container>
       </Box>

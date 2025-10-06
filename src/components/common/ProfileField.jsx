@@ -1,7 +1,14 @@
-import React from 'react';
-import { TextField, Grid } from '@mui/material';
+import React from "react";
+import { TextField, Grid } from "@mui/material";
 
-export default function ProfileField({ label, name, value, onChange, disabled, type = 'text' }) {
+export default function ProfileField({
+  label,
+  name,
+  value,
+  onChange,
+  disabled,
+  type = "text",
+}) {
   return (
     <Grid item xs={12} sm={6}>
       <TextField

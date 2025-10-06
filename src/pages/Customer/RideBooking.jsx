@@ -4,7 +4,7 @@ import VehicleTypeSelector from '../../components/common/VehicleTypeSelector';
 import MapDisplay from '../../components/shared/MapDisplay';
 import RiderCard from '../../components/shared/RiderCard';
 import Button from '../../components/common/Button';
-import { mockAvailableVehicles, mockRiders } from '../../data/mockData';
+import RideService from '../../services/RideService.js';
 import { useNavigate } from 'react-router-dom';
 import { 
   Paper, 
@@ -42,7 +42,7 @@ export default function RideBooking() {
   const [pickup, setPickup] = useState('');
   const [dropoff, setDropoff] = useState('');
   const [selectedType, setSelectedType] = useState('Bike');
-  const [selectedRider, setSelectedRider] = useState(null);
+  // Remove customer-side rider selection
   const [estimatedFare, setEstimatedFare] = useState(0);
   const [estimatedTime, setEstimatedTime] = useState(0);
   const [distance, setDistance] = useState(0);
@@ -83,36 +83,47 @@ export default function RideBooking() {
     }
   }, [pickup, dropoff, selectedType]);
 
-  const availableRiders = mockRiders.filter(r => r.type === selectedType);
+  const [availableRiders, setAvailableRiders] = useState([]);
 
   useEffect(() => {
-    if (availableRiders.length > 0 && !selectedRider) {
-      setSelectedRider(availableRiders[0]);
+    async function fetchAvailableRiders() {
+      try {
+        const response = await RideService.getAvailableRiders(selectedType);
+        setAvailableRiders(response.data);
+      } catch (error) {
+        setAvailableRiders([]);
+      }
     }
-  }, [selectedType, availableRiders]);
+    if (selectedType) {
+      fetchAvailableRiders();
+    }
+  }, [selectedType]);
 
   const handleBook = () => {
     if (!pickup || !dropoff) {
       setError('Please enter pickup and dropoff locations');
       return;
     }
-    if (!selectedRider) {
-      setError('Please select a rider');
-      return;
-    }
-    
     setLoading(true);
-    setTimeout(() => {
-      navigate('/ride-tracking', { 
-        state: { 
-          pickup, 
-          dropoff, 
-          rider: selectedRider, 
-          fare: estimatedFare,
-          vehicleType: selectedType
-        } 
-      });
-    }, 1000);
+    // Call backend to book ride
+    RideService.bookRide({ pickup, dropoff, vehicleType: selectedType })
+      .then((response) => {
+        // On success, navigate to ride tracking and show available riders on map
+        navigate('/ride-tracking', {
+          state: {
+            pickup,
+            dropoff,
+            fare: estimatedFare,
+            vehicleType: selectedType,
+            availableRiders,
+            ride: response.data // backend ride info
+          }
+        });
+      })
+      .catch(() => {
+        setError('Failed to book ride. Please try again.');
+      })
+      .finally(() => setLoading(false));
   };
 
   return (
@@ -182,7 +193,7 @@ export default function RideBooking() {
                           <Typography variant="h5" className="font-bold mt-1 text-center" sx={{ fontWeight: 700 }}>₹{estimatedFare}</Typography>
                         </Grid>
                       </Grid>
-                      <Box className="flex items-center mt-4 pt-3 border-t border-amber-200 justify-center">{getVehicleIcon(selectedType)}<Typography variant="body1" className="text-gray-700 ml-2" sx={{ fontWeight: 600 }}>{selectedType} • {selectedRider ? selectedRider.distance : distance} km</Typography></Box>
+                      <Box className="flex items-center mt-4 pt-3 border-t border-amber-200 justify-center">{getVehicleIcon(selectedType)}<Typography variant="body1" className="text-gray-700 ml-2" sx={{ fontWeight: 600 }}>{selectedType} • {distance} km</Typography></Box>
                     </CardContent>
                   </Card>
                 )}
@@ -192,7 +203,7 @@ export default function RideBooking() {
               </CardContent>
             </Card>
           </Grid>
-          <Grid item xs={12} md={10} lg={8} sx={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', mt: 6 }}>
+          {/* <Grid item xs={12} md={10} lg={8} sx={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', mt: 6 }}>
             <Card className="shadow-xl rounded-2xl overflow-hidden border border-gray-100 w-full max-w-3xl mx-auto" sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minHeight: 0 }}>
               <CardContent className="p-5 w-full flex flex-col items-center">
                 <Box className="flex justify-between items-center mb-5 w-full max-w-2xl mx-auto">
@@ -204,13 +215,13 @@ export default function RideBooking() {
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5 w-full max-w-2xl mx-auto">
                     {availableRiders.map(rider => (
-                      <Card key={rider.id} className={`border rounded-xl p-1 cursor-pointer transition-all duration-300 ${selectedRider?.id === rider.id ? 'border-amber-400 bg-gradient-to-br from-amber-50 to-amber-100 shadow-md' : 'border-gray-200 hover:border-amber-300 hover:shadow-md'}`} onClick={() => setSelectedRider(rider)} sx={{ borderRadius: '16px', overflow: 'hidden', '&:hover': { transform: 'translateY(-2px)' } }}><CardContent className="p-4"><RiderCard rider={rider} /></CardContent></Card>
+                      <Card key={rider.id} className={`border rounded-xl p-1 transition-all duration-300 border-gray-200 bg-gradient-to-br from-amber-50 to-amber-100 shadow-md`} sx={{ borderRadius: '16px', overflow: 'hidden' }}><CardContent className="p-4"><RiderCard rider={rider} /></CardContent></Card>
                     ))}
                   </div>
                 )}
               </CardContent>
             </Card>
-          </Grid>
+          </Grid> */}
   {/* End of main Grid container */}
         </Grid>
       </div>

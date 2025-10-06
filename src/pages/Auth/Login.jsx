@@ -21,12 +21,12 @@ export default function Login() {
     }
   }, [rememberMe]);
 
-  const handleSubmit = async e => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setFormError('');
     setLocalLoading(true);
 
-    console.log('Form values:', values); // Log email and password
+    console.log('Form values:', values);
 
     if (Object.keys(errors).length > 0 || !values.email || !values.password) {
       setFormError('Please fill all fields correctly');
@@ -42,13 +42,7 @@ export default function Login() {
         response: error.response?.data,
         status: error.response?.status,
       });
-      if (error.message === 'Your profile verification is pending. Please try after some time.') {
-        setFormError(error.message);
-      } else if (error.response?.status === 401) {
-        setFormError(error.message || 'Invalid email or password. Please try again.');
-      } else {
-        setFormError('An unexpected error occurred. Please try again later.');
-      }
+      setFormError(error.message || 'An unexpected error occurred. Please try again later.');
       setLocalLoading(false);
     }
   };
