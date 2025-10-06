@@ -35,9 +35,9 @@ import {
   Share,
   Cancel
 } from '@mui/icons-material';
-import MapDisplay from '../../components/shared/MapDisplay';
+// import MapDisplay from '../../components/shared/MapDisplay';
+import GoogleMapDisplay from '../../components/shared/GoogleMapDisplay';
 import webSocketService from '../../services/WebSocketService';
-import { useGlobalStore } from '../../context/GlobalStore.jsx';
 
 import RideService from '../../services/RideService.js';
 
@@ -52,10 +52,10 @@ export default function RideTracking() {
   const [destinationCoords, setDestinationCoords] = useState(null);
   const [driverCoords, setDriverCoords] = useState(null);
   const [trackingDataState, setTrackingDataState] = useState([
-    { id: 1, status: 'Driver Assigned', time: '', completed: false },
-    { id: 2, status: 'Driver Arriving', time: '', completed: false },
-    { id: 3, status: 'Ride In Progress', time: '', completed: false },
-    { id: 4, status: 'Completed', time: '', completed: false },
+    { id: 1, status: 'REQUESTED', time: '', completed: false },
+    { id: 2, status: 'ACCEPTED', time: '', completed: false },
+    { id: 3, status: 'IN_PROGRESS', time: '', completed: false },
+    { id: 4, status: 'COMPLETED', time: '', completed: false },
   ]);
   const [currentStep, setCurrentStep] = useState(0);
   const [eta, setEta] = useState('');
@@ -68,59 +68,50 @@ export default function RideTracking() {
   // prevent repeated redirects to rating
   const [redirectedToRating, setRedirectedToRating] = useState(false);
  
-  // global store hooks (if used elsewhere)
-  const { getRide, rides, completeRide, recordPayment } = useGlobalStore();
-  const globalRide = getRide ? getRide(201) : null;
-
-  // show OTP when driver is effectively "arrived" (mocked by progress reaching arrival step) OR globalRide.stage indicates toDestination
-  const showOtp = !!(globalRide && globalRide.otp && (globalRide.stage === 'toDestination' || currentStep >= 2));
-
   // Initialize ride from navigation state and current geolocation / backend response
   useEffect(() => {
     const state = routerLocation.state || {};
-    const driver = Array.isArray(state.availableRiders) && state.availableRiders.length > 0
-      ? { name: state.availableRiders[0].name || 'Driver', rating: state.availableRiders[0].rating || 4.8, vehicle: state.vehicleType || 'Bike', licensePlate: state.availableRiders[0].licensePlate || '----' }
-      : { name: 'Driver', rating: 4.8, vehicle: state.vehicleType || 'Bike', licensePlate: '----' };
     const rideResp = state.ride || {};
-    // Compose a local ride model using backend response if present
+    // Compose a local ride model using backend response
     const initialRide = {
-      id: rideResp.id || Date.now(),
+      id: rideResp.id,
       pickup: state.pickup || '',
       destination: state.dropoff || '',
-      fare: state.fare || 0,
-      status: rideResp.status || 'In Progress',
-      driver,
+      fare: typeof rideResp.cost === 'number' ? rideResp.cost : 0,
+      status: rideResp.status || 'REQUESTED',
+      driver: {
+        name: 'Driver',
+        rating: 4.8,
+        vehicle: state.vehicleType || 'Bike',
+        licensePlate: '----',
+      },
     };
     setRide(initialRide);
-    // Prefer backend-provided coordinates for current/driver and destination
+    // set coordinates from backend where available
     if (rideResp?.driverLocation && typeof rideResp.driverLocation.latitude === 'number' && typeof rideResp.driverLocation.longitude === 'number') {
       setDriverCoords({ latitude: rideResp.driverLocation.latitude, longitude: rideResp.driverLocation.longitude });
-    }
-    if (geo && typeof geo.latitude === 'number' && typeof geo.longitude === 'number') {
-      setCurrentCoords({ latitude: geo.latitude, longitude: geo.longitude });
     }
     if (rideResp?.dropOffLocation && typeof rideResp.dropOffLocation.latitude === 'number' && typeof rideResp.dropOffLocation.longitude === 'number') {
       setDestinationCoords({ latitude: rideResp.dropOffLocation.latitude, longitude: rideResp.dropOffLocation.longitude });
     } else {
-      // fall back to parsing from state.dropoff if lat,lng format
       const parsed = typeof state.dropoff === 'string' ? state.dropoff.split(',').map(s => parseFloat(s.trim())) : [];
       if (parsed.length === 2 && parsed.every(n => !Number.isNaN(n))) {
         setDestinationCoords({ latitude: parsed[0], longitude: parsed[1] });
       }
     }
     if (geo && typeof geo.latitude === 'number' && typeof geo.longitude === 'number') {
+      setCurrentCoords({ latitude: geo.latitude, longitude: geo.longitude });
       setLocation({ latitude: geo.latitude, longitude: geo.longitude });
     }
     setLoading(false);
   }, [routerLocation.state, geo]);
 
-  // keep local ride in sync when global store updates
+  // derive progress step from backend status
   useEffect(() => {
-    if (getRide) {
-      const g = getRide(201);
-      if (g) setRide(g);
-    }
-  }, [rides, getRide]);
+    const status = (ride?.status || '').toUpperCase();
+    const map = { REQUESTED: 0, ACCEPTED: 1, IN_PROGRESS: 2, COMPLETED: 3 };
+    if (status in map) setCurrentStep(map[status]);
+  }, [ride?.status]);
 
   // Synchronize trackingData completed flags with currentStep
   useEffect(() => {
@@ -149,17 +140,39 @@ export default function RideTracking() {
     if (dest && curr) {
       const km = haversineKm(curr, dest);
       setDistance(`${km.toFixed(1)} km`);
-      // naive ETA at 25km/h
       const minutes = Math.max(1, Math.round((km / 25) * 60));
       setEta(`${minutes} min`);
-      // dynamic fare by vehicle type
-      const perKm = (ride?.driver?.vehicle || '').toLowerCase().includes('auto') ? 15 : (ride?.driver?.vehicle || '').toLowerCase().includes('cab') ? 20 : 10;
-      setRide(prev => prev ? { ...prev, fare: Math.round(km * perKm) } : prev);
     } else {
       setDistance('N/A');
       setEta('N/A');
     }
   }, [ride, driverCoords, currentCoords, destinationCoords, location, geo?.latitude, geo?.longitude]);
+
+  // Poll backend for latest ride data as fallback to websocket
+  useEffect(() => {
+    if (!ride?.id) return;
+    const interval = setInterval(async () => {
+      try {
+        const res = await RideService.getRide(ride.id);
+        const data = res?.data || res; // normalize ApiResponse vs direct
+        if (data?.driverLocation && typeof data.driverLocation.latitude === 'number') {
+          setDriverCoords({ latitude: data.driverLocation.latitude, longitude: data.driverLocation.longitude });
+        }
+        if (data?.dropOffLocation && typeof data.dropOffLocation.latitude === 'number') {
+          setDestinationCoords({ latitude: data.dropOffLocation.latitude, longitude: data.dropOffLocation.longitude });
+        }
+        if (typeof data?.cost === 'number') {
+          setRide(prev => prev ? { ...prev, fare: data.cost } : prev);
+        }
+        if (typeof data?.status === 'string') {
+          setRide(prev => prev ? { ...prev, status: data.status } : prev);
+        }
+      } catch (e) {
+        // swallow polling errors
+      }
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [ride?.id]);
 
   // Connect and subscribe to WebSocket ride updates
   useEffect(() => {
@@ -202,38 +215,6 @@ export default function RideTracking() {
     };
   }, [ride?.id]);
 
-  // When tracking reaches the final 'in-progress' step, mark ride completed
-  useEffect(() => {
-    const finalStepIndex = trackingDataState.length - 1; // index of last step (Completed)
-    if (currentStep >= finalStepIndex) {
-      // mark all steps as completed locally
-      setTrackingDataState(prev => prev.map(step => ({ ...step, completed: true })));
-
-      // update global store so other pages (including rating) can read the final status / fare
-      if (typeof completeRide === 'function') {
-        completeRide(201);
-      }
-
-      // ensure local ride shows completed (normalize to lowercase check elsewhere)
-      setRide(prev => prev ? ({ ...prev, status: 'Completed' }) : prev);
-
-      // open payment dialog for customer to pay (show before navigating to rating)
-      setShowPaymentDialog(true);
-    }
-  }, [currentStep]);
-
-  // Redirect to ratings page once when ride becomes Completed
-  useEffect(() => {
-    // navigation is handled after successful payment; keep this effect minimal to avoid extra navigation
-    if (ride?.status && !redirectedToRating) {
-      const status = typeof ride.status === 'string' ? ride.status.toLowerCase() : '';
-      if (status === 'completed' && globalRide?.paid) {
-        setRedirectedToRating(true);
-        setTimeout(() => navigate('/costumor/RatingPage'), 600);
-      }
-    }
-  }, [ride?.status, redirectedToRating, navigate, globalRide?.paid]);
-
   // compute progress percent based on current step vs steps before final completion
   const totalProgressSteps = Math.max(1, trackingDataState.length - 1); // avoid divide by zero
   const progressPercent = Math.min(100, Math.round((currentStep / totalProgressSteps) * 100));
@@ -251,10 +232,11 @@ export default function RideTracking() {
 
   // Get status color
   const getStatusColor = () => {
-    switch (ride?.status) {
-      case 'Completed': return '#4CAF50';
-      case 'In Progress': return '#2196F3';
-      case 'Cancelled': return '#F44336';
+    switch ((ride?.status || '').toUpperCase()) {
+      case 'COMPLETED': return '#4CAF50';
+      case 'IN_PROGRESS': return '#2196F3';
+      case 'CANCELLED': return '#F44336';
+      case 'ACCEPTED': return '#FFB300';
       default: return '#FF9800';
     }
   };
@@ -292,11 +274,6 @@ export default function RideTracking() {
       name: 'Rapido',
       description: `Payment for ride #${ride.id}`,
       handler: function (response) {
-        // response.razorpay_payment_id etc.
-        // record payment in global store and navigate to rating page
-        if (typeof recordPayment === 'function') {
-          recordPayment(ride.id, { amount: ride.fare, method: 'razorpay', id: response.razorpay_payment_id, status: 'PAID' });
-        }
         setPaymentProcessing(false);
         setShowPaymentDialog(false);
         alert('Payment successful. Redirecting to rating page.');
@@ -402,9 +379,10 @@ export default function RideTracking() {
                 <CardContent className="p-0">
                   <Typography variant="h6" className="font-bold text-gray-800 p-4 pb-2">Live Tracking</Typography>
                   <Divider />
-                  <MapDisplay 
+                  <GoogleMapDisplay 
                     userLocation={currentCoords ? [currentCoords.latitude, currentCoords.longitude] : (geo && geo.latitude && geo.longitude ? [geo.latitude, geo.longitude] : (location ? [location.latitude, location.longitude] : [12.9716, 77.5946]))} 
-                    nearbyRiders={driverCoords ? [{ id: ride?.driver?.id || 1, name: ride?.driver?.name || 'Driver', location: [driverCoords.latitude, driverCoords.longitude] }] : []} 
+                    riderLocation={driverCoords ? [driverCoords.latitude, driverCoords.longitude] : (destinationCoords ? [destinationCoords.latitude, destinationCoords.longitude] : null)} 
+                    routePoints={(currentCoords && destinationCoords) ? [[currentCoords.latitude, currentCoords.longitude], [destinationCoords.latitude, destinationCoords.longitude]] : []}
                   />
                 </CardContent>
               </Card>
@@ -461,20 +439,6 @@ export default function RideTracking() {
                 </CardContent>
               </Card>
               
-              {/* OTP Card - shown when rider has reached customer (uses global mock ride OTP or mockProgress) */}
-              {showOtp && (
-                <Card className="shadow-md rounded-xl mb-4">
-                  <CardContent className="p-4">
-                    <Typography variant="subtitle2" color="textSecondary">Provide this OTP to your driver</Typography>
-                    <Box className="mt-3 flex items-center justify-between">
-                      <Typography variant="h4" className="font-bold">{globalRide?.otp || '----'}</Typography>
-                      <Chip label="Show to driver" color="primary" />
-                    </Box>
-                    <Typography variant="caption" className="text-gray-600 mt-2">Driver requested OTP after arrival. This value is from the global ride mock.</Typography>
-                  </CardContent>
-                </Card>
-              )}
-
               {/* Tracking Progress */}
               <Card className="shadow-md rounded-xl flex-1">
                 <CardContent className="p-6">

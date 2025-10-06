@@ -4,9 +4,19 @@ const RideService = {
   bookRide: async (request) => {
     try {
       const response = await api.post('/rides/book', request);
-      return response.data;
+      const payload = response.data;
+      if (payload && typeof payload.success === 'boolean' && payload.success === false) {
+        const err = new Error(payload.message || 'Ride booking failed');
+        err.status = response.status;
+        throw err;
+      }
+      return payload;
     } catch (error) {
-      throw new Error(error.response?.data?.message || 'Ride booking failed');
+      const status = error.response?.status;
+      const message = error.response?.data?.message || error.message || 'Ride booking failed';
+      const err = new Error(message);
+      err.status = status;
+      throw err;
     }
   },
 
@@ -24,7 +34,9 @@ const RideService = {
       const response = await api.get(`/rides/${rideId}`);
       return response.data;
     } catch (error) {
-      throw new Error(error.response?.data?.message || 'Failed to fetch ride');
+      const err = new Error(error.response?.data?.message || 'Failed to fetch ride');
+      err.status = error.response?.status;
+      throw err;
     }
   },
 

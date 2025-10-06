@@ -1,7 +1,10 @@
 import axios from 'axios';
 
+const DEFAULT_BASE_URL = 'http://localhost:8080/api';
+const baseURL = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_BASE_URL) || DEFAULT_BASE_URL;
+
 const api = axios.create({
-  baseURL: 'http://localhost:8080/api',
+  baseURL,
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
@@ -14,8 +17,8 @@ api.interceptors.request.use(
     if (token && !config.url.includes('/auth/signin') && !config.url.includes('/auth/signup')) {
       config.headers['Authorization'] = `Bearer ${token}`;
     }
-    console.log('Request headers:', config.headers); // Log headers
-    console.log('Request payload:', config.data); // Log payload
+    // console.debug('Request headers:', config.headers);
+    // console.debug('Request payload:', config.data);
     return config;
   },
   (error) => Promise.reject(error)
