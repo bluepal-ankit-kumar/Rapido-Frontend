@@ -62,13 +62,24 @@ export const AuthProvider = ({ children }) => {
       if (role === 'RIDER') {
         try {
           const driverRes = await DriverService.getDriverByUserId(userId);
-          const isApproved = driverRes?.verificationStatus === 'APPROVED';
+          const isApproved = driverRes?.data?.verificationStatus === 'APPROVED';
           localStorage.setItem('isRiderVerified', isApproved ? 'true' : 'false');
           navigate(isApproved ? '/rider/dashboard' : '/rider-verification', { replace: true });
         } catch (err) {
           console.error('Driver fetch error:', err);
-          localStorage.setItem('isRiderVerified', 'false');
-          navigate('/rider-verification', { replace: true });
+          if (err?.status === 403) {
+            // Token missing/invalid; force re-login
+            setUser(null);
+            setUserRole(null);
+            localStorage.removeItem('user');
+            localStorage.removeItem('userRole');
+            localStorage.removeItem('jwtToken');
+            localStorage.removeItem('isRiderVerified');
+            navigate('/login', { replace: true });
+          } else {
+            localStorage.setItem('isRiderVerified', 'false');
+            navigate('/rider-verification', { replace: true });
+          }
         }
       } else if (role === 'ADMIN') {
         navigate('/admin/dashboard', { replace: true });

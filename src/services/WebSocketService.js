@@ -1,7 +1,8 @@
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 
-const API_URL = 'http://localhost:8080/api'; // Your API Gateway URL
+// WebSocket endpoint is served at server root: /ws
+const WS_ROOT_URL = 'http://localhost:8080';
 
 class WebSocketService {
   constructor() {
@@ -17,7 +18,7 @@ class WebSocketService {
     }
     
     // Use SockJS as the WebSocket factory
-    const socketFactory = () => new SockJS(`${API_URL}/ws`);
+    const socketFactory = () => new SockJS(`${WS_ROOT_URL}/ws`);
 
     this.stompClient = new Client({
       webSocketFactory: socketFactory,

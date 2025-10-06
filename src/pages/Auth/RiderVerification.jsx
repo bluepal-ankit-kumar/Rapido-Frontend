@@ -34,8 +34,8 @@ export default function RiderVerification() {
       setError('');
       try {
         const driverRes = await DriverService.getDriverByUserId(user.id);
-        setDriverProfile(driverRes);
-        if (driverRes.verificationStatus === 'APPROVED') {
+        setDriverProfile(driverRes?.data);
+        if (driverRes?.data?.verificationStatus === 'APPROVED') {
           // Persist verification so we don't show verification again on subsequent logins
           localStorage.setItem('isRiderVerified', 'true');
           navigate('/rider/dashboard', { replace: true });
@@ -64,6 +64,27 @@ export default function RiderVerification() {
       fetchDriverStatus();
     }
   }, [user, navigate]);
+
+  // Auto-poll while application is pending to move rider to dashboard when approved
+  useEffect(() => {
+    let intervalId;
+    if (user?.id && driverProfile?.verificationStatus === 'PENDING') {
+      intervalId = setInterval(async () => {
+        try {
+          const latest = await DriverService.getDriverByUserId(user.id);
+          if (latest?.data?.verificationStatus === 'APPROVED') {
+            localStorage.setItem('isRiderVerified', 'true');
+            navigate('/rider/dashboard', { replace: true });
+          }
+        } catch (err) {
+          // ignore transient errors during polling
+        }
+      }, 10000); // every 10s
+    }
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [user?.id, driverProfile?.verificationStatus, navigate]);
 
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files.length > 0) {

@@ -1,6 +1,6 @@
 import useGeolocation from '../../hooks/useGeolocation';
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   Paper, 
   Typography, 
@@ -36,21 +36,30 @@ import {
   Cancel
 } from '@mui/icons-material';
 import MapDisplay from '../../components/shared/MapDisplay';
+import webSocketService from '../../services/WebSocketService';
 import { useGlobalStore } from '../../context/GlobalStore.jsx';
 
-// Mock data for demonstration
 import RideService from '../../services/RideService.js';
 
 export default function RideTracking() {
   const geo = useGeolocation();
   const navigate = useNavigate();
+  const routerLocation = useLocation();
   const [ride, setRide] = useState(null);
   const [location, setLocation] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [trackingDataState, setTrackingDataState] = useState(mockTrackingData);
-  const [currentStep, setCurrentStep] = useState(() => mockTrackingData.filter(s => s.completed).length);
-  const [eta, setEta] = useState('10 min');
-  const [distance, setDistance] = useState('3.2 km');
+  const [currentCoords, setCurrentCoords] = useState(null); // { latitude, longitude }
+  const [destinationCoords, setDestinationCoords] = useState(null);
+  const [driverCoords, setDriverCoords] = useState(null);
+  const [trackingDataState, setTrackingDataState] = useState([
+    { id: 1, status: 'Driver Assigned', time: '', completed: false },
+    { id: 2, status: 'Driver Arriving', time: '', completed: false },
+    { id: 3, status: 'Ride In Progress', time: '', completed: false },
+    { id: 4, status: 'Completed', time: '', completed: false },
+  ]);
+  const [currentStep, setCurrentStep] = useState(0);
+  const [eta, setEta] = useState('');
+  const [distance, setDistance] = useState('');
 
   // payment dialog state (was missing -> caused ReferenceError)
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
@@ -59,27 +68,51 @@ export default function RideTracking() {
   // prevent repeated redirects to rating
   const [redirectedToRating, setRedirectedToRating] = useState(false);
  
-  // read global ride (mock) so customer can see OTP and ride status updates
+  // global store hooks (if used elsewhere)
   const { getRide, rides, completeRide, recordPayment } = useGlobalStore();
   const globalRide = getRide ? getRide(201) : null;
 
   // show OTP when driver is effectively "arrived" (mocked by progress reaching arrival step) OR globalRide.stage indicates toDestination
   const showOtp = !!(globalRide && globalRide.otp && (globalRide.stage === 'toDestination' || currentStep >= 2));
 
-  // Simulate ride tracking data loading
+  // Initialize ride from navigation state and current geolocation / backend response
   useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      // prefer global ride if available so we reflect rider-side state changes
-      setRide(globalRide || mockRide);
-      if (geo && geo.latitude && geo.longitude) {
-        setLocation({ latitude: geo.latitude, longitude: geo.longitude });
-      } else {
-        setLocation(mockLocation);
+    const state = routerLocation.state || {};
+    const driver = Array.isArray(state.availableRiders) && state.availableRiders.length > 0
+      ? { name: state.availableRiders[0].name || 'Driver', rating: state.availableRiders[0].rating || 4.8, vehicle: state.vehicleType || 'Bike', licensePlate: state.availableRiders[0].licensePlate || '----' }
+      : { name: 'Driver', rating: 4.8, vehicle: state.vehicleType || 'Bike', licensePlate: '----' };
+    const rideResp = state.ride || {};
+    // Compose a local ride model using backend response if present
+    const initialRide = {
+      id: rideResp.id || Date.now(),
+      pickup: state.pickup || '',
+      destination: state.dropoff || '',
+      fare: state.fare || 0,
+      status: rideResp.status || 'In Progress',
+      driver,
+    };
+    setRide(initialRide);
+    // Prefer backend-provided coordinates for current/driver and destination
+    if (rideResp?.driverLocation && typeof rideResp.driverLocation.latitude === 'number' && typeof rideResp.driverLocation.longitude === 'number') {
+      setDriverCoords({ latitude: rideResp.driverLocation.latitude, longitude: rideResp.driverLocation.longitude });
+    }
+    if (geo && typeof geo.latitude === 'number' && typeof geo.longitude === 'number') {
+      setCurrentCoords({ latitude: geo.latitude, longitude: geo.longitude });
+    }
+    if (rideResp?.dropOffLocation && typeof rideResp.dropOffLocation.latitude === 'number' && typeof rideResp.dropOffLocation.longitude === 'number') {
+      setDestinationCoords({ latitude: rideResp.dropOffLocation.latitude, longitude: rideResp.dropOffLocation.longitude });
+    } else {
+      // fall back to parsing from state.dropoff if lat,lng format
+      const parsed = typeof state.dropoff === 'string' ? state.dropoff.split(',').map(s => parseFloat(s.trim())) : [];
+      if (parsed.length === 2 && parsed.every(n => !Number.isNaN(n))) {
+        setDestinationCoords({ latitude: parsed[0], longitude: parsed[1] });
       }
-      setLoading(false);
-    }, 1000);
-  }, [geo]);
+    }
+    if (geo && typeof geo.latitude === 'number' && typeof geo.longitude === 'number') {
+      setLocation({ latitude: geo.latitude, longitude: geo.longitude });
+    }
+    setLoading(false);
+  }, [routerLocation.state, geo]);
 
   // keep local ride in sync when global store updates
   useEffect(() => {
@@ -97,44 +130,81 @@ export default function RideTracking() {
     })));
   }, [currentStep]);
 
-  // Simulate real-time tracking updates (ETA, distance, location) and step advancement
+  // Compute live ETA/distance using haversine if we have coordinates
+  const haversineKm = (a, b) => {
+    const toRad = (deg) => deg * Math.PI / 180;
+    const R = 6371; // km
+    const dLat = toRad(b.latitude - a.latitude);
+    const dLon = toRad(b.longitude - a.longitude);
+    const lat1 = toRad(a.latitude);
+    const lat2 = toRad(b.latitude);
+    const h = Math.sin(dLat/2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon/2) ** 2;
+    return 2 * R * Math.asin(Math.sqrt(h));
+  };
+
   useEffect(() => {
-    // accept both local mock ('In Progress') and global mock ('ongoing') statuses
-    if (!loading && ride && (ride.status === 'In Progress' || ride.status === 'ongoing')) {
-      const interval = setInterval(() => {
-        // Update ETA and distance (parse numeric part from strings)
-        const parsedEta = parseInt(eta) || 0;
-        const newEtaVal = Math.max(0, parsedEta - 1);
-        const parsedDistance = parseFloat(distance) || 0;
-        const newDistanceVal = Math.max(0, parsedDistance - 0.5);
-
-        setEta(`${newEtaVal} min`);
-        setDistance(`${newDistanceVal.toFixed(1)} km`);
-
-        // Update location slightly
-        setLocation(prev => ({
-          latitude: prev.latitude + 0.0001,
-          longitude: prev.longitude + 0.0001
-        }));
-
-        // Advance tracking step mock (up to second last step)
-        setCurrentStep(prev => {
-          const maxStep = mockTrackingData.length - 1; // don't auto-complete final "Completed" step until fully done
-          const next = Math.min(maxStep, prev + 1);
-          return next;
-        });
-
-        // If ETA reached zero or we've advanced to the final step, mark ride completed
-        // final numeric ETA value used
-      }, 5000);
-
-      return () => clearInterval(interval);
+    if (!ride) return;
+    const dest = destinationCoords;
+    const curr = (driverCoords || currentCoords || location || (geo && typeof geo.latitude === 'number' && typeof geo.longitude === 'number' ? { latitude: geo.latitude, longitude: geo.longitude } : null));
+    if (dest && curr) {
+      const km = haversineKm(curr, dest);
+      setDistance(`${km.toFixed(1)} km`);
+      // naive ETA at 25km/h
+      const minutes = Math.max(1, Math.round((km / 25) * 60));
+      setEta(`${minutes} min`);
+      // dynamic fare by vehicle type
+      const perKm = (ride?.driver?.vehicle || '').toLowerCase().includes('auto') ? 15 : (ride?.driver?.vehicle || '').toLowerCase().includes('cab') ? 20 : 10;
+      setRide(prev => prev ? { ...prev, fare: Math.round(km * perKm) } : prev);
+    } else {
+      setDistance('N/A');
+      setEta('N/A');
     }
-  }, [loading, ride]); // do not depend on eta/distance here to avoid multiple intervals
+  }, [ride, driverCoords, currentCoords, destinationCoords, location, geo?.latitude, geo?.longitude]);
 
-  // When tracking reaches the final 'in-progress' step, mark ride completed (mock)
+  // Connect and subscribe to WebSocket ride updates
   useEffect(() => {
-    const finalStepIndex = mockTrackingData.length - 1; // index of last step (Completed)
+    if (!ride?.id) return;
+    let connected = false;
+    const ensureConnect = () => {
+      if (connected) return;
+      connected = true;
+      // Subscribe to user-specific updates (sendToUser) and ride topic updates
+      webSocketService.subscribe('/user/topic/ride-updates', (payload) => {
+        // payload could be ApiResponse or RideResponse; normalize
+        const data = payload?.data || payload;
+        if (data?.id && data.id !== ride.id) return;
+        if (data?.driverLocation && typeof data.driverLocation.latitude === 'number') {
+          setDriverCoords({ latitude: data.driverLocation.latitude, longitude: data.driverLocation.longitude });
+        }
+        if (data?.dropOffLocation && typeof data.dropOffLocation.latitude === 'number') {
+          setDestinationCoords({ latitude: data.dropOffLocation.latitude, longitude: data.dropOffLocation.longitude });
+        }
+        if (data?.status) {
+          setRide(prev => prev ? { ...prev, status: data.status } : prev);
+        }
+      });
+      webSocketService.subscribe(`/topic/ride-updates/${ride.id}`, (data) => {
+        if (data?.driverLocation && typeof data.driverLocation.latitude === 'number') {
+          setDriverCoords({ latitude: data.driverLocation.latitude, longitude: data.driverLocation.longitude });
+        }
+        if (data?.dropOffLocation && typeof data.dropOffLocation.latitude === 'number') {
+          setDestinationCoords({ latitude: data.dropOffLocation.latitude, longitude: data.dropOffLocation.longitude });
+        }
+        if (data?.status) {
+          setRide(prev => prev ? { ...prev, status: data.status } : prev);
+        }
+      });
+    };
+    webSocketService.connect(ensureConnect, () => {});
+    return () => {
+      webSocketService.unsubscribe('/user/topic/ride-updates');
+      webSocketService.unsubscribe(`/topic/ride-updates/${ride.id}`);
+    };
+  }, [ride?.id]);
+
+  // When tracking reaches the final 'in-progress' step, mark ride completed
+  useEffect(() => {
+    const finalStepIndex = trackingDataState.length - 1; // index of last step (Completed)
     if (currentStep >= finalStepIndex) {
       // mark all steps as completed locally
       setTrackingDataState(prev => prev.map(step => ({ ...step, completed: true })));
@@ -165,7 +235,7 @@ export default function RideTracking() {
   }, [ride?.status, redirectedToRating, navigate, globalRide?.paid]);
 
   // compute progress percent based on current step vs steps before final completion
-  const totalProgressSteps = Math.max(1, mockTrackingData.length - 1); // avoid divide by zero
+  const totalProgressSteps = Math.max(1, trackingDataState.length - 1); // avoid divide by zero
   const progressPercent = Math.min(100, Math.round((currentStep / totalProgressSteps) * 100));
 
   // Get vehicle icon based on type
@@ -333,12 +403,8 @@ export default function RideTracking() {
                   <Typography variant="h6" className="font-bold text-gray-800 p-4 pb-2">Live Tracking</Typography>
                   <Divider />
                   <MapDisplay 
-                    userLocation={geo && geo.latitude && geo.longitude ? [geo.latitude, geo.longitude] : (location ? [location.latitude, location.longitude] : [12.9716, 77.5946])} 
-                    nearbyRiders={[{
-                      id: 1,
-                      name: ride && ride.driver ? ride.driver.name : 'Driver',
-                      location: geo && geo.latitude && geo.longitude ? [geo.latitude, geo.longitude] : (location ? [location.latitude, location.longitude] : [12.9716, 77.5946])
-                    }]} 
+                    userLocation={currentCoords ? [currentCoords.latitude, currentCoords.longitude] : (geo && geo.latitude && geo.longitude ? [geo.latitude, geo.longitude] : (location ? [location.latitude, location.longitude] : [12.9716, 77.5946]))} 
+                    nearbyRiders={driverCoords ? [{ id: ride?.driver?.id || 1, name: ride?.driver?.name || 'Driver', location: [driverCoords.latitude, driverCoords.longitude] }] : []} 
                   />
                 </CardContent>
               </Card>

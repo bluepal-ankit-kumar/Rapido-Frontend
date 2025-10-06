@@ -86,7 +86,9 @@ const DriverService = {
       const response = await api.get(`/drivers/user/${userId}`);
       return response.data;
     } catch (error) {
-      throw new Error(error.response?.data?.message || 'Failed to fetch driver details');
+      const err = new Error(error.response?.data?.message || 'Failed to fetch driver details');
+      err.status = error.response?.status;
+      throw err;
     }
   },
 };

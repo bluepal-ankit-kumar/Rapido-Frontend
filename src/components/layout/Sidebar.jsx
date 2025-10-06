@@ -44,12 +44,14 @@ const adminLinks = [
 export default function Sidebar({ open, onClose }) {
   const { user, userRole } = useAuth();
   const location = useLocation();
+  // Normalize role from either context.userRole or user.role
+  const normalizedRole = ((userRole || user?.role || '') + '').toUpperCase();
   let links = customerLinks;
   let roleTitle = "Customer";
-  if (userRole === 'rider') {
+  if (normalizedRole === 'RIDER') {
     links = riderLinks;
     roleTitle = "Captain";
-  } else if (userRole === 'admin') {
+  } else if (normalizedRole === 'ADMIN') {
     links = adminLinks;
     roleTitle = "Administrator";
   }

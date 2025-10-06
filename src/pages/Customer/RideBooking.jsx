@@ -5,6 +5,7 @@ import MapDisplay from '../../components/shared/MapDisplay';
 import RiderCard from '../../components/shared/RiderCard';
 import Button from '../../components/common/Button';
 import RideService from '../../services/RideService.js';
+import useAuth from '../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { 
   Paper, 
@@ -39,6 +40,7 @@ import {
 export default function RideBooking() {
   const theme = useTheme();
   const geo = useGeolocation();
+  const { user } = useAuth();
   const [pickup, setPickup] = useState('');
   const [dropoff, setDropoff] = useState('');
   const [selectedType, setSelectedType] = useState('Bike');
@@ -104,9 +106,19 @@ export default function RideBooking() {
       setError('Please enter pickup and dropoff locations');
       return;
     }
+    if (!user?.id) {
+      setError('You must be logged in to book a ride.');
+      return;
+    }
     setLoading(true);
     // Call backend to book ride
-    RideService.bookRide({ pickup, dropoff, vehicleType: selectedType })
+    const rideRequest = {
+      userId: user.id,
+      currentPlaceName: pickup,
+      dropOffPlaceName: dropoff,
+      timestamp: Date.now(),
+    };
+    RideService.bookRide(rideRequest)
       .then((response) => {
         // On success, navigate to ride tracking and show available riders on map
         navigate('/ride-tracking', {

@@ -54,18 +54,31 @@ export default function Dashboard() {
       setLoading(true);
       setError('');
       try {
-        // Fetch driver details using DriverService and correct DTO
+        // Fetch driver details using DriverService and correct DTO shape (ApiResponse)
         const driverRes = await DriverService.getDriverByUserId(user.id);
-        setDriverProfile(driverRes);
+        const profile = driverRes?.data;
+        setDriverProfile(profile);
         // Only fetch ride and earnings data if the driver is fully approved
-        if (driverRes.verificationStatus === 'APPROVED') {
-          const ridesRes = await RideService.getAllRidesForRider(user.id); 
-          const completedRides = ridesRes.data.data.filter(r => r.status === 'COMPLETED');
+        if (profile?.verificationStatus === 'APPROVED') {
+          // Fetch rides using available API; fallback to getAllRides if rider-specific API is unavailable
+          let rides = [];
+          if (typeof RideService.getAllRidesForRider === 'function') {
+            const ridesRes = await RideService.getAllRidesForRider(user.id);
+            const list = ridesRes?.data?.data || ridesRes?.data || ridesRes;
+            rides = Array.isArray(list) ? list : [];
+          } else {
+            const ridesRes = await RideService.getAllRides();
+            const list = ridesRes?.data?.data || ridesRes?.data || ridesRes;
+            rides = Array.isArray(list) ? list : [];
+            // Optional: filter by rider id if present on items
+            rides = rides.filter(r => !r.riderId || r.riderId === user.id);
+          }
+          const completedRides = rides.filter(r => r.status === 'COMPLETED');
           const totalEarnings = completedRides.reduce((sum, ride) => sum + (ride.fare || 0), 0);
           setSummary([
             { title: 'Completed Rides', value: completedRides.length, icon: <TwoWheeler color="primary" /> },
             { title: 'Earnings', value: `₹${totalEarnings.toFixed(2)}`, icon: <CurrencyRupee color="primary" /> },
-            { title: 'Rating', value: `${driverRes.rating?.toFixed(1) || 'N/A'}/5`, icon: <Star color="primary" /> },
+            { title: 'Rating', value: `${profile?.rating?.toFixed(1) || 'N/A'}/5`, icon: <Star color="primary" /> },
           ]);
           setRecentRides(completedRides.slice(0, 5));
         }
@@ -182,9 +195,11 @@ export default function Dashboard() {
                   <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>Current Status</Typography>
                   <Chip icon={<Box className={`w-3 h-3 rounded-full ${online ? 'bg-green-500' : 'bg-gray-400'}`} />} label={online ? 'Online' : 'Offline'} sx={{ mb: 2 }} />
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <LocationOn color="action" />
-                    <Typography color="text.secondary">Current location: {geo.latitude ? `${geo.latitude.toFixed(4)}, ${geo.longitude.toFixed(4)}` : "Unavailable"}</Typography>
-                  </Box>
+                  <LocationOn color="action" />
+                  <Typography color="text.secondary">
+                    Current location: {typeof geo?.latitude === 'number' && typeof geo?.longitude === 'number' ? `${geo.latitude.toFixed(4)}, ${geo.longitude.toFixed(4)}` : "Unavailable"}
+                  </Typography>
+                </Box>
                 </CardContent>
               </Card>
 
