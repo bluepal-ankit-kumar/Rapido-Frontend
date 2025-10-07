@@ -35,8 +35,8 @@ import {
   Share,
   Cancel
 } from '@mui/icons-material';
-// import MapDisplay from '../../components/shared/MapDisplay';
-import GoogleMapDisplay from '../../components/shared/GoogleMapDisplay';
+import MapDisplay from '../../components/shared/MapDisplay';
+// import GoogleMapDisplay from '../../components/shared/GoogleMapDisplay';
 import webSocketService from '../../services/WebSocketService';
 
 import RideService from '../../services/RideService.js';
@@ -379,7 +379,7 @@ export default function RideTracking() {
                 <CardContent className="p-0">
                   <Typography variant="h6" className="font-bold text-gray-800 p-4 pb-2">Live Tracking</Typography>
                   <Divider />
-                  <GoogleMapDisplay 
+                  <MapDisplay 
                     userLocation={currentCoords ? [currentCoords.latitude, currentCoords.longitude] : (geo && geo.latitude && geo.longitude ? [geo.latitude, geo.longitude] : (location ? [location.latitude, location.longitude] : [12.9716, 77.5946]))} 
                     riderLocation={driverCoords ? [driverCoords.latitude, driverCoords.longitude] : (destinationCoords ? [destinationCoords.latitude, destinationCoords.longitude] : null)} 
                     routePoints={(currentCoords && destinationCoords) ? [[currentCoords.latitude, currentCoords.longitude], [destinationCoords.latitude, destinationCoords.longitude]] : []}

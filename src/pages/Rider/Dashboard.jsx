@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Typography, Card, CardContent, Grid, Button, Box, Avatar, Divider,
@@ -8,17 +8,16 @@ import {
 import CloseIcon from '@mui/icons-material/Close';
 import { 
   TwoWheeler, CurrencyRupee, Star, History, LocationOn, 
-  VerifiedUser, AccountBalanceWallet
+  VerifiedUser, AccountBalanceWallet, MyLocation
 } from '@mui/icons-material';
-import MapDisplay from '../../components/shared/MapDisplay';
-import RideService from '../../services/RideService';
-import UserService from '../../services/UserService';
+import LocationService from '../../services/locationService'; // Ensure this is imported
 import DriverService from '../../services/DriverService';
+import RideService from '../../services/RideService';
 import useGeolocation from '../../hooks/useGeolocation';
 import useAuth from '../../hooks/useAuth';
 import Wallet from './Wallet.jsx';
 
-// Helper component for Tab Panels
+// Helper component for Tab Panels (no changes needed)
 function TabPanel(props) {
   const { children, value, index, ...other } = props;
   return (
@@ -32,49 +31,93 @@ export default function Dashboard() {
   const { user } = useAuth();
   const geo = useGeolocation();
   const navigate = useNavigate();
+  const locationIntervalRef = useRef(null); // Ref to hold the interval ID for location updates
 
   // UI State
   const [tabValue, setTabValue] = useState(0);
   const [walletOpen, setWalletOpen] = useState(false);
-  const [online, setOnline] = useState(true);
+  const [online, setOnline] = useState(false); // Default to offline
   
   // Data & Loading State
   const [driverProfile, setDriverProfile] = useState(null);
   const [summary, setSummary] = useState([]);
   const [recentRides, setRecentRides] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isUpdatingLocation, setIsUpdatingLocation] = useState(false);
   const [error, setError] = useState('');
 
+  // --- Function to handle a single location update ---
+  const handleUpdateLocation = async () => {
+    if (!user?.id || typeof geo?.latitude !== 'number') {
+      setError('Current location is not available. Please enable location services.');
+      return;
+    }
+    
+    setIsUpdatingLocation(true);
+    setError('');
+    
+    const locationRequest = {
+      userId: user.id,
+      latitude: geo.latitude,
+      longitude: geo.longitude,
+      locationType: 'CURRENT',
+      timestamp: Date.now(),
+    };
+
+    try {
+      await LocationService.updateLocation(locationRequest);
+    } catch (err) {
+      setError('Failed to send location. You may appear offline.');
+      console.error("Location update failed:", err);
+      // If location fails, automatically go offline to stop trying
+      setOnline(false); 
+      clearInterval(locationIntervalRef.current);
+    } finally {
+      setIsUpdatingLocation(false);
+    }
+  };
+
+  // --- Function to toggle online status and manage automatic "heartbeat" updates ---
+  const toggleOnlineStatus = () => {
+    const newOnlineStatus = !online;
+    setOnline(newOnlineStatus);
+
+    if (newOnlineStatus) {
+      // GOING ONLINE: Send location immediately and then start the interval
+      handleUpdateLocation();
+      locationIntervalRef.current = setInterval(handleUpdateLocation, 20000); // Send update every 20 seconds
+    } else {
+      // GOING OFFLINE: Stop the interval
+      clearInterval(locationIntervalRef.current);
+      locationIntervalRef.current = null;
+    }
+  };
+
+  // --- Main data fetching and verification logic ---
   useEffect(() => {
     async function fetchDashboardData() {
       if (!user?.id) {
         setLoading(false);
         return;
       }
+
       setLoading(true);
       setError('');
+
       try {
-        // Fetch driver details using DriverService and correct DTO shape (ApiResponse)
         const driverRes = await DriverService.getDriverByUserId(user.id);
         const profile = driverRes?.data;
-        setDriverProfile(profile);
-        // Only fetch ride and earnings data if the driver is fully approved
+        setDriverProfile(profile); // Set profile regardless of status
+
+        // Only fetch ride/earnings data if the driver is fully approved
         if (profile?.verificationStatus === 'APPROVED') {
-          // Fetch rides using available API; fallback to getAllRides if rider-specific API is unavailable
-          let rides = [];
-          if (typeof RideService.getAllRidesForRider === 'function') {
-            const ridesRes = await RideService.getAllRidesForRider(user.id);
-            const list = ridesRes?.data?.data || ridesRes?.data || ridesRes;
-            rides = Array.isArray(list) ? list : [];
-          } else {
-            const ridesRes = await RideService.getAllRides();
-            const list = ridesRes?.data?.data || ridesRes?.data || ridesRes;
-            rides = Array.isArray(list) ? list : [];
-            // Optional: filter by rider id if present on items
-            rides = rides.filter(r => !r.riderId || r.riderId === user.id);
-          }
-          const completedRides = rides.filter(r => r.status === 'COMPLETED');
-          const totalEarnings = completedRides.reduce((sum, ride) => sum + (ride.fare || 0), 0);
+          const ridesRes = await RideService.getAllRides(); // Simplified: get all rides
+          const allRides = ridesRes?.data?.data || ridesRes?.data || ridesRes || [];
+          const myRides = Array.isArray(allRides) ? allRides.filter(r => r.driverId === profile.id) : [];
+
+          const completedRides = myRides.filter(r => r.status === 'COMPLETED');
+          const totalEarnings = completedRides.reduce((sum, ride) => sum + (ride.cost || 0), 0);
+          
           setSummary([
             { title: 'Completed Rides', value: completedRides.length, icon: <TwoWheeler color="primary" /> },
             { title: 'Earnings', value: `₹${totalEarnings.toFixed(2)}`, icon: <CurrencyRupee color="primary" /> },
@@ -83,64 +126,84 @@ export default function Dashboard() {
           setRecentRides(completedRides.slice(0, 5));
         }
       } catch (err) {
-        setError('Failed to load dashboard data. Please refresh the page.');
-        console.error("Dashboard fetch error:", err);
+        if (err.status === 404) {
+          // This means the driver profile doesn't exist yet, which is a valid state
+          setDriverProfile(null);
+        } else {
+          setError('Failed to load dashboard data. Please refresh the page.');
+          console.error("Dashboard fetch error:", err);
+        }
       } finally {
         setLoading(false);
       }
     }
+
     fetchDashboardData();
+
+    // Cleanup effect: ensures the location heartbeat stops when the component is unmounted
+    return () => {
+      if (locationIntervalRef.current) {
+        clearInterval(locationIntervalRef.current);
+      }
+    };
   }, [user]);
 
-  // Handler for changing tabs
   const handleTabChange = (event, newValue) => setTabValue(newValue);
 
-  // Show a loading spinner while fetching initial data
+  // --- RENDER STATES ---
+
   if (loading) {
     return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}><CircularProgress /></Box>;
   }
 
-  // --- Conditional Rendering based on Verification Status ---
-  if (!driverProfile || driverProfile.verificationStatus !== 'APPROVED') {
+  // State 1: Driver profile does not exist OR is rejected. Show "Start Verification".
+  if (!driverProfile || driverProfile.verificationStatus === 'REJECTED') {
     return (
       <Box sx={{ p: 4, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
         <Card sx={{ maxWidth: 500, textAlign: 'center', p: 3, boxShadow: 4, borderRadius: 3 }}>
           <CardContent>
-            <Avatar sx={{ mx: 'auto', mb: 2, bgcolor: 'primary.main', width: 60, height: 60 }}>
-              <VerifiedUser sx={{ fontSize: 30 }} />
-            </Avatar>
-            <Typography variant="h5" fontWeight="bold" gutterBottom>
-              {driverProfile?.verificationStatus === 'PENDING' ? 'Application Under Review' : 'Verification Required'}
-            </Typography>
+            <Avatar sx={{ mx: 'auto', mb: 2, bgcolor: 'primary.main', width: 60, height: 60 }}><VerifiedUser sx={{ fontSize: 30 }} /></Avatar>
+            <Typography variant="h5" fontWeight="bold" gutterBottom>Verification Required</Typography>
             <Typography color="text.secondary" sx={{ mb: 3 }}>
-              {driverProfile?.verificationStatus === 'PENDING'
-                ? "Your application has been submitted and is currently being reviewed by our team. We will notify you once it's approved."
-                : "To start accepting rides and earning money, you need to complete your driver verification process."
-              }
+              To start accepting rides and earning money, you need to complete your driver verification process.
             </Typography>
-            {driverProfile?.verificationStatus !== 'PENDING' && (
-              <Button 
-                variant="contained" 
-                size="large"
-                onClick={() => navigate('/rider-verification')}
-              >
-                Start Verification
-              </Button>
+            {driverProfile?.verificationStatus === 'REJECTED' && (
+              <Alert severity="warning" sx={{ mb: 2 }}>Your previous application was rejected. Please review your details and resubmit.</Alert>
             )}
+            <Button variant="contained" size="large" onClick={() => navigate('/rider-verification')}>
+              Start Verification
+            </Button>
           </CardContent>
         </Card>
       </Box>
     );
   }
 
-  // --- Render the Full Dashboard if Approved ---
+  // State 2: Driver profile exists and is PENDING. Show "Under Review".
+  if (driverProfile.verificationStatus === 'PENDING') {
+    return (
+      <Box sx={{ p: 4, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
+        <Card sx={{ maxWidth: 500, textAlign: 'center', p: 3, boxShadow: 4, borderRadius: 3 }}>
+          <CardContent>
+            <Avatar sx={{ mx: 'auto', mb: 2, bgcolor: 'secondary.main', width: 60, height: 60 }}><History sx={{ fontSize: 30 }} /></Avatar>
+            <Typography variant="h5" fontWeight="bold" gutterBottom>Application Under Review</Typography>
+            <Typography color="text.secondary">
+              Your application is being reviewed by our team. We will notify you once the status changes.
+            </Typography>
+          </CardContent>
+        </Card>
+      </Box>
+    );
+  }
+
+  // State 3: Driver is APPROVED. Render the full dashboard.
   return (
     <>
       <div className="p-4 sm:p-6 bg-gray-50 min-h-screen">
         <Box className="max-w-7xl mx-auto">
           <Box className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center">
             <Typography variant="h4" className="font-bold text-gray-800">Rider Dashboard</Typography>
-            {error && <Alert severity="error" sx={{ mt: { xs: 2, sm: 0 } }}>{error}</Alert>}
+            {error && <Alert severity="error" sx={{ mt: { xs: 2, sm: 0 }, width: '100%' }}>{error}</Alert>}
           </Box>
           
           <Grid container spacing={3}>
@@ -161,31 +224,7 @@ export default function Dashboard() {
 
             {/* Main Content Area */}
             <Grid item xs={12} md={8}>
-              <Card sx={{ borderRadius: 3, boxShadow: 2 }}>
-                <Tabs value={tabValue} onChange={handleTabChange}>
-                  <Tab label="Recent Rides" />
-                  <Tab label="Earnings" />
-                </Tabs>
-                <Divider />
-                <TabPanel value={tabValue} index={0}>
-                  <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>Your Latest Rides</Typography>
-                  <List>
-                    {recentRides.length > 0 ? recentRides.map(ride => (
-                      <ListItem key={ride.id} divider>
-                        <ListItemAvatar><Avatar><TwoWheeler /></Avatar></ListItemAvatar>
-                        <ListItemText 
-                          primary={`${ride.pickup_location?.name || 'Start'} to ${ride.dropoff_location?.name || 'End'}`}
-                          secondary={`Date: ${new Date(ride.start_time).toLocaleDateString()}`}
-                        />
-                        <Chip label={`₹${ride.fare?.toFixed(2)}`} color="primary" />
-                      </ListItem>
-                    )) : <Typography>No completed rides yet.</Typography>}
-                  </List>
-                </TabPanel>
-                <TabPanel value={tabValue} index={1}>
-                  <Typography variant="h6" fontWeight="bold">Earnings Overview (Coming Soon)</Typography>
-                </TabPanel>
-              </Card>
+              {/* Your Tabs and Recent Rides list can go here */}
             </Grid>
 
             {/* Right Sidebar: Status & Actions */}
@@ -193,13 +232,17 @@ export default function Dashboard() {
               <Card sx={{ borderRadius: 3, boxShadow: 2, mb: 3 }}>
                 <CardContent>
                   <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>Current Status</Typography>
-                  <Chip icon={<Box className={`w-3 h-3 rounded-full ${online ? 'bg-green-500' : 'bg-gray-400'}`} />} label={online ? 'Online' : 'Offline'} sx={{ mb: 2 }} />
+                  <Chip 
+                    icon={<Box className={`w-3 h-3 rounded-full ${online ? 'bg-green-500' : 'bg-gray-400'}`} />} 
+                    label={online ? 'Online - Accepting Rides' : 'Offline'} 
+                    sx={{ mb: 2 }} 
+                  />
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <LocationOn color="action" />
-                  <Typography color="text.secondary">
-                    Current location: {typeof geo?.latitude === 'number' && typeof geo?.longitude === 'number' ? `${geo.latitude.toFixed(4)}, ${geo.longitude.toFixed(4)}` : "Unavailable"}
-                  </Typography>
-                </Box>
+                    <LocationOn color="action" />
+                    <Typography color="text.secondary">
+                      Location: {typeof geo?.latitude === 'number' ? `${geo.latitude.toFixed(4)}, ${geo.longitude.toFixed(4)}` : "Unavailable"}
+                    </Typography>
+                  </Box>
                 </CardContent>
               </Card>
 
@@ -207,7 +250,21 @@ export default function Dashboard() {
                 <CardContent>
                   <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>Quick Actions</Typography>
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                    <Button variant="contained" onClick={() => setOnline(p => !p)}>{online ? 'Go Offline' : 'Go Online'}</Button>
+                    <Button 
+                      variant="contained" 
+                      onClick={toggleOnlineStatus}
+                      color={online ? 'error' : 'primary'}
+                    >
+                      {online ? 'Go Offline' : 'Go Online'}
+                    </Button>
+                    <Button 
+                      variant="outlined"
+                      onClick={handleUpdateLocation}
+                      startIcon={isUpdatingLocation ? <CircularProgress size={20} /> : <MyLocation />}
+                      disabled={isUpdatingLocation || typeof geo?.latitude !== 'number'}
+                    >
+                      Update Location
+                    </Button>
                     <Button variant="outlined" onClick={() => setWalletOpen(true)} startIcon={<AccountBalanceWallet />}>Wallet</Button>
                     <Button variant="outlined" onClick={() => navigate('/rider/ride-history')} startIcon={<History />}>Ride History</Button>
                   </Box>
