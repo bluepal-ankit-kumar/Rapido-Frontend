@@ -155,7 +155,7 @@ export default function Dashboard() {
                 </CardContent>
               </Card>
             </RouterLink>
-          </Grid>
+          </Grid>  
         ))}
       </Grid>
       {/* Pending Approvals Section */}
