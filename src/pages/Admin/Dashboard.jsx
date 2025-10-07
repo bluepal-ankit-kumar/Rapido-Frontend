@@ -157,7 +157,7 @@ export default function Dashboard() {
             </RouterLink>
           </Grid>  
         ))}
-      </Grid>
+      </Grid>  
       {/* Pending Approvals Section */}
       <Grid container spacing={3} className="mb-6">
         <Grid item xs={12} width="100%">
