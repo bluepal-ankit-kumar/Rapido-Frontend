@@ -48,34 +48,65 @@ const RoutingMachine = ({ routePoints }) => {
   const map = useMap();
 
   useEffect(() => {
-    // FIX for 'removeLayer' error: First, remove any existing routing control.
+    if (!map) return;
+    // Remove any existing routing control safely
     if (map.routingControl) {
-      map.removeControl(map.routingControl);
+      try {
+        map.removeControl(map.routingControl);
+      } catch (e) {
+        // Ignore errors if already removed
+      }
+      map.routingControl = null;
     }
 
     if (!routePoints || routePoints.length < 2) return;
 
     const [pickup, dropoff] = routePoints;
+    // Prevent routing if pickup or dropoff are invalid or identical
+    if (
+      !pickup || !dropoff ||
+      pickup[0] == null || pickup[1] == null ||
+      dropoff[0] == null || dropoff[1] == null ||
+      (pickup[0] === dropoff[0] && pickup[1] === dropoff[1])
+    ) {
+      return;
+    }
+
     const waypoints = [
       L.latLng(pickup[0], pickup[1]),
       L.latLng(dropoff[0], dropoff[1])
     ];
 
-    const routingControl = L.Routing.control({
-      waypoints,
-      routeWhileDragging: false,
-      show: false, // Hide the turn-by-turn instruction panel
-      addWaypoints: false,
-      fitSelectedRoutes: true,
-      lineOptions: {
-        styles: [{ color: '#6366f1', opacity: 0.8, weight: 6 }]
-      },
-      createMarker: () => null, // We use our own markers
-    }).addTo(map);
+    let routingControl;
+    try {
+      routingControl = L.Routing.control({
+        waypoints,
+        routeWhileDragging: false,
+        show: false, // Hide the turn-by-turn instruction panel
+        addWaypoints: false,
+        fitSelectedRoutes: true,
+        lineOptions: {
+          styles: [{ color: '#6366f1', opacity: 0.8, weight: 6 }]
+        },
+        createMarker: () => null, // We use our own markers
+      }).addTo(map);
+      // Store the control instance on the map to allow for removal later
+      map.routingControl = routingControl;
+    } catch (e) {
+      // Defensive: ignore errors from L.Routing.control
+    }
 
-    // Store the control instance on the map to allow for removal later
-    map.routingControl = routingControl;
-
+    // Cleanup function to remove routing control safely
+    return () => {
+      if (map && map.routingControl) {
+        try {
+          map.removeControl(map.routingControl);
+        } catch (e) {
+          // Ignore errors if already removed
+        }
+        map.routingControl = null;
+      }
+    };
   }, [map, routePoints]);
 
   return null;
@@ -85,15 +116,24 @@ const LeafletMapDisplay = ({ userLocation, routePoints }) => {
   const center = userLocation ? [userLocation[0], userLocation[1]] : [17.3850, 78.4867]; // Default to Hyderabad
   const [pickupCoords, dropoffCoords] = routePoints || [];
 
+  // Only show RoutingMachine if both pickup and dropoff are valid and not identical
+  const showRouting =
+    routePoints &&
+    routePoints.length === 2 &&
+    pickupCoords && dropoffCoords &&
+    pickupCoords[0] != null && pickupCoords[1] != null &&
+    dropoffCoords[0] != null && dropoffCoords[1] != null &&
+    !(pickupCoords[0] === dropoffCoords[0] && pickupCoords[1] === dropoffCoords[1]);
+
   return (
     <MapContainer center={center} zoom={12} style={{ height: '250px', width: '100%', borderRadius: '12px' }}>
       <TileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
       />
-      {pickupCoords && <Marker position={pickupCoords}></Marker>}
-      {dropoffCoords && <Marker position={dropoffCoords}></Marker>}
-      {routePoints && routePoints.length === 2 && <RoutingMachine routePoints={routePoints} />}
+      {pickupCoords && pickupCoords[0] != null && pickupCoords[1] != null && <Marker position={pickupCoords}></Marker>}
+      {dropoffCoords && dropoffCoords[0] != null && dropoffCoords[1] != null && <Marker position={dropoffCoords}></Marker>}
+      {showRouting && <RoutingMachine routePoints={routePoints} />}
     </MapContainer>
   );
 };
@@ -124,6 +164,10 @@ export default function RideBooking() {
   
   const [searching, setSearching] = useState({ pickup: false, dropoff: false });
   const [autofilledFromGeo, setAutofilledFromGeo] = useState(false);
+  // New: Track ride assignment state
+  const [rideStatus, setRideStatus] = useState('IDLE'); // IDLE | WAITING | ASSIGNED | FAILED
+  const [assignedDriver, setAssignedDriver] = useState(null);
+  const [rideId, setRideId] = useState(null);
 
   // --- API & Helper Functions ---
 
@@ -255,23 +299,43 @@ export default function RideBooking() {
       };
 
       const response = await RideService.bookRide(rideRequest);
+      console.log('Ride booking response:', response);
       const rideResp = response?.data || response;
-      
-      navigate('/ride-tracking', {
-        state: {
-          pickup,
-          dropoff,
-          vehicleType: selectedType,
-          ride: rideResp,
-        }
-      });
+      if (!rideResp || !rideResp.id) {
+        setError('Ride was not created. Please try again or contact support.');
+        return;
+      }
+      // After booking, navigate customer to ride tracking page
+      navigate('/ride-tracking', { state: { rideId: rideResp.id } });
+      setRideStatus('WAITING');
+      setRideId(rideResp.rideId || rideResp.id);
+      // Optionally, store rideResp for further use
 
     } catch (err) {
+      console.error('Ride booking error:', err);
       setError(err.message || 'Unable to book the ride. Please check locations and try again.');
     } finally {
       setLoading(false);
     }
   };
+
+  // Optionally, poll for ride assignment (pseudo-code, implement as needed)
+  /*
+  useEffect(() => {
+    if (rideStatus === 'WAITING' && rideId) {
+      const interval = setInterval(async () => {
+        // Replace with your actual API call to check ride assignment
+        const statusResp = await RideService.getRideStatus(rideId);
+        if (statusResp.driverAssigned) {
+          setAssignedDriver(statusResp.driver);
+          setRideStatus('ASSIGNED');
+          // Optionally, navigate to ride tracking or update UI
+        }
+      }, 3000);
+      return () => clearInterval(interval);
+    }
+  }, [rideStatus, rideId]);
+  */
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
@@ -368,35 +432,47 @@ export default function RideBooking() {
                 </Box>
 
                 <Box sx={{ mb: 3 }}>
+                  {/* Show route only if both pickup and dropoff are valid and not identical */}
                   <LeafletMapDisplay 
                     userLocation={pickupCoords || (geo?.latitude ? [geo.latitude, geo.longitude] : null)}
-                    routePoints={(pickupCoords && dropoffCoords) ? [pickupCoords, dropoffCoords] : []}
+                    routePoints={(pickupCoords && dropoffCoords && !(pickupCoords[0] === dropoffCoords[0] && pickupCoords[1] === dropoffCoords[1])) ? [pickupCoords, dropoffCoords] : []}
                   />
+                  {/* Optionally, show driver location and route when assigned */}
+                  {rideStatus === 'ASSIGNED' && assignedDriver && assignedDriver.location && (
+                    <LeafletMapDisplay
+                      userLocation={pickupCoords}
+                      routePoints={[pickupCoords, [assignedDriver.location.lat, assignedDriver.location.lng]]}
+                    />
+                  )}
                 </Box>
                 
                  <Box sx={{ mt: 'auto', width: '100%', display: 'flex', justifyContent: 'center' }}>
-                  <Button 
-                    variant="contained" 
-                    fullWidth
-                    size="large"
-                    sx={{ 
-                      background: 'linear-gradient(90deg, #6366f1, #8b5cf6)', 
-                      fontSize: '1rem', 
-                      fontWeight: 600, 
-                      borderRadius: '12px',
-                      boxShadow: '0 10px 15px -3px rgba(99, 102, 241, 0.3)',
-                      '&:hover': { 
-                        background: 'linear-gradient(90deg, #4f46e5, #7c3aed)', 
-                        boxShadow: '0 20px 25px -5px rgba(99, 102, 241, 0.4)' 
-                      }
-                    }} 
-                    onClick={handleBook} 
-                    disabled={loading || !pickup || !dropoff} // Button is enabled as long as text fields are filled
-                    startIcon={loading ? <CircularProgress size={20} color="inherit" /> : null} 
-                    endIcon={!loading ? <ArrowForward /> : null}
-                  >
-                    {loading ? 'Booking...' : 'Confirm Booking'}
-                  </Button>
+                  {rideStatus === 'WAITING' ? (
+                    <Alert severity="info">Waiting for a nearby driver to accept your ride...</Alert>
+                  ) : (
+                    <Button 
+                      variant="contained" 
+                      fullWidth
+                      size="large"
+                      sx={{ 
+                        background: 'linear-gradient(90deg, #6366f1, #8b5cf6)', 
+                        fontSize: '1rem', 
+                        fontWeight: 600, 
+                        borderRadius: '12px',
+                        boxShadow: '0 10px 15px -3px rgba(99, 102, 241, 0.3)',
+                        '&:hover': { 
+                          background: 'linear-gradient(90deg, #4f46e5, #7c3aed)', 
+                          boxShadow: '0 20px 25px -5px rgba(99, 102, 241, 0.4)' 
+                        }
+                      }} 
+                      onClick={handleBook} 
+                      disabled={loading || !pickup || !dropoff} // Button is enabled as long as text fields are filled
+                      startIcon={loading ? <CircularProgress size={20} color="inherit" /> : null} 
+                      endIcon={!loading ? <ArrowForward /> : null}
+                    >
+                      {loading ? 'Booking...' : 'Confirm Booking'}
+                    </Button>
+                  )}
                 </Box>
               </CardContent>
             </Card>

@@ -91,6 +91,16 @@ const DriverService = {
       throw err;
     }
   },
+
+  // Updates the driver's online/offline status. Corresponds to: POST /drivers/status
+  updateDriverStatus: async (status) => {
+    try {
+      const response = await api.post('/drivers/status', { status });
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Failed to update driver status');
+    }
+  },
 };
 
 export default DriverService;

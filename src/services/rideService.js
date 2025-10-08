@@ -48,6 +48,21 @@ const RideService = {
       throw new Error(error.response?.data?.message || 'Failed to fetch rides');
     }
   },
+
+
+  getAllRidesForRider: async (userId) => {
+    try {
+      const response = await api.get(`/rides/rider/${userId}`);
+      return response.data;
+    } catch (error) {
+      const err = new Error(error.response?.data?.message || 'Failed to fetch rider rides');
+      err.status = error.response?.status;
+      throw err;
+    }
+  },
 };
+
+
+
 
 export default RideService;
