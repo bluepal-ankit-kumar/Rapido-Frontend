@@ -185,7 +185,7 @@ export default function RatingPage() {
               <Grid item xs={12} md={7}>
                 <Card className="shadow-md rounded-xl">
                   <CardContent className="p-6">
-                    <Typography variant="h6" className="font-bold text-gray-800 mb-4">Your Ratings</Typography>
+                    <Typography variant="h6" className="font-bold text-gray-800 mb-4">Your Rating</Typography>
                     
                     {ratings.length === 0 ? (
                       <Box className="text-center py-8">

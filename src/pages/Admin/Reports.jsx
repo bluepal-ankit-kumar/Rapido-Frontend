@@ -203,7 +203,7 @@ export default function Reports() {
           Reports & Analytics
         </Typography>
         <Typography variant="body1" className="text-gray-600">
-          Generate and view reports to track performance and make data-driven decisions
+          Generate and view reports to track performance and make data-driven decision
         </Typography>
       </Box>
 
@@ -296,7 +296,7 @@ export default function Reports() {
             <Card className="h-full">
               <CardContent>
                 <Typography variant="h6" className="font-bold text-gray-800 mb-4">
-                  Weekly Ride Trends
+                  Weekly Ride Trend
                 </Typography>
                 {/* Weekly Ride Trends Chart */}
                 <Box className="bg-gray-100 rounded-lg h-full flex items-center justify-center mt-10">

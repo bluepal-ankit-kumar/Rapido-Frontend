@@ -23,7 +23,7 @@ ChartJS.register(
   Legend
 );
 
-// Mock data for weekly ride trends
+// Mock data for weekly ride trend
 export const weeklyTrendsData = {
   labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
   datasets: [

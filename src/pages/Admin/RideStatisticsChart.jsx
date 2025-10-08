@@ -26,7 +26,7 @@ const mockRideStats = {
   datasets: [
     {
       label: 'Completed Rides',
-      data: [50, 75, 60, 90, 120, 80, 100],
+      data: [50, 75, 60, 90, 120, 81, 100],
       borderColor: '#FACC15',
       backgroundColor: 'rgba(250,204,21,0.2)',
       tension: 0.4,

@@ -42,11 +42,11 @@ const initialRequests = [
 const faqs = [
   {
     question: 'How do I book a ride?',
-    answer: 'To book a ride, open the Rapido app, enter your pickup and destination locations, select your preferred vehicle type, and confirm your booking. You can track your ride in real-time through the app.'
+    answer: 'To book a ride, open the Rapido app, enter your pickup and destination location, select your preferred vehicle type, and confirm your booking. You can track your ride in real-time through the app.'
   },
   {
     question: 'What payment methods are accepted?',
-    answer: 'Rapido accepts various payment methods including cash, digital wallets, credit/debit cards, and UPI. You can add or change your payment methods in the app settings.'
+    answer: 'Rapido accepts various payment methods including cash, digital wallet, credit/debit cards, and UPI. You can add or change your payment methods in the app settings.'
   },
   {
     question: 'How do I cancel a ride?',
