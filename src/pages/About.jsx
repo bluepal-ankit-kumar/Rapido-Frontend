@@ -5,12 +5,12 @@ export default function About() {
     <div className="max-w-2xl mx-auto p-8 mt-8 bg-white rounded-xl shadow-md">
       <h1 className="text-3xl font-bold mb-4 text-yellow-400">About Rapido</h1>
       <p className="mb-4 text-gray-700">
-        <strong>Rapido</strong> is a modern ride-hailing platform designed to connect riders and drivers seamlessly. Our mission is to provide safe, affordable, and convenient transportation for everyone, whether you are commuting to work, running errands, or exploring the city.
+        <strong>Rapido</strong> is a cutting-edge ride-hailing platform that effortlessly connects riders with drivers. Our mission is to deliver safe, affordable, and convenient travel experiences for everyone — whether you're commuting, running errands, or exploring your city.
       </p>
       <ul className="mb-4 list-disc pl-6 text-gray-700">
-        <li>🚀 <strong>Fast Booking:</strong> Book a ride in seconds with our user-friendly interface.</li>
-        <li>🛵 <strong>Multiple Ride Options:</strong> Choose from bikes, autos, and more for your journey.</li>
-        <li>📍 <strong>Live Tracking:</strong> Track your ride and driver in real-time on the map.</li>
+        <li>🚀 <strong>Fast Booking:</strong> Book your ride instantly through our simple and intuitive.</li>
+        <li>🛵 <strong>Multiple Ride Options:</strong> Choose from bikes, autos, and more.</li>
+        <li>📍 <strong>Live Tracking:</strong> Track your ride in real time with live map updates.</li>
         <li>⭐ <strong>Ratings & Reviews:</strong> Rate your experience and help us improve our service.</li>
         <li>🔒 <strong>Secure Payments:</strong> Pay easily and securely with multiple payment options.</li>
         <li>👥 <strong>For Riders & Drivers:</strong> Dedicated features and dashboards for both customers and captains.</li>

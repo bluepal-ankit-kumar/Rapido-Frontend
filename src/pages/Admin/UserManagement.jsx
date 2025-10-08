@@ -153,7 +153,7 @@ export default function UserManagement() {
         <Grid item xs={12} sm={6} md={3}>
           <Card className="border-l-4 border-yellow-500">
             <CardContent>
-              <Typography variant="h6" className="text-gray-600">Active Users</Typography>
+              <Typography variant="h6" className="text-gray-600">Active User</Typography>
               <Typography variant="h4" className="font-bold text-yellow-500">{activeUsers}</Typography>
             </CardContent>
           </Card>
