@@ -195,7 +195,7 @@ export default function RatingsReview() {
           Ratings & Reviews
         </Typography>
         <Typography variant="body1" className="text-gray-600">
-          Manage and moderate customer ratings and reviews
+          Manage and moderate customer rating and reviews
         </Typography>
       </Box>
 
@@ -217,7 +217,7 @@ export default function RatingsReview() {
         <Grid item xs={12} sm={6} md={3}>
           <Card className="border-l-4 border-yellow-500">
             <CardContent>
-              <Typography variant="h6" className="text-gray-600">Total Reviews</Typography>
+              <Typography variant="h6" className="text-gray-600">Total Review</Typography>
               <Typography variant="h4" className="font-bold text-yellow-500">
                 {totalRatings}
               </Typography>
@@ -300,7 +300,7 @@ export default function RatingsReview() {
             startIcon={<FilterList />}
             className="whitespace-nowrap"
           >
-            More Filters
+            More Filter
           </Button>
         </Box>
       </Box>
