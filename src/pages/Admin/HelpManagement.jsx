@@ -259,13 +259,13 @@ export default function HelpManagement() {
               <TableRow>
                 <TableCell>ID</TableCell>
                 <TableCell>User</TableCell>
-                <TableCell>Issue</TableCell>
+                <TableCell>Issues</TableCell>
                 <TableCell>Category</TableCell>
                 <TableCell>Priority</TableCell>
                 <TableCell>Status</TableCell>
                 <TableCell>Assigned To</TableCell>
                 <TableCell>Date</TableCell>
-                <TableCell>Actions</TableCell>
+                <TableCell>Action</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
