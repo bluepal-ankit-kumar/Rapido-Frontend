@@ -1,3 +1,4 @@
+// Updated frontend App component with WebSocket subscription for riders
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext.jsx';
@@ -8,6 +9,7 @@ import Footer from './components/layout/Footer.jsx';
 import Sidebar from './components/layout/Sidebar.jsx';
 import useAuth from './hooks/useAuth';
 import Navbar from './components/layout/Navbar.jsx';
+import webSocketService from './services/WebSocketService'; // Import the WebSocketService
 
 // Customer pages
 import HomePage from './pages/Customer/HomePage.jsx';
@@ -65,6 +67,30 @@ function App() {
 
 function AppLayout({ sidebarOpen, setSidebarOpen }) {
   const { user } = useAuth();
+  const navigate = useNavigate();
+
+useEffect(() => {
+  if (user && user.role === 'RIDER') {
+    webSocketService.connect(() => {
+      webSocketService.subscribe(`/user/${user.id}/topic/private-notifications`, (message) => {
+        console.log('Received notification:', message);
+        if (message.title === 'New Ride Request') {
+          const rideId = message.data?.rideId;
+          if (rideId && rideId !== 'undefined' && !isNaN(Number(rideId))) {
+            console.log('Navigating to AcceptRide with rideId:', rideId);
+            navigate(`/rider/accept-ride/${rideId}`);
+          } else {
+            console.error('Invalid or missing rideId in notification:', message);
+          }
+        }
+      });
+    });
+    return () => {
+      webSocketService.disconnect();
+    };
+  }
+}, [user, navigate]);
+
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
       <Header onSidebarToggle={() => setSidebarOpen((open) => !open)} />
@@ -94,7 +120,7 @@ function AppLayout({ sidebarOpen, setSidebarOpen }) {
             <Route path="/reset-password" element={<ResetPassword />} />
             {/* Rider routes */}
             <Route path="/rider/dashboard" element={<RequireAuth><RiderDashboard /></RequireAuth>} />
-            <Route path="/rider/accept-ride" element={<RequireAuth><AcceptRide /></RequireAuth>} />
+            <Route path="/rider/accept-ride/:rideId" element={<RequireAuth><AcceptRide /></RequireAuth>} /> {/* Updated path with :rideId */}
             <Route path="/rider/ride-in-progress" element={<RequireAuth><RideInProgress /></RequireAuth>} />
             <Route path="/rider/ride-to-destination" element={<RequireAuth><RideToDestination /></RequireAuth>} />
             <Route path="/rider/ride-history" element={<RequireAuth><RiderRideHistory /></RequireAuth>} />

@@ -51,15 +51,18 @@ const DriverService = {
   },
 
   // Assigns a ride to a driver or records their acceptance/rejection. Corresponds to: POST /drivers/assign-ride
-  assignRide: async (assignmentRequest) => {
+  assignRide: async ({ rideId, driverId, accepted }) => {
     try {
-      const response = await api.post('/drivers/assign-ride', assignmentRequest);
+      const response = await axios.post(
+        '/rides/assign',
+        { rideId, driverId, accepted },
+        { headers: { Authorization: `Bearer ${localStorage.getItem('jwt')}` } }
+      );
       return response.data;
     } catch (error) {
-      throw new Error(error.response?.data?.message || 'Ride assignment failed');
+      throw new Error(error.response?.data?.message || 'Failed to assign ride');
     }
   },
-
   // Fetches a list of drivers whose applications are pending approval. Corresponds to: GET /drivers/pending
   getPendingDrivers: async () => {
     try {
