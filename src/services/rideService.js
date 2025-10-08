@@ -31,12 +31,12 @@ const RideService = {
 
   getRide: async (rideId) => {
     try {
-      const response = await api.get(`/rides/${rideId}`);
-      return response.data;
+      const response = await axios.get(`/rides/${rideId}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('jwt')}` }
+      });
+      return response.data; // Should return { success: true, message: string, data: RideResponse }
     } catch (error) {
-      const err = new Error(error.response?.data?.message || 'Failed to fetch ride');
-      err.status = error.response?.status;
-      throw err;
+      throw new Error(error.response?.data?.message || 'Failed to fetch ride');
     }
   },
 

@@ -1,95 +1,44 @@
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 
-// WebSocket endpoint is served at server root: /ws
-const WS_ROOT_URL = 'http://localhost:8080';
-
 class WebSocketService {
   constructor() {
-    this.stompClient = null;
-    this.subscriptions = new Map();
+    this.client = null;
   }
 
-  connect(onConnectCallback, onErrorCallback) {
-    if (this.stompClient && this.stompClient.connected) {
-      console.log('STOMP client is already connected.');
-      if (onConnectCallback) onConnectCallback();
-      return;
-    }
-    
-    // Use SockJS as the WebSocket factory
-    const socketFactory = () => new SockJS(`${WS_ROOT_URL}/ws`);
-
-    this.stompClient = new Client({
-      webSocketFactory: socketFactory,
+  connect(callback) {
+    const socket = new SockJS('http://localhost:8080/ws');
+    this.client = new Client({
+      webSocketFactory: () => socket,
       reconnectDelay: 5000,
-      debug: (str) => {
-        console.log('STOMP: ' + str);
-      },
       onConnect: () => {
-        console.log('STOMP client connected');
-        if (onConnectCallback) {
-          onConnectCallback();
-        }
+        console.log('WebSocket connected');
+        callback();
       },
-      onStompError: (frame) => {
-        console.error('Broker reported error: ' + frame.headers['message']);
-        console.error('Additional details: ' + frame.body);
-        if (onErrorCallback) {
-          onErrorCallback(frame);
-        }
+      onStompError: (error) => {
+        console.error('WebSocket error:', error);
       },
     });
+    this.client.activate();
+  }
 
-    this.stompClient.activate();
+  subscribe(destination, callback) {
+    if (this.client && this.client.connected) {
+      this.client.subscribe(destination, (message) => {
+        const parsedMessage = JSON.parse(message.body);
+        callback(parsedMessage);
+      });
+    } else {
+      console.error('Cannot subscribe: WebSocket not connected');
+    }
   }
 
   disconnect() {
-    if (this.stompClient && this.stompClient.connected) {
-      this.stompClient.deactivate();
-      console.log('STOMP client disconnected');
-      this.subscriptions.clear();
-    }
-  }
-
-  subscribe(topic, callback) {
-    if (this.stompClient && this.stompClient.connected) {
-      if (this.subscriptions.has(topic)) {
-        console.warn(`Already subscribed to ${topic}. Unsubscribing before creating new subscription.`);
-        this.subscriptions.get(topic).unsubscribe();
-      }
-      
-      const subscription = this.stompClient.subscribe(topic, (message) => {
-        callback(JSON.parse(message.body));
-      });
-      
-      this.subscriptions.set(topic, subscription);
-      console.log(`Subscribed to ${topic}`);
-    } else {
-      console.error('Cannot subscribe, STOMP client is not connected.');
-    }
-  }
-
-  unsubscribe(topic) {
-    if (this.subscriptions.has(topic)) {
-      this.subscriptions.get(topic).unsubscribe();
-      this.subscriptions.delete(topic);
-      console.log(`Unsubscribed from ${topic}`);
-    }
-  }
-
-  sendMessage(destination, body) {
-    if (this.stompClient && this.stompClient.connected) {
-      this.stompClient.publish({
-        destination: destination,
-        body: JSON.stringify(body),
-      });
-    } else {
-      console.error('Cannot send message, STOMP client is not connected.');
+    if (this.client) {
+      this.client.deactivate();
+      console.log('WebSocket disconnected');
     }
   }
 }
 
-// Export a singleton instance
-const webSocketService = new WebSocketService();
-export default webSocketService;
+export default new WebSocketService();

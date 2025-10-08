@@ -294,12 +294,10 @@
 //   );
 // }
 
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { 
   Typography, 
-  Paper, 
   Button, 
   Box, 
   Grid, 
@@ -309,8 +307,7 @@ import {
   Divider,
   Alert,
   CircularProgress,
-  Avatar,
-  IconButton
+  Avatar
 } from '@mui/material';
 import { 
   Person, 
@@ -318,8 +315,6 @@ import {
   Directions, 
   AccessTime, 
   AttachMoney,
-  Phone,
-  Message,
   Star,
   TwoWheeler,
   LocalTaxi,
@@ -328,11 +323,13 @@ import {
 import MapDisplay from '../../components/shared/MapDisplay';
 import DriverService from '../../services/DriverService';
 import RideService from '../../services/RideService';
+import useAuth from '../../hooks/useAuth';
 
 export default function AcceptRide() {
-  const { rideId: rideIdParam } = useParams(); // Assume rideId from URL or props
-  const rideId = rideIdParam ? rideIdParam.trim() : null; // Trim any whitespace
+  const { rideId: rideIdParam } = useParams();
+  const rideId = rideIdParam ? rideIdParam.trim() : null;
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [ride, setRide] = useState(null);
   const [loading, setLoading] = useState(true);
   const [countdown, setCountdown] = useState(30);
@@ -343,37 +340,50 @@ export default function AcceptRide() {
       if (!rideId || rideId === 'undefined' || isNaN(Number(rideId))) {
         setErrorMessage('Invalid or missing ride ID. Please access this page from a valid ride request.');
         setLoading(false);
-        setRide(null);
         console.error('Invalid rideId provided to fetchRide:', rideId);
         return;
       }
       try {
-        const res = await RideService.getRide(rideId);
-        setRide(res.data);
+        const res = await RideService.getRide(Number(rideId));
+        if (!res.success || !res.data) {
+          throw new Error('Ride data not found in response');
+        }
+        // Verify driver ID matches the logged-in user
+        if (res.data.driverId !== user?.id) {
+          setErrorMessage('Unauthorized: This ride is not assigned to you.');
+          setRide(null);
+        } else {
+          setRide(res.data);
+        }
       } catch (err) {
         setRide(null);
         setErrorMessage('Failed to load ride details. Please try again or check if the ride exists.');
-        console.error("Failed to fetch ride:", err);
+        console.error('Failed to fetch ride:', err.message);
       } finally {
         setLoading(false);
       }
     }
-    fetchRide();
-  }, [rideId]);
+    if (user) {
+      fetchRide();
+    } else {
+      setErrorMessage('You must be logged in to view this ride.');
+      setLoading(false);
+    }
+  }, [rideId, user]);
 
   useEffect(() => {
-    if (countdown > 0) {
+    if (countdown > 0 && !errorMessage) {
       const timer = setTimeout(() => setCountdown(prev => prev - 1), 1000);
       return () => clearTimeout(timer);
-    } else if (countdown === 0 && ride) { // Only auto-reject if ride is loaded
+    } else if (countdown === 0 && ride && !errorMessage) {
       handleReject();
     }
-  }, [countdown, ride]);
+  }, [countdown, ride, errorMessage]);
 
   const handleAccept = async () => {
-    if (!ride || !ride.id || !ride.driverId) {
-      console.error('Invalid ride data for acceptance');
-      setErrorMessage('Cannot accept ride: Invalid or missing ride data.');
+    if (!ride || !ride.id || !ride.driverId || ride.driverId !== user?.id) {
+      console.error('Invalid ride data for acceptance:', { ride, userId: user?.id });
+      setErrorMessage('Cannot accept ride: Invalid or unauthorized ride data.');
       return;
     }
     try {
@@ -381,7 +391,7 @@ export default function AcceptRide() {
       await DriverService.assignRide({ rideId: ride.id, driverId: ride.driverId, accepted: true });
       navigate('/rider/ride-to-destination', { state: { rideId: ride.id } });
     } catch (err) {
-      console.error("Failed to accept ride:", err);
+      console.error('Failed to accept ride:', err);
       setErrorMessage('Failed to accept the ride. Please try again.');
     } finally {
       setLoading(false);
@@ -389,9 +399,9 @@ export default function AcceptRide() {
   };
 
   const handleReject = async () => {
-    if (!ride || !ride.id || !ride.driverId) {
-      console.error('Invalid ride data for rejection');
-      setErrorMessage('Cannot reject ride: Invalid or missing ride data.');
+    if (!ride || !ride.id || !ride.driverId || ride.driverId !== user?.id) {
+      console.error('Invalid ride data for rejection:', { ride, userId: user?.id });
+      setErrorMessage('Cannot reject ride: Invalid or unauthorized ride data.');
       return;
     }
     try {
@@ -399,24 +409,12 @@ export default function AcceptRide() {
       await DriverService.assignRide({ rideId: ride.id, driverId: ride.driverId, accepted: false });
       navigate('/rider/dashboard');
     } catch (err) {
-      console.error("Failed to reject ride:", err);
+      console.error('Failed to reject ride:', err);
       setErrorMessage('Failed to reject the ride. Please try again.');
     } finally {
       setLoading(false);
     }
   };
-
-  if (loading) {
-    return <CircularProgress />;
-  }
-  if (errorMessage) {
-    return <Alert severity="error">{errorMessage}</Alert>;
-  }
-  if (!ride) {
-    return <Alert severity="error">Ride not found or could not be loaded.</Alert>;
-  }
-  // Defensive: check for customer info
-  const customer = ride.customer || {};
 
   const getVehicleIcon = (type) => {
     switch (type) {
@@ -427,10 +425,52 @@ export default function AcceptRide() {
     }
   };
 
+  if (loading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="50vh">
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (errorMessage) {
+    return (
+      <Box maxWidth="600px" mx="auto" mt={4}>
+        <Alert severity="error">{errorMessage}</Alert>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={() => navigate('/rider/dashboard')}
+          sx={{ mt: 2 }}
+        >
+          Back to Dashboard
+        </Button>
+      </Box>
+    );
+  }
+
+  if (!ride) {
+    return (
+      <Box maxWidth="600px" mx="auto" mt={4}>
+        <Alert severity="error">Ride not found or could not be loaded.</Alert>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={() => navigate('/rider/dashboard')}
+          sx={{ mt: 2 }}
+        >
+          Back to Dashboard
+        </Button>
+      </Box>
+    );
+  }
+
+  const customer = ride.customer || {};
+
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
+    <div className="p-6 bg-gray-50 min-h-screen" style={{ marginTop: 'clamp(64px, 8vw, 88px)' }}>
       <div className="max-w-6xl mx-auto">
-        <Box className="mb-8">
+        <Box mb={8}>
           <Typography variant="h4" className="font-bold text-gray-800">New Ride Request</Typography>
           <Typography variant="body1" className="text-gray-600">Accept or reject the ride request within the time limit</Typography>
         </Box>
@@ -442,7 +482,7 @@ export default function AcceptRide() {
                   <Typography variant="h6" className="font-bold text-gray-800">Ride Details</Typography>
                   <Chip label={`${countdown}s`} color={countdown < 10 ? "error" : "primary"} variant="outlined" />
                 </Box>
-                <Box className="mb-4">
+                <Box mb={4}>
                   <Typography variant="body2" className="text-gray-600 mb-2">Customer</Typography>
                   <Box className="flex items-center">
                     <Avatar className="mr-3" src={`https://i.pravatar.cc/150?u=${customer.name || 'user'}`} />
@@ -501,17 +541,39 @@ export default function AcceptRide() {
                   <Typography variant="body2" className="ml-2">{ride.vehicleType || 'N/A'}</Typography>
                 </Box>
                 <Box className="flex gap-4 mt-6">
-                  <Button variant="contained" color="success" onClick={handleAccept} disabled={loading} fullWidth>Accept</Button>
-                  <Button variant="outlined" color="error" onClick={handleReject} disabled={loading} fullWidth>Reject</Button>
+                  <Button
+                    variant="contained"
+                    color="success"
+                    onClick={handleAccept}
+                    disabled={loading}
+                    fullWidth
+                  >
+                    {loading ? <CircularProgress size={20} color="inherit" /> : 'Accept'}
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    onClick={handleReject}
+                    disabled={loading}
+                    fullWidth
+                  >
+                    Reject
+                  </Button>
                 </Box>
               </CardContent>
             </Card>
           </Grid>
           <Grid item xs={12} md={7}>
-            <MapDisplay
-              pickup={ride.startLatitude && ride.startLongitude ? { lat: ride.startLatitude, lng: ride.startLongitude } : null}
-              dropoff={ride.endLatitude && ride.endLongitude ? { lat: ride.endLatitude, lng: ride.endLongitude } : null}
-            />
+            <Card className="shadow-md rounded-xl">
+              <CardContent className="p-0">
+                <Typography variant="h6" className="font-bold text-gray-800 p-4 pb-2">Route Map</Typography>
+                <Divider />
+                <MapDisplay
+                  pickup={ride.startLatitude && ride.startLongitude ? { lat: ride.startLatitude, lng: ride.startLongitude } : null}
+                  dropoff={ride.endLatitude && ride.endLongitude ? { lat: ride.endLatitude, lng: ride.endLongitude } : null}
+                />
+              </CardContent>
+            </Card>
           </Grid>
         </Grid>
       </div>
