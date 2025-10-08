@@ -2,7 +2,7 @@ import useGeolocation from '../../hooks/useGeolocation';
 import React, { useState, useEffect, useRef } from 'react';
 import VehicleTypeSelector from '../../components/common/VehicleTypeSelector';
 import Button from '../../components/common/Button';
-import RideService from '../../services/RideService.js';
+import RideService from '../../services/rideService.js';
 import useAuth from '../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';

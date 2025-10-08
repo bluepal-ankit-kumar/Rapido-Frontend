@@ -344,16 +344,24 @@ export default function AcceptRide() {
         return;
       }
       try {
+        console.log('Fetching ride with ID:', rideId, 'for user:', user?.id);
         const res = await RideService.getRide(Number(rideId));
-        if (!res.success || !res.data) {
+        console.log('Ride service response:', res);
+        const rideData = res.data || res; // Handle both wrapped and direct responses
+        
+        if (!rideData) {
           throw new Error('Ride data not found in response');
         }
+        
+        console.log('Ride data:', rideData);
+        console.log('Driver ID in ride:', rideData.driverId, 'Current user ID:', user?.id);
+        
         // Verify driver ID matches the logged-in user
-        if (res.data.driverId !== user?.id) {
+        if (rideData.driverId !== user?.id) {
           setErrorMessage('Unauthorized: This ride is not assigned to you.');
           setRide(null);
         } else {
-          setRide(res.data);
+          setRide(rideData);
         }
       } catch (err) {
         setRide(null);
@@ -389,7 +397,7 @@ export default function AcceptRide() {
     try {
       setLoading(true);
       await DriverService.assignRide({ rideId: ride.id, driverId: ride.driverId, accepted: true });
-      navigate('/rider/ride-to-destination', { state: { rideId: ride.id } });
+      navigate('/rider/ride-in-progress', { state: { rideId: ride.id } });
     } catch (err) {
       console.error('Failed to accept ride:', err);
       setErrorMessage('Failed to accept the ride. Please try again.');

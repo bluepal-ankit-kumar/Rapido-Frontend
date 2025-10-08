@@ -31,9 +31,7 @@ const RideService = {
 
   getRide: async (rideId) => {
     try {
-      const response = await axios.get(`/rides/${rideId}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('jwt')}` }
-      });
+      const response = await api.get(`/rides/${rideId}`);
       return response.data; // Should return { success: true, message: string, data: RideResponse }
     } catch (error) {
       throw new Error(error.response?.data?.message || 'Failed to fetch ride');

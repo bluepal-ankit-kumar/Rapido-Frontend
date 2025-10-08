@@ -12,7 +12,7 @@
 // } from '@mui/icons-material';
 // import LocationService from '../../services/locationService'; // Ensure this is imported
 // import DriverService from '../../services/DriverService';
-// import RideService from '../../services/RideService';
+// import RideService from '../../services/rideService';
 // import useGeolocation from '../../hooks/useGeolocation';
 // import useAuth from '../../hooks/useAuth';
 // import Wallet from './Wallet.jsx';
@@ -311,7 +311,7 @@ import {
 } from '@mui/icons-material';
 import LocationService from '../../services/locationService';
 import DriverService from '../../services/DriverService';
-import RideService from '../../services/RideService';
+import RideService from '../../services/rideService';
 import useGeolocation from '../../hooks/useGeolocation';
 import useAuth from '../../hooks/useAuth';
 import Wallet from './Wallet.jsx';
@@ -379,12 +379,18 @@ export default function Dashboard() {
     if (newOnlineStatus) {
       await handleUpdateLocation();
       locationIntervalRef.current = setInterval(handleUpdateLocation, 20000);
+      // Update backend status to AVAILABLE
+      try {
+        await DriverService.updateDriverStatus('AVAILABLE');
+      } catch (e) {
+        console.error("Failed to update status to AVAILABLE", e);
+      }
     } else {
       clearInterval(locationIntervalRef.current);
       locationIntervalRef.current = null;
       // Optional: Update backend status to OFFLINE
       try {
-        await DriverService.updateDriverStatus({ status: 'OFFLINE' });
+        await DriverService.updateDriverStatus('OFFLINE');
       } catch (e) {
         console.error("Failed to update status to OFFLINE", e);
       }

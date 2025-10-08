@@ -537,16 +537,23 @@ export default function RideTracking() {
     async function fetchRide() {
       try {
         const res = await RideService.getRide(rideId);
-        const rideData = res.data;
+        const rideData = res.data || res; // Handle both wrapped and direct responses
         setRide(rideData);
+        
+        // Set coordinates with proper fallbacks
+        console.log('Ride data received:', rideData);
+        
         if (rideData.startLatitude && rideData.startLongitude) {
           setCurrentCoords([rideData.startLatitude, rideData.startLongitude]);
+          console.log('Set current coords:', [rideData.startLatitude, rideData.startLongitude]);
         }
         if (rideData.endLatitude && rideData.endLongitude) {
           setDestinationCoords([rideData.endLatitude, rideData.endLongitude]);
+          console.log('Set destination coords:', [rideData.endLatitude, rideData.endLongitude]);
         }
         if (rideData.driverLocation?.latitude && rideData.driverLocation?.longitude) {
           setDriverCoords([rideData.driverLocation.latitude, rideData.driverLocation.longitude]);
+          console.log('Set driver coords:', [rideData.driverLocation.latitude, rideData.driverLocation.longitude]);
         }
       } catch (err) {
         setError('Failed to fetch ride');
@@ -569,7 +576,7 @@ export default function RideTracking() {
     const interval = setInterval(async () => {
       try {
         const res = await RideService.getRide(rideId);
-        const rideData = res.data;
+        const rideData = res.data || res; // Handle both wrapped and direct responses
         setRide(rideData);
         if (rideData.driverLocation?.latitude && rideData.driverLocation?.longitude) {
           setDriverCoords([rideData.driverLocation.latitude, rideData.driverLocation.longitude]);
@@ -616,7 +623,7 @@ export default function RideTracking() {
       handler: (response) => {
         setPaymentProcessing(false);
         setShowPaymentDialog(false);
-        navigate('/costumor/rating-page', { state: { rideId } });
+        navigate('/rating', { state: { rideId } });
       },
       prefill: {
         name: 'Customer',
@@ -651,7 +658,7 @@ export default function RideTracking() {
   const handleCancelRide = async () => {
     try {
       await RideService.updateRideStatus({ rideId, status: 'CANCELLED' });
-      navigate('/costumor/ride-booking');
+      navigate('/ride-booking');
     } catch (e) {
       setError('Failed to cancel ride');
       console.error("Cancel ride error:", e);
@@ -756,6 +763,12 @@ export default function RideTracking() {
                       : [[17.3850, 78.4867], [17.3850, 78.4867]]
                   }
                 />
+                {/* Debug info */}
+                <div className="p-2 text-xs text-gray-500">
+                  <div>Current Coords: {currentCoords ? `${currentCoords[0]}, ${currentCoords[1]}` : 'Not set'}</div>
+                  <div>Destination Coords: {destinationCoords ? `${destinationCoords[0]}, ${destinationCoords[1]}` : 'Not set'}</div>
+                  <div>Driver Coords: {driverCoords ? `${driverCoords[0]}, ${driverCoords[1]}` : 'Not set'}</div>
+                </div>
               </CardContent>
             </Card>
           </Grid>

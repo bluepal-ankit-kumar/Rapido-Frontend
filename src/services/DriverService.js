@@ -53,11 +53,7 @@ const DriverService = {
   // Assigns a ride to a driver or records their acceptance/rejection. Corresponds to: POST /drivers/assign-ride
   assignRide: async ({ rideId, driverId, accepted }) => {
     try {
-      const response = await axios.post(
-        '/rides/assign',
-        { rideId, driverId, accepted },
-        { headers: { Authorization: `Bearer ${localStorage.getItem('jwt')}` } }
-      );
+      const response = await api.post('/rides/assign', { rideId, driverId, accepted });
       return response.data;
     } catch (error) {
       throw new Error(error.response?.data?.message || 'Failed to assign ride');
@@ -98,9 +94,18 @@ const DriverService = {
   // Updates the driver's online/offline status. Corresponds to: POST /drivers/status
   updateDriverStatus: async (status) => {
     try {
-      const response = await api.post('/drivers/status', { status });
+      // Validate and normalize status
+      if (typeof status !== 'string') {
+        throw new Error('Status must be a string (AVAILABLE or OFFLINE)');
+      }
+      const normalizedStatus = status.toUpperCase();
+      if (!['AVAILABLE', 'OFFLINE'].includes(normalizedStatus)) {
+        throw new Error('Status must be either AVAILABLE or OFFLINE');
+      }
+      const response = await api.post('/drivers/status', { status: normalizedStatus });
       return response.data;
     } catch (error) {
+      console.error('Failed to update driver status:', error);
       throw new Error(error.response?.data?.message || 'Failed to update driver status');
     }
   },

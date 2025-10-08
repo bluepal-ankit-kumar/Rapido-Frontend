@@ -1,182 +1,57 @@
-// import React, { useEffect, useState, useRef } from 'react';
-// import { useLocation, useNavigate } from 'react-router-dom';
-// import MapDisplay from '../../components/shared/MapDisplay';
-// import { 
-//   Typography, 
-//   Card, 
-//   CardContent, 
-//   Avatar, 
-//   LinearProgress, 
-//   Divider,
-//   Box,
-//   Button
-// } from '@mui/material';
-// import { Person, Star } from '@mui/icons-material';
-// import { useGlobalStore } from '../../context/GlobalStore.jsx';
-
-// export default function RideToDestination() {
-//   const location = useLocation();
-//   const navigate = useNavigate();
-//   const { rideId } = location.state || {};
-//   const { getRide, updateProgress, completeRide } = useGlobalStore();
-//   const ride = getRide(rideId);
-//   const [localProgress, setLocalProgress] = useState(ride ? ride.progress : 0);
-//   const timerRef = useRef(null);
-
-//   useEffect(() => {
-//     if (!ride) {
-//       navigate('/rider/dashboard');
-//       return;
-//     }
-//     // simulate progress increasing every 2s
-//     timerRef.current = setInterval(() => {
-//       setLocalProgress(prev => {
-//         const next = Math.min(100, prev + Math.floor(Math.random() * 10) + 5);
-//         updateProgress(rideId, next);
-//         return next;
-//       });
-//     }, 2000);
-
-//     return () => clearInterval(timerRef.current);
-//   }, []);
-
-//   useEffect(() => {
-//     if (localProgress >= 100) {
-//       clearInterval(timerRef.current);
-//     }
-//   }, [localProgress]);
-
-//   const handleReachedDestination = () => {
-//     completeRide(rideId);
-//     alert(`Ride completed. You earned ₹${ride.fare}. Amount added to your wallet.`);
-//     navigate('/rider/dashboard');
-//   };
-
-//   if (!ride) return null;
-
-//   const routePoints = [
-//     ride.driver.location,
-//     ride.customer.location
-//   ];
-
-//   const etaEstimate = Math.max(1, Math.round((100 - localProgress) / 10) * 2);
-
-//   return (
-//     <div className="p-6 max-w-3xl mx-auto">
-//       <Typography variant="h4" fontWeight="bold" gutterBottom>
-//         Heading to Destination
-//       </Typography>
-
-//       <Card elevation={3} className="mb-6">
-//         <CardContent className="p-0">
-//           <div className="w-full h-80 rounded-xl overflow-hidden">
-//             <MapDisplay
-//               userLocation={ride.customer.location}
-//               nearbyRiders={[
-//                 { id: ride.driver.name, name: ride.driver.name, location: ride.driver.location, distance: '---', eta: '---' }
-//               ]}
-//               routePoints={routePoints}
-//               riderLocation={ride.driver.location}
-//             />
-//           </div>
-//         </CardContent>
-//       </Card>
-
-//       <Card elevation={2} className="mb-6">
-//         <CardContent className="p-4">
-//           <Box className="mb-3">
-//             <Typography variant="h6">Trip Progress</Typography>
-//             <LinearProgress variant="determinate" value={localProgress} className="h-3 my-2" />
-//             <Box className="flex justify-between">
-//               <Typography variant="caption">{localProgress}% completed</Typography>
-//               <Typography variant="caption">ETA: {etaEstimate} min</Typography>
-//             </Box>
-//           </Box>
-
-//           <Divider className="my-3" />
-
-//           <Box className="flex items-center mb-3">
-//             <Avatar className="bg-blue-100 text-blue-600 mr-3">
-//               <Person />
-//             </Avatar>
-//             <Box>
-//               <Typography variant="subtitle1">{ride.driver.name}</Typography>
-//               <Box className="flex items-center">
-//                 <Star className="text-yellow-500 mr-1" fontSize="small" />
-//                 <Typography variant="body2">{ride.driver.rating}</Typography>
-//               </Box>
-//             </Box>
-//           </Box>
-
-//           <Box className="mb-3">
-//             <Typography variant="subtitle1">Estimated Fare</Typography>
-//             <Typography variant="h6">₹{ride.fare}</Typography>
-//           </Box>
-
-//           <Box className="flex justify-end">
-//             <Button variant="contained" color="success" onClick={handleReachedDestination}>
-//               Reached Destination
-//             </Button>
-//           </Box>
-//         </CardContent>
-//       </Card>
-//     </div>
-//   );
-// }
-
-
-
-import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, useLocation as useRouterLocation } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { 
-  Typography, Card, CardContent, Grid, Button, Box, Avatar, Divider,
-  Chip, List, ListItem, ListItemText, ListItemAvatar, Tabs, Tab, Dialog,
-  DialogTitle, DialogContent, IconButton, CircularProgress, Alert
+  Typography, 
+  Card, 
+  CardContent, 
+  Avatar, 
+  LinearProgress, 
+  Divider,
+  Box,
+  Button,
+  Chip,
+  Alert
 } from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
 import { 
-  TwoWheeler, CurrencyRupee, Star, History, LocationOn, 
-  VerifiedUser, AccountBalanceWallet, MyLocation
+  Person, 
+  Star, 
+  LocationOn, 
+  Directions,
+  Phone,
+  Message,
+  Navigation
 } from '@mui/icons-material';
-import LocationService from '../../services/locationService';
-import DriverService from '../../services/DriverService';
-import RideService from '../../services/RideService';
-import useGeolocation from '../../hooks/useGeolocation';
+import MapDisplay from '../../components/shared/MapDisplay';
+import RideService from '../../services/rideService';
 import useAuth from '../../hooks/useAuth';
 
-const RideToDestination = () => {
-  const routerLocation = useRouterLocation();
+export default function RideToDestination() {
+  const location = useLocation();
   const navigate = useNavigate();
-  const { rideId } = routerLocation.state || {};
   const { user } = useAuth();
-  const geo = useGeolocation();
-
+  const { rideId } = location.state || {};
   const [ride, setRide] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [pickupCoords, setPickupCoords] = useState(null);
-  const [dropoffCoords, setDropoffCoords] = useState(null);
-  const [driverCoords, setDriverCoords] = useState(null);
-  const [eta, setEta] = useState('');
-  const [distance, setDistance] = useState('');
+  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
     async function fetchRide() {
+      if (!rideId) {
+        setError('No ride ID provided');
+        setLoading(false);
+        return;
+      }
       try {
         const res = await RideService.getRide(rideId);
-        const data = res.data;
-        setRide(data);
-        if (data.pickupLocation) {
-          setPickupCoords([data.pickupLocation.latitude, data.pickupLocation.longitude]);
-        }
-        if (data.dropOffLocation) {
-          setDropoffCoords([data.dropOffLocation.latitude, data.dropOffLocation.longitude]);
-        }
-        if (data.driverLocation) {
-          setDriverCoords([data.driverLocation.latitude, data.driverLocation.longitude]);
-        }
+        const rideData = res.data || res;
+        setRide(rideData);
+        
+        // Update ride status to IN_PROGRESS
+        await RideService.updateRideStatus({ rideId, status: 'IN_PROGRESS' });
       } catch (err) {
-        setError('Failed to fetch ride details');
+        setError('Failed to load ride details');
+        console.error('Failed to fetch ride:', err);
       } finally {
         setLoading(false);
       }
@@ -185,120 +60,217 @@ const RideToDestination = () => {
   }, [rideId]);
 
   useEffect(() => {
-    if (geo && ride) {
-      const updateLocation = async () => {
-        try {
-          await LocationService.updateLocation({
-            userId: user.id,
-            rideId: ride.id,
-            latitude: geo.latitude,
-            longitude: geo.longitude,
-            locationType: 'CURRENT',
-            timestamp: Date.now(),
-          });
-          setDriverCoords([geo.latitude, geo.longitude]);
-        } catch (e) {
-          console.error("Location update failed", e);
-        }
-      };
-      updateLocation();
-      const interval = setInterval(updateLocation, 20000); // Every 20 seconds
+    if (ride) {
+      // Simulate progress
+      const interval = setInterval(() => {
+        setProgress(prev => {
+          const next = Math.min(100, prev + Math.floor(Math.random() * 5) + 2);
+          if (next >= 100) {
+            clearInterval(interval);
+          }
+          return next;
+        });
+      }, 2000);
+
       return () => clearInterval(interval);
     }
-  }, [geo, ride, user.id]);
-
-  useEffect(() => {
-    if (driverCoords && dropoffCoords) {
-      const km = haversineKm(driverCoords, dropoffCoords);
-      setDistance(`${km.toFixed(1)} km`);
-      const minutes = Math.max(1, Math.round((km / 25) * 60));
-      setEta(`${minutes} min`);
-    }
-  }, [driverCoords, dropoffCoords]);
-
-  const haversineKm = (a, b) => {
-    const toRad = (deg) => deg * Math.PI / 180;
-    const R = 6371; // km
-    const dLat = toRad(b[0] - a[0]);
-    const dLon = toRad(b[1] - a[1]);
-    const lat1 = toRad(a[0]);
-    const lat2 = toRad(b[0]);
-    const h = Math.sin(dLat/2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon/2) ** 2;
-    return 2 * R * Math.asin(Math.sqrt(h));
-  };
+  }, [ride]);
 
   const handleReachedDestination = async () => {
     try {
-      await RideService.updateRideStatus({ rideId: ride.id, status: 'COMPLETED' });
-      alert(`Ride completed. You earned ₹${ride.cost}. Amount added to your wallet.`);
+      await RideService.updateRideStatus({ rideId, status: 'COMPLETED' });
       navigate('/rider/dashboard');
-    } catch (e) {
+    } catch (err) {
       setError('Failed to complete ride');
+      console.error('Failed to complete ride:', err);
     }
   };
 
-  if (loading) return <CircularProgress />;
-  if (error) return <Alert severity="error">{error}</Alert>;
-  if (!ride) return <Typography>No ride found</Typography>;
+  const handleCancelRide = async () => {
+    try {
+      await RideService.updateRideStatus({ rideId, status: 'CANCELLED' });
+      navigate('/rider/dashboard');
+    } catch (err) {
+      setError('Failed to cancel ride');
+      console.error('Failed to cancel ride:', err);
+    }
+  };
+
+  if (loading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="50vh">
+        <Typography>Loading ride details...</Typography>
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box maxWidth="600px" mx="auto" mt={4}>
+        <Alert severity="error">{error}</Alert>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={() => navigate('/rider/dashboard')}
+          sx={{ mt: 2 }}
+        >
+          Back to Dashboard
+        </Button>
+      </Box>
+    );
+  }
+
+  if (!ride) {
+    return (
+      <Box maxWidth="600px" mx="auto" mt={4}>
+        <Alert severity="error">Ride not found</Alert>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={() => navigate('/rider/dashboard')}
+          sx={{ mt: 2 }}
+        >
+          Back to Dashboard
+        </Button>
+      </Box>
+    );
+  }
+
+  const customer = ride.customer || {};
 
   return (
-    <div className="p-6 max-w-3xl mx-auto">
-      <Typography variant="h4" fontWeight="bold" gutterBottom>
-        Heading to Destination
-      </Typography>
+    <div className="p-6 bg-gray-50 min-h-screen" style={{ marginTop: 'clamp(64px, 8vw, 88px)' }}>
+      <div className="max-w-6xl mx-auto">
+        <Box mb={4}>
+          <Typography variant="h4" className="font-bold text-gray-800">Ride in Progress</Typography>
+          <Typography variant="body1" className="text-gray-600">Taking customer to destination</Typography>
+        </Box>
 
-      <Card elevation={3} className="mb-6">
-        <CardContent className="p-0">
-          <div className="w-full h-80 rounded-xl overflow-hidden">
-            <MapDisplay 
-              userLocation={pickupCoords}
-              riderLocation={driverCoords}
-              routePoints={[pickupCoords, dropoffCoords]}
-            />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Left Column - Customer Info and Progress */}
+          <div className="space-y-6">
+            <Card className="shadow-md rounded-xl">
+              <CardContent className="p-6">
+                <Typography variant="h6" className="font-bold text-gray-800 mb-4">Customer Information</Typography>
+                
+                <Box className="flex items-center mb-4">
+                  <Avatar className="mr-4" src={`https://i.pravatar.cc/150?u=${customer.name || 'user'}`} />
+                  <Box>
+                    <Typography variant="h6" className="font-medium">{customer.name || 'N/A'}</Typography>
+                    <Box className="flex items-center">
+                      <Star className="text-yellow-500 mr-1" fontSize="small" />
+                      <Typography variant="body2">{customer.rating || 'N/A'}</Typography>
+                    </Box>
+                  </Box>
+                </Box>
+                
+                <Divider className="my-4" />
+                
+                <Box className="space-y-3">
+                  <Box className="flex items-center">
+                    <LocationOn className="text-gray-500 mr-3" />
+                    <Box>
+                      <Typography variant="body2" className="text-gray-600">Pickup</Typography>
+                      <Typography variant="h6" className="font-medium">{ride.currentPlaceName || 'N/A'}</Typography>
+                    </Box>
+                  </Box>
+                  
+                  <Box className="flex items-center">
+                    <Directions className="text-gray-500 mr-3" />
+                    <Box>
+                      <Typography variant="body2" className="text-gray-600">Destination</Typography>
+                      <Typography variant="h6" className="font-medium">{ride.dropOffPlaceName || 'N/A'}</Typography>
+                    </Box>
+                  </Box>
+                </Box>
+                
+                <Divider className="my-4" />
+                
+                <Box className="flex gap-2">
+                  <Button 
+                    variant="outlined" 
+                    startIcon={<Phone />}
+                    className="flex-1"
+                    disabled={!customer.phone}
+                    onClick={() => window.location.href = `tel:${customer.phone}`}
+                  >
+                    Call
+                  </Button>
+                  <Button 
+                    variant="outlined" 
+                    startIcon={<Message />}
+                    className="flex-1"
+                    disabled={!customer.phone}
+                    onClick={() => window.location.href = `sms:${customer.phone}`}
+                  >
+                    Message
+                  </Button>
+                </Box>
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-md rounded-xl">
+              <CardContent className="p-6">
+                <Typography variant="h6" className="font-bold text-gray-800 mb-4">Ride Progress</Typography>
+                
+                <Box className="mb-4">
+                  <Box className="flex justify-between items-center mb-2">
+                    <Typography variant="body2" className="text-gray-600">Trip Progress</Typography>
+                    <Chip label={`${progress}%`} color="primary" size="small" />
+                  </Box>
+                  <LinearProgress 
+                    variant="determinate" 
+                    value={progress} 
+                    className="h-3 rounded-lg"
+                  />
+                </Box>
+                
+                <Box className="space-y-2">
+                  <Typography variant="body2" className="text-gray-600">Fare: ₹{ride.cost || 'N/A'}</Typography>
+                  <Typography variant="body2" className="text-gray-600">Distance: {ride.distance || 'N/A'} km</Typography>
+                  <Typography variant="body2" className="text-gray-600">Vehicle: {ride.vehicleType || 'N/A'}</Typography>
+                </Box>
+                
+                <Divider className="my-4" />
+                
+                <Box className="flex gap-2">
+                  <Button 
+                    variant="contained" 
+                    color="success"
+                    onClick={handleReachedDestination}
+                    disabled={progress < 100}
+                    className="flex-1"
+                  >
+                    {progress >= 100 ? 'Complete Ride' : 'In Progress...'}
+                  </Button>
+                  <Button 
+                    variant="outlined" 
+                    color="error"
+                    onClick={handleCancelRide}
+                    className="flex-1"
+                  >
+                    Cancel Ride
+                  </Button>
+                </Box>
+              </CardContent>
+            </Card>
           </div>
-        </CardContent>
-      </Card>
 
-      <Card elevation={2} className="mb-6">
-        <CardContent className="p-4">
-          <Box className="mb-3">
-            <Typography variant="h6">Trip Progress</Typography>
-            <LinearProgress variant="determinate" value={ride.progress} className="h-3 my-2" />
-            <Box className="flex justify-between">
-              <Typography variant="caption">{ride.progress}% completed</Typography>
-              <Typography variant="caption">ETA: {eta}</Typography>
-            </Box>
-          </Box>
-
-          <Divider className="my-3" />
-
-          <Box className="flex items-center mb-3">
-            <Avatar className="bg-blue-100 text-blue-600 mr-3">
-              <Person />
-            </Avatar>
-            <Box>
-              <Typography variant="subtitle1">{ride.driver.name}</Typography>
-              <Box className="flex items-center">
-                <Star className="text-yellow-500 mr-1" fontSize="small" />
-                <Typography variant="body2">{ride.driver.rating}</Typography>
-              </Box>
-            </Box>
-          </Box>
-
-          <Box className="mb-3">
-            <Typography variant="subtitle1">Estimated Fare</Typography>
-            <Typography variant="h6">₹{ride.cost}</Typography>
-          </Box>
-
-          <Box className="flex justify-end">
-            <Button variant="contained" color="success" onClick={handleReachedDestination}>
-              Reached Destination
-            </Button>
-          </Box>
-        </CardContent>
-      </Card>
+          {/* Right Column - Map */}
+          <div>
+            <Card className="shadow-md rounded-xl">
+              <CardContent className="p-0">
+                <Typography variant="h6" className="font-bold text-gray-800 p-4 pb-2">Route Map</Typography>
+                <Divider />
+                <MapDisplay
+                  pickup={ride.startLatitude && ride.startLongitude ? { lat: ride.startLatitude, lng: ride.startLongitude } : null}
+                  dropoff={ride.endLatitude && ride.endLongitude ? { lat: ride.endLatitude, lng: ride.endLongitude } : null}
+                />
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
     </div>
   );
-};
-
-export default RideToDestination;
+}
