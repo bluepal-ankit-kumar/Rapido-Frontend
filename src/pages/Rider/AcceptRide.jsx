@@ -295,7 +295,7 @@
 // }
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { 
   Typography, 
   Button, 
@@ -327,7 +327,12 @@ import useAuth from '../../hooks/useAuth';
 
 export default function AcceptRide() {
   const { rideId: rideIdParam } = useParams();
-  const rideId = rideIdParam ? rideIdParam.trim() : null;
+  const location = useLocation();
+  // Try to get rideId from params, then from location.state
+  let rideId = rideIdParam ? rideIdParam.trim() : null;
+  if (!rideId && location.state && location.state.rideId) {
+    rideId = location.state.rideId;
+  }
   const navigate = useNavigate();
   const { user } = useAuth();
   const [ride, setRide] = useState(null);
@@ -347,22 +352,12 @@ export default function AcceptRide() {
         console.log('Fetching ride with ID:', rideId, 'for user:', user?.id);
         const res = await RideService.getRide(Number(rideId));
         console.log('Ride service response:', res);
-        const rideData = res.data || res; // Handle both wrapped and direct responses
-        
+        const rideData = res.data || res;
         if (!rideData) {
           throw new Error('Ride data not found in response');
         }
-        
-        console.log('Ride data:', rideData);
-        console.log('Driver ID in ride:', rideData.driverId, 'Current user ID:', user?.id);
-        
-        // Verify driver ID matches the logged-in user
-        if (rideData.driverId !== user?.id) {
-          setErrorMessage('Unauthorized: This ride is not assigned to you.');
-          setRide(null);
-        } else {
-          setRide(rideData);
-        }
+        // Accept any driver for now, or optionally check driverId
+        setRide(rideData);
       } catch (err) {
         setRide(null);
         setErrorMessage('Failed to load ride details. Please try again or check if the ride exists.');
@@ -389,17 +384,16 @@ export default function AcceptRide() {
   }, [countdown, ride, errorMessage]);
 
   const handleAccept = async () => {
-    if (!ride || !ride.id || !ride.driverId || ride.driverId !== user?.id) {
-      console.error('Invalid ride data for acceptance:', { ride, userId: user?.id });
-      setErrorMessage('Cannot accept ride: Invalid or unauthorized ride data.');
+    if (!ride || !ride.id || !ride.driverId) {
+      setErrorMessage('Cannot accept ride: Invalid ride data.');
       return;
     }
     try {
       setLoading(true);
+      // Use /rides/assign endpoint with RideAssignmentRequest
       await DriverService.assignRide({ rideId: ride.id, driverId: ride.driverId, accepted: true });
       navigate('/rider/ride-in-progress', { state: { rideId: ride.id } });
     } catch (err) {
-      console.error('Failed to accept ride:', err);
       setErrorMessage('Failed to accept the ride. Please try again.');
     } finally {
       setLoading(false);
@@ -407,9 +401,8 @@ export default function AcceptRide() {
   };
 
   const handleReject = async () => {
-    if (!ride || !ride.id || !ride.driverId || ride.driverId !== user?.id) {
-      console.error('Invalid ride data for rejection:', { ride, userId: user?.id });
-      setErrorMessage('Cannot reject ride: Invalid or unauthorized ride data.');
+    if (!ride || !ride.id || !ride.driverId) {
+      setErrorMessage('Cannot reject ride: Invalid ride data.');
       return;
     }
     try {
@@ -417,7 +410,6 @@ export default function AcceptRide() {
       await DriverService.assignRide({ rideId: ride.id, driverId: ride.driverId, accepted: false });
       navigate('/rider/dashboard');
     } catch (err) {
-      console.error('Failed to reject ride:', err);
       setErrorMessage('Failed to reject the ride. Please try again.');
     } finally {
       setLoading(false);

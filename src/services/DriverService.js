@@ -52,8 +52,19 @@ const DriverService = {
 
   // Assigns a ride to a driver or records their acceptance/rejection. Corresponds to: POST /drivers/assign-ride
   assignRide: async ({ rideId, driverId, accepted }) => {
+    // Extra validation and logging for rideId
+    if (!rideId || rideId === 'undefined' || isNaN(Number(rideId))) {
+      console.error('assignRide called with invalid rideId:', rideId);
+      throw new Error('Invalid rideId provided to assignRide');
+    }
+    if (!driverId || driverId === 'undefined' || isNaN(Number(driverId))) {
+      console.error('assignRide called with invalid driverId:', driverId);
+      throw new Error('Invalid driverId provided to assignRide');
+    }
+    const payload = { rideId: Number(rideId), driverId: Number(driverId), accepted };
+    console.log('assignRide payload:', payload);
     try {
-      const response = await api.post('/rides/assign', { rideId, driverId, accepted });
+      const response = await api.post('/rides/assign', payload);
       return response.data;
     } catch (error) {
       throw new Error(error.response?.data?.message || 'Failed to assign ride');
@@ -82,7 +93,7 @@ const DriverService = {
   // Fetches driver details for a given userId. Corresponds to: GET /drivers/user/{userId}
   getDriverByUserId: async (userId) => {
     try {
-      const response = await api.get(`/drivers/user/${userId}`);
+      const response = await api.get(`/drivers/${userId}`);
       return response.data;
     } catch (error) {
       const err = new Error(error.response?.data?.message || 'Failed to fetch driver details');

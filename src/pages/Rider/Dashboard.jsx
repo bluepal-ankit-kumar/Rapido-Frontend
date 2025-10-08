@@ -311,7 +311,7 @@ import {
 } from '@mui/icons-material';
 import LocationService from '../../services/locationService';
 import DriverService from '../../services/DriverService';
-import RideService from '../../services/rideService';
+import RideService from '../../services/RideService';
 import useGeolocation from '../../hooks/useGeolocation';
 import useAuth from '../../hooks/useAuth';
 import Wallet from './Wallet.jsx';
@@ -430,17 +430,12 @@ export default function Dashboard() {
             ]);
             setRecentRides(completedRides.slice(0, 5));
           } else {
+            // Fetch all rides for this rider
             const ridesRes = await RideService.getAllRidesForRider(user.id);
-            // Use correct property for completedRides array
-            let completedRides = [];
-            if (Array.isArray(ridesRes)) {
-              completedRides = ridesRes.filter(r => r.status === 'COMPLETED');
-            } else if (Array.isArray(ridesRes.data)) {
-              completedRides = ridesRes.data.filter(r => r.status === 'COMPLETED');
-            } else if (Array.isArray(ridesRes.data?.data)) {
-              completedRides = ridesRes.data.data.filter(r => r.status === 'COMPLETED');
-            }
-            const totalEarnings = completedRides.reduce((sum, ride) => sum + (ride.fare || 0), 0);
+            // ridesRes should be { success, message, data: [rides] }
+            const ridesArr = Array.isArray(ridesRes.data) ? ridesRes.data : (Array.isArray(ridesRes.data?.data) ? ridesRes.data.data : []);
+            const completedRides = ridesArr.filter(r => r.status === 'COMPLETED');
+            const totalEarnings = completedRides.reduce((sum, ride) => sum + (ride.cost || ride.fare || 0), 0);
             setSummary([
               { title: 'Completed Rides', value: completedRides.length, icon: <TwoWheeler color="primary" /> },
               { title: 'Earnings', value: `₹${totalEarnings.toFixed(2)}`, icon: <CurrencyRupee color="primary" /> },
@@ -547,7 +542,7 @@ export default function Dashboard() {
             <TabPanel value={tabValue} index={0}>
               <List>
                 {recentRides.map((ride, index) => (
-                  <ListItem key={ride.id} divider={index < recentRides.length - 1}>
+                  <ListItem key={ride.id || index} divider={index < recentRides.length - 1}>
                     <ListItemAvatar>
                       <Avatar sx={{ bgcolor: 'primary.light' }}>
                         <LocationOn />
@@ -555,9 +550,15 @@ export default function Dashboard() {
                     </ListItemAvatar>
                     <ListItemText 
                       primary={`Ride #${ride.id}`}
-                      secondary={`${ride.startLatitude}, ${ride.startLongitude} to ${ride.endLatitude}, ${ride.endLongitude}`}
+                      secondary={
+                        ride.startLatitude && ride.startLongitude && ride.endLatitude && ride.endLongitude
+                          ? `${ride.startLatitude}, ${ride.startLongitude} to ${ride.endLatitude}, ${ride.endLongitude}`
+                          : ride.pickupLocation && ride.dropLocation
+                            ? `${ride.pickupLocation} to ${ride.dropLocation}`
+                            : 'Location info unavailable'
+                      }
                     />
-                    <Chip label={`₹${ride.cost}`} color="success" />
+                    <Chip label={`₹${ride.cost || ride.fare || 0}`} color="success" />
                   </ListItem>
                 ))}
                 {recentRides.length === 0 && <Typography color="text.secondary">No recent rides</Typography>}
