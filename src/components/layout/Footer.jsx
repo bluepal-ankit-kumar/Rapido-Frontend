@@ -89,11 +89,7 @@ export default function Footer({ sidebarOpen }) {
           <div className="text-gray-500 text-sm mb-4 md:mb-0">
             © {new Date().getFullYear()} Rapido. All rights reserved.
           </div>
-          <div className="flex flex-wrap justify-center gap-4 text-sm">
-            <Link to="/privacy-policy" className="text-gray-500 hover:text-yellow-400 transition-colors">Privacy Policy</Link>
-            <Link to="/terms-of-service" className="text-gray-500 hover:text-yellow-400 transition-colors">Terms of Service</Link>
-            <Link to="/cookie-policy" className="text-gray-500 hover:text-yellow-400 transition-colors">Cookie Policy</Link>
-          </div>
+       
         </div>
       </div>
     </footer>
