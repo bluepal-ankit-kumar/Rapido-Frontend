@@ -146,7 +146,7 @@ export default function AcceptRide() {
       alert("Ride Started");
       setAccepted(true);
       // Navigate to the next screen upon successful acceptance
-      // navigate(`/rider/ride-in-progress/${rideDetails.id}`); // Pass ride ID
+      navigate(`/rider/ride-in-progress/${rideDetails.id}`); // Pass ride ID
     } catch (err) {
       console.error("Failed to accept ride:", err);
       setError(
@@ -456,9 +456,15 @@ export default function AcceptRide() {
                   alignItems="center"
                   mb={2}
                 >
-                  <Typography variant="h6" fontWeight="bold">
-                    Customer ID: {rideDetails.id}
-                  </Typography>
+                  {rideDetails.customer ? (
+                    <Typography variant="h6" fontWeight="bold">
+                      Customer: {rideDetails.customer.username}
+                    </Typography>
+                  ) : (
+                    <Typography variant="h6" fontWeight="bold">
+                      Customer ID: {rideDetails.userId}
+                    </Typography>
+                  )}
                   <Chip
                     label={`${countdown}s`}
                     color={countdown < 10 ? "error" : "primary"}
@@ -472,10 +478,8 @@ export default function AcceptRide() {
                     <Typography variant="body2" color="text.secondary">
                       Pickup
                     </Typography>
-                    <Typography fontWeight="medium">
-                      {rideDetails.startLatitude.toFixed(4) ?? ""},{" "}
-                      {rideDetails.startLongitude.toFixed(4) ?? ""}
-                    </Typography>
+                        <Typography fontWeight="medium">{rideDetails.pickupName || 'Loading...'}</Typography>
+
                   </Box>
                 </Box>
                 <Box display="flex" alignItems="center">
@@ -484,10 +488,8 @@ export default function AcceptRide() {
                     <Typography variant="body2" color="text.secondary">
                       Dropoff
                     </Typography>
-                    <Typography fontWeight="medium">
-                      {rideDetails.endLatitude.toFixed(4) ?? " "},{" "}
-                      {rideDetails.endLongitude.toFixed(4) ?? " "}
-                    </Typography>
+                       <Typography fontWeight="medium">{rideDetails.dropoffName || 'Loading...'}</Typography>
+
                   </Box>
                 </Box>
                 <Divider sx={{ my: 2 }} />
