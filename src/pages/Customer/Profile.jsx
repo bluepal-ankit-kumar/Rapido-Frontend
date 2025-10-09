@@ -12,6 +12,7 @@ import {
 } from '@mui/material';
 import EditProfileModal from '../../components/common/EditProfileModal';
 import useAuth from '../../hooks/useAuth';
+import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -90,22 +91,24 @@ export default function Profile() {
         {profile && (
           <>
             <Box className="mb-8 text-center w-full flex flex-col items-center justify-center">
-              <Avatar
-                src={`https://i.pravatar.cc/150?u=${profile.email}`}
-                className="w-24 h-24 mx-auto mb-4 border-4 border-yellow-400"
+              {/* Profile Icon */}
+              <AccountCircleIcon 
+                className="mb-4" 
+                sx={{ 
+                  fontSize: 64, 
+                  color: '#6366f1',
+                  backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                  borderRadius: '50%',
+                  padding: 1
+                }} 
               />
+              
+            
               <Typography variant="h5" className="font-bold text-gray-800">{profile.fullName}</Typography>
               <Typography variant="body2" className="text-gray-600 mb-2">{profile.email}</Typography>
               <Typography variant="body2" className="text-gray-600 mb-2">{profile.phone}</Typography>
-              <Typography variant="body2" className="text-gray-600 mb-2">{profile.address || 'No address provided'}</Typography>
+              
               <Box className="flex flex-col sm:flex-row justify-center items-center gap-3 mt-4">
-                <Button
-                  variant="contained"
-                  className="bg-yellow-500 hover:bg-yellow-600 shadow-md px-6 py-2 rounded-lg text-base font-semibold"
-                  onClick={() => setEditModalOpen(true)}
-                >
-                  Edit Profile
-                </Button>
                 <Button
                   variant="outlined"
                   color="error"

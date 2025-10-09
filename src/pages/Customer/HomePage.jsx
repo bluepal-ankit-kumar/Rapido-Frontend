@@ -110,7 +110,7 @@ export default function HomePage() {
                 onClick={handleBookRide}
                 sx={{ mt: 2, px: 6, py: 2 }}
               >
-                Book Your Adventure Now
+                Book Your Ride Here
               </Button>
             </Grid>
           </Grid>
@@ -166,42 +166,7 @@ export default function HomePage() {
       {/* Divider */}
       <Divider className="my-2" />
 
-      {/* Testimonials Section (static) */}
-      <Box className="py-16 px-4 bg-gray-50">
-        <Container maxWidth="lg">
-          <Box className="text-center mb-12">
-            <Typography
-              variant="h4"
-              className="font-bold mb-4 text-gray-900"
-              sx={{ fontSize: { xs: "1.8rem", md: "2.2rem" } }}
-            >
-              What Our Riders Say
-            </Typography>
-          </Box>
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 4 }}>
-            <Card sx={{ minWidth: 260, maxWidth: 320, p: 3, borderRadius: 3, boxShadow: 2 }}>
-              <Typography variant="body1" className="italic mb-4 text-gray-700 text-center">"Rapido has transformed my daily commute. I save time and money every single day!"</Typography>
-              <Typography variant="h6" className="font-bold text-gray-900 text-center">Priya Sharma</Typography>
-              <Typography variant="body2" className="text-gray-600 text-center">Daily Commuter</Typography>
-            </Card>
-            <Card sx={{ minWidth: 260, maxWidth: 320, p: 3, borderRadius: 3, boxShadow: 2 }}>
-              <Typography variant="body1" className="italic mb-4 text-gray-700 text-center">"The reliability and comfort of Rapido rides are unmatched. My go-to for all business trips."</Typography>
-              <Typography variant="h6" className="font-bold text-gray-900 text-center">Raj Patel</Typography>
-              <Typography variant="body2" className="text-gray-600 text-center">Business Traveler</Typography>
-            </Card>
-            <Card sx={{ minWidth: 260, maxWidth: 320, p: 3, borderRadius: 3, boxShadow: 2 }}>
-              <Typography variant="body1" className="italic mb-4 text-gray-700 text-center">"As a student, I love the affordable pricing and safety features. Highly recommended!"</Typography>
-              <Typography variant="h6" className="font-bold text-gray-900 text-center">Ananya Reddy</Typography>
-              <Typography variant="body2" className="text-gray-600 text-center">Student</Typography>
-            </Card>
-            <Card sx={{ minWidth: 260, maxWidth: 320, p: 3, borderRadius: 3, boxShadow: 2 }}>
-              <Typography variant="body1" className="italic mb-4 text-gray-700 text-center">"Convenience and peace of mind every time I book. Rapido is my first choice always!"</Typography>
-              <Typography variant="h6" className="font-bold text-gray-900 text-center">Vikram Singh</Typography>
-              <Typography variant="body2" className="text-gray-600 text-center">Entrepreneur</Typography>
-            </Card>
-          </Box>
-        </Container>
-      </Box>
+   
 
       {/* Final CTA Section */}
       <Box className="py-20 px-4 bg-gradient-to-r from-yellow-400 to-yellow-400">
