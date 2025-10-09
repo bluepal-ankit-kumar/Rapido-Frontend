@@ -58,17 +58,22 @@ function TabPanel(props) {
 }
 
 export default function Dashboard() {
+  
   const { user } = useAuth();
   const geo = useGeolocation();
   const navigate = useNavigate();
   const locationIntervalRef = useRef(null); // Ref to hold the interval ID for location updates
   const pollingIntervalRef = useRef(null);
   const { token } = useAuth();
+  const getInitialOnlineStatus = () => {
+    // Check localStorage for the saved status. It must be 'true' (a string).
+    return localStorage.getItem("driverOnlineStatus") === "true";
+  };
 
   // UI State
   const [tabValue, setTabValue] = useState(0);
   const [walletOpen, setWalletOpen] = useState(false);
-  const [online, setOnline] = useState(false); // Default to offline
+  const [online, setOnline] = useState(getInitialOnlineStatus);
   const [rideRequests, setRideRequests] = useState([]);
 
   // Data & Loading State
@@ -112,7 +117,44 @@ export default function Dashboard() {
     }
   };
 
+  useEffect(() => {
+    // This function will run when the 'online' state changes.
+
+    const startActiveDuties = () => {
+      // --- Functions from your toggleOnlineStatus ---
+      console.log("Driver is ONLINE. Starting active duties...");
+      handleUpdateLocation(); // Send location once immediately
+      checkForNewRides(); // Check for rides once immediately
+
+      locationIntervalRef.current = setInterval(handleUpdateLocation, 20000);
+      pollingIntervalRef.current = setInterval(checkForNewRides, 5000);
+    };
+
+    const stopActiveDuties = () => {
+      console.log("Driver is OFFLINE. Stopping active duties...");
+      clearInterval(locationIntervalRef.current);
+      clearInterval(pollingIntervalRef.current);
+      locationIntervalRef.current = null;
+      pollingIntervalRef.current = null;
+    };
+
+    if (online) {
+      startActiveDuties();
+    } else {
+      stopActiveDuties();
+    }
+
+    // --- Cleanup Function ---
+    // This runs when the component unmounts OR before the effect runs again.
+    // It's a safety net to ensure no intervals are left running.
+    return () => {
+      stopActiveDuties();
+    };
+
+  }, [online, token]); // The effect's dependency array. It re-runs if 'online' or 'token' changes.
+
   const checkForNewRides = async () => {
+    console.log("online status:", online);
     // if (!token) return;
     try {
       console.log("Polling for new rides..."); // 1. Check if the function is running
@@ -121,29 +163,30 @@ export default function Dashboard() {
       console.log("API Response received:", response.data); // 2. Check the raw data
       const newRequests = response.data; // You might need .data.data depending on your ApiResponse structure
 
-     if (Array.isArray(newRequests) && newRequests.length > 0) {
-            console.log("New rides found:", newRequests);
+      if (Array.isArray(newRequests) && newRequests.length > 0) {
+        console.log("New rides found:", newRequests);
 
-            // This is the correct way to update the state
-            setRideRequests((prevRequests) => {
-                // Get the IDs of the requests we are already showing
-                const existingIds = new Set(prevRequests.map(r => r.id));
-                
-                // Filter out any new requests that we are already showing
-                const uniqueNewRequests = newRequests.filter(r => !existingIds.has(r.id));
-                
-                // If there are no truly new requests, don't update the state
-                if (uniqueNewRequests.length === 0) {
-                    return prevRequests;
-                }
+        // This is the correct way to update the state
+        setRideRequests((prevRequests) => {
+          // Get the IDs of the requests we are already showing
+          const existingIds = new Set(prevRequests.map((r) => r.id));
 
-                // Add the unique new requests to the existing list
-                const updatedRequests = [...prevRequests, ...uniqueNewRequests];
-                console.log("Updating state with:", updatedRequests);
-                return updatedRequests;
-            });
-        }
+          // Filter out any new requests that we are already showing
+          const uniqueNewRequests = newRequests.filter(
+            (r) => !existingIds.has(r.id)
+          );
 
+          // If there are no truly new requests, don't update the state
+          if (uniqueNewRequests.length === 0) {
+            return prevRequests;
+          }
+
+          // Add the unique new requests to the existing list
+          const updatedRequests = [...prevRequests, ...uniqueNewRequests];
+          console.log("Updating state with:", updatedRequests);
+          return updatedRequests;
+        });
+      }
     } catch (err) {
       console.error("Polling for rides failed:", err);
     }
@@ -153,6 +196,7 @@ export default function Dashboard() {
   const toggleOnlineStatus = () => {
     const newOnlineStatus = !online;
     setOnline(newOnlineStatus);
+    localStorage.setItem("driverOnlineStatus", newOnlineStatus);
 
     if (newOnlineStatus) {
       // GOING ONLINE: Send location immediately and then start the interval
@@ -431,7 +475,6 @@ export default function Dashboard() {
                   </CardContent>
                 </Card>
               </Grid>
-              
             ))}
 
             {/* Main Content Area */}

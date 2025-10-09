@@ -185,7 +185,259 @@ export default function AcceptRide() {
   const cost = rideDetails.cost?.toFixed(2) ?? "0.00";
   const distance = rideDetails.distance?.toFixed(1) ?? "0.0";
   return (
+    // <div
+    //   className="p-6 bg-gray-50 min-h-screen"
+    //   style={{
+    //     marginTop: "clamp(64px, 8vw, 88px)",
+    //     zIndex: 1,
+    //     position: "relative",
+    //   }}
+    // >
+    //   <div className="max-w-6xl mx-auto">
+    //     {/* Header */}
+    //     <Box className="mb-8">
+    //       <Typography variant="h4" className="font-bold text-gray-800">
+    //         New Ride Request
+    //       </Typography>
+    //       <Typography variant="body1" className="text-gray-600">
+    //         Accept or reject the ride request within the time limit
+    //       </Typography>
+    //     </Box>
 
+    //     <Grid container spacing={3}>
+    //       {/* Left Column - Request Details */}
+    //       <Grid item xs={12} md={5} minHeight={610}>
+    //         <Card className="shadow-md rounded-xl" style={{ height: "100%" }}>
+    //           <CardContent className="p-6">
+    //             <Box className="flex justify-between items-center mb-30 ">
+    //               <Typography variant="h6" className="font-bold text-gray-800 ">
+    //                 Ride Details
+    //               </Typography>
+    //               <Chip
+    //                 label={`${countdown}s`}
+    //                 color={countdown < 10 ? "error" : "primary"}
+    //                 variant="outlined"
+    //               />
+    //             </Box>
+
+    //             <Box className="mb-10">
+    //               <Typography variant="body2" className="text-gray-600 mb-3">
+    //                 Customer
+    //               </Typography>
+    //               <Box className="flex items-center">
+    //                 <Avatar
+    //                   className="mr-3"
+    //                   src={`https://i.pravatar.cc/150?u=${rideRequest.customer.name}`}
+    //                 />
+    //                 <Box>
+    //                   <Typography variant="h6" className="font-medium">
+    //                     {rideRequest.customer.name}
+    //                   </Typography>
+    //                   <Box className="flex items-center">
+    //                     <Star
+    //                       className="text-yellow-500 mr-1"
+    //                       fontSize="small"
+    //                     />
+
+    //                     <Typography variant="body2">
+    //                       {rideRequest.customer.rating}
+    //                     </Typography>
+    //                     <Typography variant="body2" className="mx-2">
+    //                       •
+    //                     </Typography>
+    //                     <Typography variant="body2">
+    //                       {rideRequest.customer.totalRides} rides
+    //                     </Typography>
+    //                   </Box>
+    //                 </Box>
+    //               </Box>
+    //             </Box>
+
+    //             <Divider className="my-4" />
+
+    //             <Box className="space-y-4 mb-6 mt-6">
+    //               <Box className="flex items-center">
+    //                 <LocationOn className="text-gray-500 mr-3" />
+    //                 <Box>
+    //                   <Typography variant="body2" className="text-gray-600">
+    //                     Pickup
+    //                   </Typography>
+    //                   <Typography variant="h6" className="font-medium">
+    //                     {rideRequest.pickup}
+    //                   </Typography>
+    //                 </Box>
+    //               </Box>
+
+    //               <Box className="flex items-center mt-6">
+    //                 <Directions className="text-gray-500 mr-3" />
+    //                 <Box>
+    //                   <Typography variant="body2" className="text-gray-600">
+    //                     Destination
+    //                   </Typography>
+    //                   <Typography variant="h6" className="font-medium">
+    //                     {rideRequest.drop}
+    //                   </Typography>
+    //                 </Box>
+    //               </Box>
+    //             </Box>
+
+    //             <Divider className="my-4" />
+
+    //             <Grid container spacing={2} className="mt-6">
+    //               <Grid item xs={6}>
+    //                 <Box className="flex items-center">
+    //                   <AttachMoney className="text-gray-500 mr-2" />
+    //                   <Box>
+    //                     <Typography variant="body2" className="text-gray-600">
+    //                       Fare
+    //                     </Typography>
+    //                     <Typography variant="h6" className="font-medium">
+    //                       ₹{rideRequest.fare}
+    //                     </Typography>
+    //                   </Box>
+    //                 </Box>
+    //               </Grid>
+    //               <Grid item xs={6}>
+    //                 <Box className="flex items-center">
+    //                   <AccessTime className="text-gray-500 mr-2" />
+    //                   <Box>
+    //                     <Typography variant="body2" className="text-gray-600">
+    //                       Est. Time
+    //                     </Typography>
+    //                     <Typography variant="h6" className="font-medium">
+    //                       {rideRequest.estimatedTime}
+    //                     </Typography>
+    //                   </Box>
+    //                 </Box>
+    //               </Grid>
+    //               <Grid item xs={6}>
+    //                 <Box className="flex items-center">
+    //                   <TwoWheeler className="text-gray-500 mr-2" />
+    //                   <Box>
+    //                     <Typography variant="body2" className="text-gray-600">
+    //                       Distance
+    //                     </Typography>
+    //                     <Typography variant="h6" className="font-medium">
+    //                       {rideRequest.distance}
+    //                     </Typography>
+    //                   </Box>
+    //                 </Box>
+    //               </Grid>
+    //               <Grid item xs={6}>
+    //                 <Box className="flex items-center">
+    //                   <Person className="text-gray-500 mr-2" />
+    //                   <Box>
+    //                     <Typography variant="body2" className="text-gray-600">
+    //                       Customer Phone
+    //                     </Typography>
+    //                     <Typography variant="h6" className="font-medium">
+    //                       {rideRequest.customer.phone}
+    //                     </Typography>
+    //                   </Box>
+    //                 </Box>
+    //               </Grid>
+    //             </Grid>
+
+    //             <Box className="mt-6 pt-4 border-t border-gray-200">
+    //               <Typography
+    //                 variant="body2"
+    //                 className="text-gray-600 mb-3 mt-6"
+    //               >
+    //                 Customer Contact
+    //               </Typography>
+    //               <Box className="flex gap-2 mt-6">
+    //                 <Button
+    //                   variant="outlined"
+    //                   startIcon={<Phone />}
+    //                   className="flex-1"
+    //                 >
+    //                   Call
+    //                 </Button>
+    //                 <Button
+    //                   variant="outlined"
+    //                   startIcon={<Message />}
+    //                   className="flex-1"
+    //                 >
+    //                   Message
+    //                 </Button>
+    //               </Box>
+    //             </Box>
+    //           </CardContent>
+    //         </Card>
+    //       </Grid>
+
+    //       {/* Right Column - Map and Action */}
+    //       <Grid item xs={12} md={7} minWidth={600} height={200}>
+    //         {/* Map */}
+    //         <Card className="shadow-md rounded-xl mb-2">
+    //           <CardContent className="p-0">
+    //             <Typography
+    //               variant="h6"
+    //               className="font-bold text-gray-800 p-4 pb-2 "
+    //             >
+    //               Route Map
+    //             </Typography>
+    //             <Divider />
+    //             <MapDisplay
+    //               userLocation={rideRequest.pickupLocation}
+    //               nearbyRiders={mockNearbyRiders}
+    //             />
+    //           </CardContent>
+    //         </Card>
+
+    //         {/* Action */}
+    //         <Card className="shadow-md rounded-xl">
+    //           <CardContent className="p-6">
+    //             <Typography
+    //               variant="h6"
+    //               className="font-bold text-gray-800 mb-4"
+    //             >
+    //               Take Action
+    //             </Typography>
+
+    //             <Box className="mb-6">
+    //               <Typography variant="body2" className="text-gray-600 mb-2">
+    //                 Accept or reject this ride request
+    //               </Typography>
+    //               <Typography variant="body2" className="text-gray-500">
+    //                 You have {countdown} seconds to respond
+    //               </Typography>
+    //             </Box>
+
+    //             <Box className="flex gap-4">
+    //               <Button
+    //                 variant="contained"
+    //                 className="flex-1 bg-green-500 hover:bg-green-600 text-white"
+    //                 onClick={handleAccept}
+    //                 disabled={loading}
+    //                 startIcon={
+    //                   loading ? (
+    //                     <CircularProgress size={20} color="inherit" />
+    //                   ) : null
+    //                 }
+    //               >
+    //                 {loading ? "Processing..." : "Accept Ride"}
+    //               </Button>
+    //               <Button
+    //                 variant="outlined"
+    //                 className="flex-1 border-red-500 text-red-500 hover:bg-red-50"
+    //                 onClick={handleReject}
+    //               >
+    //                 Reject
+    //               </Button>
+    //             </Box>
+
+    //             {countdown < 10 && (
+    //               <Alert severity="warning" className="mt-4">
+    //                 Hurry! You have only {countdown} seconds left to respond.
+    //               </Alert>
+    //             )}
+    //           </CardContent>
+    //         </Card>
+    //       </Grid>
+    //     </Grid>
+    //   </div>
+    // </div>
     <div className="p-6 bg-gray-50 min-h-screen">
       <div className="max-w-6xl mx-auto">
         <Box className="mb-8">

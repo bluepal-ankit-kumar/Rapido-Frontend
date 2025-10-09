@@ -6,9 +6,6 @@ import RideService from '../../services/RideService.js';
 import useAuth from '../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import L from 'leaflet';
-import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
-import 'leaflet-routing-machine';
 
 import {
   Typography,
@@ -28,76 +25,6 @@ import {
   Directions,
   ArrowForward,
 } from '@mui/icons-material';
-
-// --- Leaflet Icon Fix ---
-// This is a common fix to ensure Leaflet's default marker icons load correctly.
-import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
-import markerIcon from 'leaflet/dist/images/marker-icon.png';
-import markerShadow from 'leaflet/dist/images/marker-shadow.png';
-
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: markerIcon2x,
-  iconUrl: markerIcon,
-  shadowUrl: markerShadow,
-});
-
-// --- Leaflet Map Components (Integrated) ---
-
-const RoutingMachine = ({ routePoints }) => {
-  const map = useMap();
-
-  useEffect(() => {
-    // FIX for 'removeLayer' error: First, remove any existing routing control.
-    if (map.routingControl) {
-      map.removeControl(map.routingControl);
-    }
-
-    if (!routePoints || routePoints.length < 2) return;
-
-    const [pickup, dropoff] = routePoints;
-    const waypoints = [
-      L.latLng(pickup[0], pickup[1]),
-      L.latLng(dropoff[0], dropoff[1])
-    ];
-
-    const routingControl = L.Routing.control({
-      waypoints,
-      routeWhileDragging: false,
-      show: false, // Hide the turn-by-turn instruction panel
-      addWaypoints: false,
-      fitSelectedRoutes: true,
-      lineOptions: {
-        styles: [{ color: '#6366f1', opacity: 0.8, weight: 6 }]
-      },
-      createMarker: () => null, // We use our own markers
-    }).addTo(map);
-
-    // Store the control instance on the map to allow for removal later
-    map.routingControl = routingControl;
-
-  }, [map, routePoints]);
-
-  return null;
-};
-
-const LeafletMapDisplay = ({ userLocation, routePoints }) => {
-  const center = userLocation ? [userLocation[0], userLocation[1]] : [17.3850, 78.4867]; // Default to Hyderabad
-  const [pickupCoords, dropoffCoords] = routePoints || [];
-
-  return (
-    <MapContainer center={center} zoom={12} style={{ height: '250px', width: '100%', borderRadius: '12px' }}>
-      <TileLayer
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-      />
-      {pickupCoords && <Marker position={pickupCoords}></Marker>}
-      {dropoffCoords && <Marker position={dropoffCoords}></Marker>}
-      {routePoints && routePoints.length === 2 && <RoutingMachine routePoints={routePoints} />}
-    </MapContainer>
-  );
-};
-
 
 // --- Main RideBooking Component ---
 
@@ -275,20 +202,58 @@ export default function RideBooking() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      <div className="max-w-6xl mx-auto p-4 md:p-8">
+    <div 
+      className="min-h-screen flex items-center justify-center p-4"
+      style={{
+        backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('https://images.yourstory.com/cs/2/79900dd0d91311e8a16045a90309d734/RapidoBike-1594036043552.jpg?mode=crop&crop=faces&ar=2%3A1&format=auto&w=1920&q=75')`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed'
+      }}
+    >
+      <div className="max-w-6xl mx-auto w-full">
         <Grid container justifyContent="center">
           <Grid item xs={12} md={8} lg={6}>
-            <Card className="shadow-xl rounded-2xl w-full max-w-xl mx-auto">
+            <Card 
+              className="shadow-2xl rounded-2xl w-full max-w-xl mx-auto overflow-hidden"
+              sx={{ 
+                backdropFilter: 'blur(10px)',
+                backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                border: '1px solid rgba(255, 255, 255, 0.2)'
+              }}
+            >
               <CardContent className="p-6 md:p-8">
-                <Typography variant="h5" sx={{ fontWeight: 700, mb: 3, textAlign: 'center' }}>Enter Your Trip Details</Typography>
-                {error && <Alert severity="error" sx={{ mb: 2, borderRadius: '12px' }}>{error}</Alert>}
+                <Typography 
+                  variant="h4" 
+                  sx={{ 
+                    fontWeight: 700, 
+                    mb: 3, 
+                    textAlign: 'center',
+                    color: '#1e293b',
+                    fontSize: { xs: '1.8rem', md: '2rem' }
+                  }}
+                >
+                  Book Your Ride
+                </Typography>
+                
+                {error && <Alert severity="error" sx={{ mb: 3, borderRadius: '12px' }}>{error}</Alert>}
                 
                 {/* Pickup Location */}
-                <Box sx={{ mb: 2 }}>
+                <Box sx={{ mb: 3 }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                    <Typography variant="body1" sx={{ fontWeight: 600 }}>Pickup Location</Typography>
-                    <Button size="small" variant="text" onClick={useCurrentLocationForPickup}>Use current location</Button>
+                    <Typography variant="body1" sx={{ fontWeight: 600, color: '#334155' }}>Pickup Location</Typography>
+                    <Button 
+                      size="small" 
+                      variant="text" 
+                      onClick={useCurrentLocationForPickup}
+                      sx={{ 
+                        color: '#6366f1', 
+                        fontWeight: 500,
+                        '&:hover': { backgroundColor: 'rgba(99, 102, 241, 0.1)' }
+                      }}
+                    >
+                      Use current location
+                    </Button>
                   </Box>
                   <Autocomplete
                     freeSolo
@@ -309,7 +274,22 @@ export default function RideBooking() {
                       }
                     }}
                     renderInput={(params) => (
-                      <TextField {...params} placeholder="Search pickup location"
+                      <TextField 
+                        {...params} 
+                        placeholder="Search pickup location"
+                        sx={{
+                          '& .MuiOutlinedInput-root': {
+                            borderRadius: '12px',
+                            backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                            '&:hover': {
+                              borderColor: '#6366f1',
+                            },
+                            '&.Mui-focused': {
+                              borderColor: '#6366f1',
+                              boxShadow: '0 0 0 2px rgba(99, 102, 241, 0.2)'
+                            }
+                          }
+                        }}
                         InputProps={{
                           ...params.InputProps,
                           startAdornment: (<LocationOn color="warning" sx={{ mr: 1 }} />),
@@ -327,7 +307,7 @@ export default function RideBooking() {
 
                 {/* Dropoff Location */}
                 <Box sx={{ mb: 3 }}>
-                   <Typography variant="body1" sx={{ fontWeight: 600, mb: 1 }}>Dropoff Location</Typography>
+                   <Typography variant="body1" sx={{ fontWeight: 600, mb: 1, color: '#334155' }}>Dropoff Location</Typography>
                    <Autocomplete
                     freeSolo
                     options={dropoffSuggestions}
@@ -347,7 +327,22 @@ export default function RideBooking() {
                       }
                     }}
                     renderInput={(params) => (
-                      <TextField {...params} placeholder="Search dropoff location"
+                      <TextField 
+                        {...params} 
+                        placeholder="Search dropoff location"
+                        sx={{
+                          '& .MuiOutlinedInput-root': {
+                            borderRadius: '12px',
+                            backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                            '&:hover': {
+                              borderColor: '#6366f1',
+                            },
+                            '&.Mui-focused': {
+                              borderColor: '#6366f1',
+                              boxShadow: '0 0 0 2px rgba(99, 102, 241, 0.2)'
+                            }
+                          }
+                        }}
                         InputProps={{
                           ...params.InputProps,
                           startAdornment: (<Directions color="warning" sx={{ mr: 1 }} />),
@@ -363,16 +358,19 @@ export default function RideBooking() {
                   />
                 </Box>
                 
-                <Box sx={{ mb: 3, textAlign: 'center' }}>
-                    <Typography variant="body1" sx={{ fontWeight: 600, mb: 1.5 }}>Select Vehicle Type</Typography>
+                <Box sx={{ mb: 4, textAlign: 'center' }}>
+                    <Typography 
+                      variant="body1" 
+                      sx={{ 
+                        fontWeight: 600, 
+                        mb: 1.5, 
+                        color: '#334155',
+                        fontSize: '1.1rem'
+                      }}
+                    >
+                      Select Vehicle Type
+                    </Typography>
                     <VehicleTypeSelector selected={selectedType} onSelect={setSelectedType} />
-                </Box>
-
-                <Box sx={{ mb: 3 }}>
-                  <LeafletMapDisplay 
-                    userLocation={pickupCoords || (geo?.latitude ? [geo.latitude, geo.longitude] : null)}
-                    routePoints={(pickupCoords && dropoffCoords) ? [pickupCoords, dropoffCoords] : []}
-                  />
                 </Box>
                 
                  <Box sx={{ mt: 'auto', width: '100%', display: 'flex', justifyContent: 'center' }}>
@@ -386,9 +384,14 @@ export default function RideBooking() {
                       fontWeight: 600, 
                       borderRadius: '12px',
                       boxShadow: '0 10px 15px -3px rgba(99, 102, 241, 0.3)',
+                      py: 1.5,
                       '&:hover': { 
                         background: 'linear-gradient(90deg, #4f46e5, #7c3aed)', 
                         boxShadow: '0 20px 25px -5px rgba(99, 102, 241, 0.4)' 
+                      },
+                      '&:disabled': {
+                        background: '#94a3b8',
+                        color: 'white'
                       }
                     }} 
                     onClick={handleBook} 
