@@ -1,15 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Typography, Button,
   Chip, Box, TextField, InputAdornment, IconButton, Menu, MenuItem, TablePagination, Avatar,
-  Grid, Card, CardContent, Dialog, DialogTitle, DialogContent, DialogActions, FormControl, InputLabel, Select
+  Grid, Card, CardContent, Dialog, DialogTitle, DialogContent, DialogActions, FormControl, InputLabel, Select,
+  CircularProgress, Alert
 } from '@mui/material';
 import { 
   Search, FilterList, MoreVert, Visibility, Edit, Delete, PersonAdd, Block, CheckCircle,
   Email, Phone, CalendarToday, AdminPanelSettings, Person, TwoWheeler
 } from '@mui/icons-material';
+import { GetApp } from '@mui/icons-material';
 // import UserService if needed
 
+import UserService from '../../services/UserService';
 // ...existing code...
 
 const statusColors = { 'Active': '#4CAF50', 'Inactive': '#F44336', 'Pending': '#FF9800', 'Suspended': '#9E9E9E' };
@@ -17,7 +20,56 @@ const roleIcons = { 'Customer': <Person className="text-blue-500" />, 'Rider': <
 const roleColors = { 'Customer': '#2196F3', 'Rider': '#FFC107', 'Admin': '#9C27B0' };
 
 export default function UserManagement() {
-  const [usersData, setUsersData] = useState(mockUsers);
+  const [usersData, setUsersData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState('');
+
+  useEffect(() => {
+    let mounted = true;
+    async function loadUsers() {
+      setLoading(true);
+      setFetchError('');
+      try {
+        const res = await UserService.getAllUsers(0, 1000);
+        // Normalize response into an array of users regardless of backend shape
+        const payload = res && res.data !== undefined ? res.data : res;
+        // Debug log to help track payload shapes
+        console.debug('UserService.getAllUsers payload:', payload);
+
+        let usersArray = [];
+        if (Array.isArray(payload)) {
+          usersArray = payload;
+        } else if (payload && Array.isArray(payload.data)) {
+          usersArray = payload.data;
+        } else if (payload && payload.data && Array.isArray(payload.data.content)) {
+          // Handle paginated response: { success, message, data: { content: [...], ... } }
+          usersArray = payload.data.content;
+          console.debug('Normalized users from payload.data.content, count=', usersArray.length);
+        } else if (payload && Array.isArray(payload.users)) {
+          usersArray = payload.users;
+        } else if (payload && Array.isArray(payload.items)) {
+          usersArray = payload.items;
+        } else {
+          // If payload contains a single user object, wrap it into array
+          if (payload && typeof payload === 'object' && Object.keys(payload).length > 0) {
+            // no obvious array found - log and fallback to empty
+            console.warn('UserService.getAllUsers returned unexpected payload format, defaulting to empty list', payload);
+          }
+          usersArray = [];
+        }
+
+        if (mounted) setUsersData(usersArray);
+      } catch (err) {
+        console.error('Failed to fetch users for admin user management:', err);
+        setFetchError(err.message || 'Failed to load users');
+        // keep usersData as empty array
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    }
+    loadUsers();
+    return () => { mounted = false; };
+  }, []);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [searchTerm, setSearchTerm] = useState('');
@@ -25,23 +77,29 @@ export default function UserManagement() {
   const [filterRole, setFilterRole] = useState('All');
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
   const [openDialog, setOpenDialog] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [formData, setFormData] = useState({ name: '', email: '', phone: '', role: 'Customer', status: 'Active' });
 
-  // Calculate statistics
-  const totalUsers = usersData.length;
-  const activeUsers = usersData.filter(u => u.status === 'Active').length;
-  const riderUsers = usersData.filter(u => u.role === 'Rider').length;
-  const customerUsers = usersData.filter(u => u.role === 'Customer').length;
+  // Keep only customers in this view
+  const customers = usersData.filter(u => (u.userType || u.role || '').toString().toUpperCase() === 'CUSTOMER');
+  const totalUsers = customers.length;
+  const activeUsers = customers.filter(u => (u.status || '').toString().toLowerCase() === 'active').length;
+  const riderUsers = usersData.filter(u => (u.userType || u.role || '').toString().toUpperCase() === 'RIDER').length;
+  const customerUsers = customers.length;
 
   // Filter users based on search and filters
-  const filteredUsers = usersData.filter(user => {
-    const matchesSearch = (user.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) || 
-                         (user.email?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-                         (user.phone || '').includes(searchTerm);
-    const matchesStatus = filterStatus === 'All' || user.status === filterStatus;
-    const matchesRole = filterRole === 'All' || user.role === filterRole;
+  // Work on customers array only
+  const filteredUsers = customers.filter(user => {
+    const name = (user.fullName || user.username || '').toString();
+    const matchesSearch = name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                         (user.email || '').toString().toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (user.phone || '').toString().includes(searchTerm);
+    const matchesStatus = filterStatus === 'All' || (user.status || '').toString() === filterStatus;
+    const matchesRole = filterRole === 'All' || (user.userType || user.role || '').toString() === filterRole;
     return matchesSearch && matchesStatus && matchesRole;
   });
 
@@ -81,9 +139,35 @@ export default function UserManagement() {
     handleMenuClose();
   };
 
+  // Immediately opens confirmation for deletion
   const handleDelete = () => {
-    setUsersData(usersData.filter(u => u.id !== selectedUser.id));
-    handleMenuClose();
+    if (selectedUser) {
+      setConfirmDeleteOpen(true);
+    }
+  };
+
+  // Perform deletion (call backend)
+  const performDelete = async () => {
+    if (!selectedUser || !selectedUser.id) {
+      setDeleteError('Invalid user selected');
+      return;
+    }
+    setDeleting(true);
+    setDeleteError('');
+    try {
+      await UserService.deleteUser(selectedUser.id);
+      // remove from local state
+      setUsersData(prev => prev.filter(u => u.id !== selectedUser.id));
+      setConfirmDeleteOpen(false);
+      setSelectedUser(null);
+      // close menu if open
+      setAnchorEl(null);
+    } catch (err) {
+      console.error('Failed to delete user:', err);
+      setDeleteError(err.response?.data?.message || err.message || 'Failed to delete user');
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const handleToggleStatus = () => {
@@ -127,21 +211,70 @@ export default function UserManagement() {
     handleDialogClose();
   };
 
+  // PDF preview & download animation
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState('');
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [animatingDownload, setAnimatingDownload] = useState(false);
+
+  const openPdfPreviewFor = async (userType = '') => {
+    setPreviewLoading(true);
+    try {
+      const res = await UserService.downloadUsersPdf(userType);
+      // res.data is a blob
+      const blob = new Blob([res.data], { type: res.headers?.['content-type'] || 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      setPreviewUrl(url);
+      setPreviewOpen(true);
+      // small animation to indicate download
+      setAnimatingDownload(true);
+      setTimeout(() => setAnimatingDownload(false), 1400);
+    } catch (err) {
+      console.error('Failed to download PDF:', err);
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
+  const closePreview = () => {
+    setPreviewOpen(false);
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+      setPreviewUrl('');
+    }
+  };
+
+  const savePreviewToDisk = () => {
+    if (!previewUrl) return;
+    const a = document.createElement('a');
+    a.href = previewUrl;
+    a.download = `users-${Date.now()}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  };
+
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
+      {loading && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}><CircularProgress /></Box>
+      )}
+      {!loading && fetchError && (
+        <Box sx={{ mb: 2 }}><Alert severity="error">{fetchError}</Alert></Box>
+      )}
       {/* Header */}
       <Box className="mb-6 flex justify-between items-center">
         <div>
           <Typography variant="h4" className="font-bold text-gray-800 mb-2">User Management</Typography>
-          <Typography variant="body1" className="text-gray-600">Manage all users in the system</Typography>
+          {/* <Typography variant="body1" className="text-gray-600">Manage all users in the system</Typography> */}
         </div>
-        <Button variant="contained" startIcon={<PersonAdd />} onClick={handleAddUser} className="bg-yellow-500 hover:bg-yellow-600">
-          Add User
+        <Button variant="contained" startIcon={<GetApp />} onClick={() => openPdfPreviewFor('CUSTOMER')} className="bg-yellow-500 hover:bg-yellow-600">
+          Download PDF
         </Button>
       </Box>
 
       {/* Statistics Cards */}
-      <Grid container spacing={3} className="mb-6">
+      {/* <Grid container spacing={3} className="mb-6">
         <Grid item xs={12} sm={6} md={3}>
           <Card className="border-l-4 border-yellow-500">
             <CardContent>
@@ -174,49 +307,9 @@ export default function UserManagement() {
             </CardContent>
           </Card>
         </Grid>
-      </Grid>
+      </Grid> */}
 
-      {/* Filters and Search */}
-      <Box className="mb-6 flex flex-col sm:flex-row gap-4">
-        <TextField
-          placeholder="Search users..."
-          variant="outlined"
-          size="small"
-          className="flex-1"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          InputProps={{ startAdornment: (<InputAdornment position="start"><Search /></InputAdornment>) }}
-        />
-        <Box className="flex gap-2">
-          <TextField
-            select
-            label="Status"
-            variant="outlined"
-            size="small"
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className="w-40"
-          >
-            <MenuItem value="All">All</MenuItem>
-            <MenuItem value="Active">Active</MenuItem>
-            <MenuItem value="Inactive">Inactive</MenuItem>
-          </TextField>
-          <TextField
-            select
-            label="Role"
-            variant="outlined"
-            size="small"
-            value={filterRole}
-            onChange={(e) => setFilterRole(e.target.value)}
-            className="w-32"
-          >
-            <MenuItem value="All">All</MenuItem>
-            <MenuItem value="Customer">Customer</MenuItem>
-            <MenuItem value="Rider">Rider</MenuItem>
-            <MenuItem value="Admin">Admin</MenuItem>
-          </TextField>
-        </Box>
-      </Box>
+      
 
       {/* Table */}
       <Paper className="overflow-hidden">
@@ -224,84 +317,60 @@ export default function UserManagement() {
           <Table>
             <TableHead className="bg-gray-100">
               <TableRow>
-                <TableCell>ID</TableCell>
-                <TableCell>User</TableCell>
+                <TableCell>S.No</TableCell>
+                <TableCell>User Name</TableCell>
+                <TableCell>Emali</TableCell>
                 <TableCell>Contact</TableCell>
                 <TableCell>Role</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Last Login</TableCell>
-                <TableCell>Activity</TableCell>
+                {/* <TableCell>Status</TableCell> */}
+                <TableCell>Created On</TableCell>
+                {/* <TableCell>Activity</TableCell> */}
                 <TableCell>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {filteredUsers.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((user) => (
-                <TableRow key={user.id} hover>
-                  <TableCell className="font-medium">#{user.id}</TableCell>
+              {filteredUsers.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((user, idx) => (
+                <TableRow key={user.id || idx} hover>
+                  <TableCell className="font-medium">{page * rowsPerPage + idx + 1}.</TableCell>
                   <TableCell>
                     <Box className="flex items-center">
-                      <Avatar className="mr-3" src={`https://i.pravatar.cc/150?u=${user.id}`} />
-                      <div>
-                        <Typography variant="body2" className="font-medium">{user.name}</Typography>
-                        <Typography variant="caption" className="text-gray-500">{user.email}</Typography>
-                      </div>
-                    </Box>
-                  </TableCell>
-                  <TableCell>
-                    <Box className="flex flex-col">
-                      {[{ type: 'phone', value: user.phone }, { type: 'email', value: user.email }].map((item) => (
-                        <Box className="flex items-center" key={item.type}>
-                          {item.type === 'phone' ? (
-                            <Phone className="text-gray-500 mr-1" fontSize="small" />
-                          ) : (
-                            <Email className="text-gray-500 mr-1" fontSize="small" />
-                          )}
-                          <Typography variant="body2">{item.value}</Typography>
-                        </Box>
-                      ))}
+                        <Typography variant="body2" className="font-medium">{user.fullName || user.username || '—'}</Typography>  
                     </Box>
                   </TableCell>
                   <TableCell>
                     <Box className="flex items-center">
-                      {roleIcons[user.role]}
-                      <Chip label={user.role} size="small" style={{ 
-                        backgroundColor: `${roleColors[user.role]}20`,
-                        color: roleColors[user.role],
-                        fontWeight: 'bold',
-                        marginLeft: '8px'
-                      }} />
+                        <Typography variant="body2" className="text-gray-600">{user.email}</Typography>
                     </Box>
                   </TableCell>
                   <TableCell>
+                    <Box className="flex items-center" sx={{ gap: 1 }}>
+                      <Phone className="text-gray-500" fontSize="small" />
+                      <Typography variant="body2">{user.phone || '—'}</Typography>
+                    </Box>
+                  </TableCell>
+                  <TableCell>
+                    <Chip label={(user.userType || user.role || 'N/A').toString()} size="small" sx={{ fontWeight: 'bold' }} />
+                  </TableCell>
+                  {/* <TableCell>
                     <Chip label={user.status} size="small" style={{ 
                       backgroundColor: `${statusColors[user.status]}20`,
                       color: statusColors[user.status],
                       fontWeight: 'bold'
                     }} />
-                  </TableCell>
+                  </TableCell> */}
                   <TableCell>
-                    <Box className="flex items-center">
-                      <CalendarToday className="text-gray-500 mr-1" fontSize="small" />
-                      <Typography variant="body2">{user.lastLogin}</Typography>
-                    </Box>
+                    <Typography variant="body2">{user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '—'}</Typography>
                   </TableCell>
-                  <TableCell>
-                    <Box className="flex flex-col">
-                      {[
-                        { key: 'rides', label: 'rides', value: user.totalRides },
-                        { key: 'spent', label: 'spent', value: `₹${user.totalSpent}` }
-                      ].map((item) => (
-                        <Typography variant="body2" key={item.key}>
-                          <span className="font-medium">{item.value}</span> {item.label}
-                        </Typography>
-                      ))}
+                  {/* <TableCell>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>{user.rating != null ? user.rating : '—'}</Typography>
+                      <Typography variant="caption" sx={{ color: 'text.secondary' }}>rating</Typography>
                     </Box>
-                  </TableCell>
+                  </TableCell> */}
                   <TableCell>
                     <Box className="flex gap-1">
-                      <Button size="small" variant="outlined" startIcon={<Visibility />}>View</Button>
-                      <IconButton size="small" onClick={(e) => handleMenuClick(e, user)}>
-                        <MoreVert />
+                      <IconButton size="small" color="error" onClick={() => { setSelectedUser(user); setConfirmDeleteOpen(true); }}>
+                        <Delete />
                       </IconButton>
                     </Box>
                   </TableCell>
@@ -322,19 +391,46 @@ export default function UserManagement() {
         />
       </Paper>
 
+          {/* PDF Preview Dialog */}
+          <Dialog open={previewOpen} onClose={closePreview} maxWidth="lg" fullWidth>
+            <DialogTitle>Users PDF Preview</DialogTitle>
+            <DialogContent sx={{ height: '80vh' }}>
+              {previewLoading ? <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}><CircularProgress /></Box> : (
+                previewUrl ? <iframe title="users-pdf" src={previewUrl} style={{ width: '100%', height: '100%', border: 'none' }} /> : <Box sx={{ p: 2 }}>No preview available</Box>
+              )}
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={closePreview}>Close</Button>
+              <Button onClick={savePreviewToDisk} variant="contained">Download</Button>
+            </DialogActions>
+          </Dialog>
+
+          {/* simple download animation indicator */}
+          {animatingDownload && (
+            <Box sx={{ position: 'fixed', right: 24, bottom: 24, width: 80, height: 80, borderRadius: '50%', bgcolor: 'background.paper', boxShadow: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', animation: 'flyToDownloads 1.2s ease-in-out' }}>
+              <GetApp />
+            </Box>
+          )}
+
       {/* Action Menu */}
       <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
-        <MenuItem onClick={handleView}><Visibility className="mr-2" fontSize="small" />View Details</MenuItem>
-        <MenuItem onClick={handleEdit}><Edit className="mr-2" fontSize="small" />Edit User</MenuItem>
-        <MenuItem onClick={handleToggleStatus}>
-          {selectedUser && selectedUser.status === 'Active' ? (
-            <><Block className="mr-2" fontSize="small" />Deactivate User</>
-          ) : (
-            <><CheckCircle className="mr-2" fontSize="small" />Activate User</>
-          )}
-        </MenuItem>
-        <MenuItem onClick={handleDelete}><Delete className="mr-2" fontSize="small" />Delete User</MenuItem>
+        <MenuItem onClick={() => { handleDelete(); handleMenuClose(); }}><Delete className="mr-2" fontSize="small" />Delete User</MenuItem>
       </Menu>
+
+      {/* Delete confirmation dialog */}
+      <Dialog open={confirmDeleteOpen} onClose={() => setConfirmDeleteOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>Confirm delete</DialogTitle>
+        <DialogContent>
+          <Typography>Are you sure you want to permanently delete <strong>{selectedUser?.fullName || selectedUser?.username}</strong>?</Typography>
+          {deleteError && <Alert severity="error" sx={{ mt: 2 }}>{deleteError}</Alert>}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmDeleteOpen(false)} disabled={deleting}>Cancel</Button>
+          <Button onClick={performDelete} color="error" variant="contained" disabled={deleting}>
+            {deleting ? 'Deleting...' : 'Delete'}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Add/Edit User Dialog */}
       <Dialog open={openDialog} onClose={handleDialogClose} maxWidth="sm" fullWidth>

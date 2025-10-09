@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Table, 
   TableBody, 
@@ -21,7 +21,8 @@ import {
   CardContent,
   Badge,
   Grid,
-  IconButton
+  IconButton,
+  CircularProgress
 } from '@mui/material';
 import { 
   Search, 
@@ -40,9 +41,11 @@ import {
   Cancel,
   Directions
 } from '@mui/icons-material';
-// TODO: Replace with RideService API call
+import { Delete, GetApp } from '@mui/icons-material';
+import { Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
+import UserService from '../../services/UserService';
 
-
+// Display riders list instead of mock rides
 const statusColors = {
   'Completed': '#4CAF50',
   'Ongoing': '#2196F3',
@@ -57,31 +60,63 @@ const vehicleIcons = {
 };
 
 export default function RideManagement() {
-  const [ridesData, setRidesData] = useState(rides);
+  const [ridersData, setRidersData] = useState([]);
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('All');
-  const [filterVehicle, setFilterVehicle] = useState('All');
   const [anchorEl, setAnchorEl] = useState(null);
-  const [selectedRide, setSelectedRide] = useState(null);
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [viewOpen, setViewOpen] = useState(false);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
+  // PDF preview & download animation
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState('');
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [animatingDownload, setAnimatingDownload] = useState(false);
 
-  // Calculate statistics
-  const totalRides = ridesData.length;
-  const completedRides = ridesData.filter(r => r.status === 'Completed').length;
-  const ongoingRides = ridesData.filter(r => r.status === 'Ongoing').length;
-  const cancelledRides = ridesData.filter(r => r.status === 'Cancelled').length;
-  const totalRevenue = ridesData.reduce((sum, ride) => sum + ride.fare, 0);
+  useEffect(() => {
+    let mounted = true;
+    async function loadRiders() {
+      setLoading(true);
+      setError('');
+      try {
+        const res = await UserService.getAllUsers(0, 1000);
+        const payload = res && res.data !== undefined ? res.data : res;
+        let users = [];
+        if (Array.isArray(payload)) users = payload;
+        else if (payload && Array.isArray(payload.data)) users = payload.data;
+        else if (payload && payload.data && Array.isArray(payload.data.content)) users = payload.data.content;
+        else users = [];
+        const riders = users.filter(u => (u.userType || u.role || '').toString().toUpperCase() === 'RIDER');
+        if (mounted) setRidersData(riders);
+      } catch (err) {
+        console.error('Failed to load riders for RideManagement:', err);
+        setError(err.message || 'Failed to load riders');
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    }
+    loadRiders();
+    return () => { mounted = false; };
+  }, []);
+
+  // Calculate statistics for riders
+  const totalRides = ridersData.length;
+  const completedRides = 0;
+  const ongoingRides = 0;
+  const cancelledRides = 0;
+  const totalRevenue = 0;
 
   // Handle search and filters
-  const filteredRides = ridesData.filter(ride => {
-    const matchesSearch = ride.user.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         ride.driver.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         ride.pickup.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         ride.destination.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = filterStatus === 'All' || ride.status === filterStatus;
-    const matchesVehicle = filterVehicle === 'All' || ride.vehicleType === filterVehicle;
-    return matchesSearch && matchesStatus && matchesVehicle;
+  const filteredRides = ridersData.filter(user => {
+    const name = (user.fullName || user.username || '').toString();
+    const matchesSearch = name.toLowerCase().includes(searchTerm.toLowerCase()) || (user.email || '').toString().toLowerCase().includes(searchTerm.toLowerCase()) || (user.phone || '').toString().includes(searchTerm);
+    return matchesSearch;
   });
 
   // Handle page change
@@ -95,30 +130,22 @@ export default function RideManagement() {
     setPage(0);
   };
 
-  // Handle status update
-  const updateStatus = (id, newStatus) => {
-    setRidesData(ridesData.map(ride => 
-      ride.id === id ? { ...ride, status: newStatus } : ride
-    ));
-  };
+  // (no status update for riders list)
 
   // Handle menu open
-  const handleMenuClick = (event, ride) => {
+  const handleMenuClick = (event, item) => {
     setAnchorEl(event.currentTarget);
-    setSelectedRide(ride);
+    setSelectedItem(item);
   };
 
   // Handle menu close
   const handleMenuClose = () => {
     setAnchorEl(null);
-    setSelectedRide(null);
+    setSelectedItem(null);
   };
 
   // Handle view ride
-  const handleView = () => {
-    // Implement view functionality
-    handleMenuClose();
-  };
+  const handleView = () => { handleMenuClose(); };
 
   // Handle edit ride
   const handleEdit = () => {
@@ -128,8 +155,82 @@ export default function RideManagement() {
 
   // Handle cancel ride
   const handleCancel = () => {
-    updateStatus(selectedRide.id, 'Cancelled');
+    // No-op for riders list; placeholder for potential actions
     handleMenuClose();
+  };
+
+  // View dialog
+  const openView = (rider) => {
+    setSelectedItem(rider);
+    setViewOpen(true);
+  };
+  const closeView = () => {
+    setViewOpen(false);
+    setSelectedItem(null);
+  };
+
+  // Delete flow (similar to UserManagement)
+  const promptDelete = (rider) => {
+    setSelectedItem(rider);
+    setConfirmDeleteOpen(true);
+  };
+
+  const performDelete = async () => {
+    if (!selectedItem || !selectedItem.id) {
+      setDeleteError('Invalid rider selected');
+      return;
+    }
+    setDeleting(true);
+    setDeleteError('');
+    try {
+      await UserService.deleteUser(selectedItem.id);
+      setRidersData(prev => prev.filter(r => r.id !== selectedItem.id));
+      setConfirmDeleteOpen(false);
+      setSelectedItem(null);
+      setAnchorEl(null);
+    } catch (err) {
+      console.error('Failed to delete rider:', err);
+      setDeleteError(err.response?.data?.message || err.message || 'Failed to delete rider');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  // Download single rider details as CSV fallback
+  const downloadRider = async (rider) => {
+    // Open PDF preview modal that fetches riders PDF from backend (userType=RIDER)
+    setPreviewLoading(true);
+    try {
+      const res = await UserService.downloadUsersPdf('RIDER');
+      const blob = new Blob([res.data], { type: res.headers?.['content-type'] || 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      setPreviewUrl(url);
+      setPreviewOpen(true);
+      setAnimatingDownload(true);
+      setTimeout(() => setAnimatingDownload(false), 1400);
+    } catch (err) {
+      console.error('Failed to fetch riders PDF:', err);
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
+  const closePreview = () => {
+    setPreviewOpen(false);
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+      setPreviewUrl('');
+    }
+  };
+
+  const savePreviewToDisk = () => {
+    if (!previewUrl) return;
+    const a = document.createElement('a');
+    a.href = previewUrl;
+    a.download = `riders-${Date.now()}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
   };
 
   return (
@@ -139,12 +240,17 @@ export default function RideManagement() {
         <Typography variant="h4" className="font-bold text-gray-800 mb-2">
           Ride Management
         </Typography>
-        <Typography variant="body1" className="text-gray-600">
+        {/* <Typography variant="body1" className="text-gray-600">
           Monitor and manage all rides in the system
-        </Typography>
+        </Typography> */}
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: -6 }}>
+          <Button variant="contained" startIcon={<GetApp />} onClick={() => downloadRider()} sx={{ bgcolor: 'yellow.500', '&:hover': { bgcolor: 'yellow.600' } }}>
+            Download PDF
+          </Button>
+        </Box>
       </Box>
 
-      {/* Statistics Cards */}
+      {/* Statistics Cards
   <Grid container spacing={{ xs: 2, sm: 3 }} sx={{ mb: { xs: 2, sm: 4, md: 6 } }}>
   <Grid item xs={12} sm={6} md={3}>
           <Card sx={{ borderLeft: 4, borderColor: 'yellow.500', mb: { xs: 2, sm: 0 } }}>
@@ -186,10 +292,10 @@ export default function RideManagement() {
             </CardContent>
           </Card>
         </Grid>
-      </Grid>
+      </Grid> */}
 
       {/* Filters and Search */}
-  <Box sx={{ mb: { xs: 2, sm: 4, md: 6 }, display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
+  {/* <Box sx={{ mb: { xs: 2, sm: 4, md: 6 }, display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
         <TextField
           placeholder="Search rides..."
           variant="outlined"
@@ -204,8 +310,8 @@ export default function RideManagement() {
               </InputAdornment>
             ),
           }}
-        />
-  <Box sx={{ display: 'flex', gap: 2 }}>
+        /> */}
+  {/* <Box sx={{ display: 'flex', gap: 2 }}>
           <TextField
             select
             label="Status"
@@ -221,21 +327,8 @@ export default function RideManagement() {
             <MenuItem value="Cancelled">Cancelled</MenuItem>
             <MenuItem value="Scheduled">Scheduled</MenuItem>
           </TextField>
-          <TextField
-            select
-            label="Vehicle"
-            variant="outlined"
-            size="small"
-            value={filterVehicle}
-            onChange={(e) => setFilterVehicle(e.target.value)}
-            sx={{ width: { xs: '100%', sm: 120 } }}
-          >
-            <MenuItem value="All">All</MenuItem>
-            <MenuItem value="Bike">Bike</MenuItem>
-            <MenuItem value="Auto">Auto</MenuItem>
-            <MenuItem value="Cab">Cab</MenuItem>
-          </TextField>
-          <Button 
+          {/* Vehicle filter removed for riders list */}
+          {/* <Button 
             variant="outlined" 
             startIcon={<FilterList />}
             sx={{ whiteSpace: 'nowrap' }}
@@ -243,7 +336,7 @@ export default function RideManagement() {
             More Filters
           </Button>
         </Box>
-      </Box>
+      </Box>  */}
 
       {/* Table */}
   <Paper sx={{ overflow: 'hidden', width: '100%', mt: { xs: 2, sm: 0 } }}>
@@ -251,116 +344,39 @@ export default function RideManagement() {
           <Table>
             <TableHead sx={{ bgcolor: 'grey.100' }}>
               <TableRow>
-                <TableCell>ID</TableCell>
-                <TableCell>User</TableCell>
-                <TableCell>Driver</TableCell>
-                <TableCell>Route</TableCell>
-                <TableCell>Vehicle</TableCell>
-                <TableCell>Date & Time</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Fare</TableCell>
+                <TableCell>S.No</TableCell>
+                <TableCell>Rider</TableCell>
+                <TableCell>Email</TableCell>
+                <TableCell>Phone</TableCell>
+                <TableCell>Rating</TableCell>
+                <TableCell>Joined</TableCell>
                 <TableCell>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {filteredRides
-                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                .map((ride) => (
-                <TableRow key={ride.id} hover>
-                  <TableCell sx={{ fontWeight: 500 }}>#{ride.id}</TableCell>
+              {loading ? (
+                <TableRow><TableCell colSpan={7}><Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>Loading riders...</Box></TableCell></TableRow>
+              ) : error ? (
+                <TableRow><TableCell colSpan={7}><Box sx={{ color: 'error.main', p: 2 }}>{error}</Box></TableCell></TableRow>
+              ) : filteredRides.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((rider, idx) => (
+                <TableRow key={rider.id || idx} hover>
+                  <TableCell sx={{ fontWeight: 500 }}>{page * rowsPerPage + idx + 1}.</TableCell>
                   <TableCell>
                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                      <Avatar sx={{ mr: 2 }} src={`https://i.pravatar.cc/150?u=${ride.id}`} />
                       <Box>
-                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                          {ride.user}
-                        </Typography>
-                        <Typography variant="caption" sx={{ color: 'grey.500' }}>
-                          {ride.email}
-                        </Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 500 }}>{rider.fullName || rider.username || '—'}</Typography>
+                        {/* <Typography variant="caption" sx={{ color: 'grey.500' }}>{rider.userType || rider.role}</Typography> */}
                       </Box>
                     </Box>
                   </TableCell>
-                  <TableCell>
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                      <Avatar sx={{ mr: 2 }} src={`https://i.pravatar.cc/150?d=${ride.id}`} />
-                      <Typography variant="body2">{ride.driver}</Typography>
-                    </Box>
-                  </TableCell>
-                  <TableCell className="max-w-xs">
-                    <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
-                      <Box sx={{ textAlign: 'center', mr: 2 }}>
-                        <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: 'green.500', mb: 0.5 }}></Box>
-                        <Box sx={{ width: 2, height: 32, bgcolor: 'grey.300', my: 0.5, mx: 'auto' }}></Box>
-                        <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: 'red.500', mt: 0.5 }}></Box>
-                      </Box>
-                      <Box>
-                        <Typography variant="body2" sx={{ fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {ride.pickup}
-                        </Typography>
-                        <Typography variant="body2" sx={{ fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {ride.destination}
-                        </Typography>
-                        <Typography variant="caption" sx={{ color: 'grey.500' }}>
-                          {ride.distance} • {ride.duration}
-                        </Typography>
-                      </Box>
-                    </Box>
-                  </TableCell>
-                  <TableCell>
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                      {vehicleIcons[ride.vehicleType]}
-                      <Typography variant="body2" sx={{ ml: 1 }}>
-                        {ride.vehicleType}
-                      </Typography>
-                    </Box>
-                  </TableCell>
-                  <TableCell>
-                    <Box>
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <CalendarToday className="text-gray-500 mr-1" fontSize="small" />
-                        <Typography variant="body2">{ride.date}</Typography>
-                      </Box>
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <AccessTime className="text-gray-500 mr-1" fontSize="small" />
-                        <Typography variant="body2">{ride.time}</Typography>
-                      </Box>
-                    </Box>
-                  </TableCell>
-                  <TableCell>
-                    <Chip 
-                      label={ride.status}
-                      size="small"
-                      sx={{ 
-                        bgcolor: `${statusColors[ride.status]}20`,
-                        color: statusColors[ride.status],
-                        fontWeight: 'bold'
-                      }}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                      <AttachMoney className="text-gray-500 mr-1" fontSize="small" />
-                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                        ₹{ride.fare}
-                      </Typography>
-                    </Box>
-                  </TableCell>
+                  <TableCell>{rider.email || '—'}</TableCell>
+                  <TableCell>{rider.phone || '—'}</TableCell>
+                  <TableCell>{rider.rating != null ? rider.rating : '—'}</TableCell>
+                  <TableCell>{rider.createdAt ? new Date(rider.createdAt).toLocaleDateString() : '—'}</TableCell>
                   <TableCell>
                     <Box sx={{ display: 'flex', gap: 1 }}>
-                      <Button 
-                        size="small" 
-                        variant="outlined"
-                        startIcon={<Visibility />}
-                      >
-                        View
-                      </Button>
-                      <IconButton 
-                        size="small" 
-                        onClick={(e) => handleMenuClick(e, ride)}
-                      >
-                        <MoreVert />
-                      </IconButton>
+                      <Button size="small" variant="outlined" startIcon={<Visibility />} onClick={() => openView(rider)}>View</Button>
+                      <IconButton size="small" color="error" onClick={() => promptDelete(rider)} title="Delete"><Delete /></IconButton>
                     </Box>
                   </TableCell>
                 </TableRow>
@@ -380,6 +396,67 @@ export default function RideManagement() {
         />
       </Paper>
 
+      {/* View Rider Dialog */}
+      <Dialog open={viewOpen} onClose={closeView} maxWidth="sm" fullWidth>
+        <DialogTitle>Rider details</DialogTitle>
+        <DialogContent>
+          {selectedItem ? (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              <Typography><strong>Name:</strong> {selectedItem.fullName || selectedItem.username || '—'}</Typography>
+              <Typography><strong>Email:</strong> {selectedItem.email || '—'}</Typography>
+              <Typography><strong>Phone:</strong> {selectedItem.phone || '—'}</Typography>
+              <Typography><strong>Joined:</strong> {selectedItem.createdAt ? new Date(selectedItem.createdAt).toLocaleString() : '—'}</Typography>
+              <Typography><strong>Rating:</strong> {selectedItem.rating != null ? selectedItem.rating : '—'}</Typography>
+              <Typography sx={{ mt: 2 }}><strong>Raw JSON:</strong></Typography>
+              <Paper variant="outlined" sx={{ p: 1, whiteSpace: 'pre-wrap', fontFamily: 'monospace', fontSize: 12 }}>
+                {JSON.stringify(selectedItem, null, 2)}
+              </Paper>
+            </Box>
+          ) : (
+            <Box sx={{ py: 2 }}>No rider selected</Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeView}>Close</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete confirmation dialog */}
+      <Dialog open={confirmDeleteOpen} onClose={() => setConfirmDeleteOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>Confirm delete</DialogTitle>
+        <DialogContent>
+          <Typography>Are you sure you want to permanently delete <strong>{selectedItem?.fullName || selectedItem?.username}</strong>?</Typography>
+          {deleteError && <Box sx={{ color: 'error.main', mt: 2 }}>{deleteError}</Box>}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmDeleteOpen(false)} disabled={deleting}>Cancel</Button>
+          <Button onClick={performDelete} color="error" variant="contained" disabled={deleting}>
+            {deleting ? 'Deleting...' : 'Delete'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* PDF Preview Dialog */}
+      <Dialog open={previewOpen} onClose={closePreview} maxWidth="lg" fullWidth>
+        <DialogTitle>Riders PDF Preview</DialogTitle>
+        <DialogContent sx={{ height: '80vh' }}>
+          {previewLoading ? <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}><CircularProgress /></Box> : (
+            previewUrl ? <iframe title="riders-pdf" src={previewUrl} style={{ width: '100%', height: '100%', border: 'none' }} /> : <Box sx={{ p: 2 }}>No preview available</Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closePreview}>Close</Button>
+          <Button onClick={savePreviewToDisk} variant="contained">Download</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* simple download animation indicator */}
+      {animatingDownload && (
+        <Box sx={{ position: 'fixed', right: 24, bottom: 24, width: 80, height: 80, borderRadius: '50%', bgcolor: 'background.paper', boxShadow: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', animation: 'flyToDownloads 1.2s ease-in-out' }}>
+          <GetApp />
+        </Box>
+      )}
+
       {/* Action Menu */}
       <Menu
         anchorEl={anchorEl}
@@ -394,7 +471,7 @@ export default function RideManagement() {
           <Edit className="mr-2" fontSize="small" />
           Edit Ride
         </MenuItem>
-        {selectedRide && selectedRide.status !== 'Cancelled' && (
+        {selectedItem && selectedItem.status !== 'Cancelled' && (
           <MenuItem onClick={handleCancel}>
             <Cancel className="mr-2" fontSize="small" />
             Cancel Ride
