@@ -107,22 +107,46 @@ export default function Dashboard() {
     async function fetchSummary() {
       setLoadingSummary(true);
       try {
-        // Fetch user, ride, pending, ratings, help ticket counts from backend
-        const [userRes, rideRes, pendingRes, ratingRes, helpRes] = await Promise.all([
+        // Fetch counts concurrently but tolerate individual failures.
+        const promises = [
           UserService.getAllUsers(),
           RideService.getAllRides(),
           DriverService.getPendingDrivers(),
           UserService.getAllRatings(),
           UserService.getAllHelpTickets()
-        ]);
+        ];
+
+        const results = await Promise.allSettled(promises);
+
+        // Helper to normalize settled results
+        const valueOrDefault = (res, defaultVal) => {
+          if (!res) return defaultVal;
+          if (res.status === 'fulfilled') return res.value;
+          console.error('Summary fetch failed:', res.reason);
+          return defaultVal;
+        };
+
+        const userRes = valueOrDefault(results[0], { data: [] });
+        const rideRes = valueOrDefault(results[1], { data: [] });
+        const pendingRes = valueOrDefault(results[2], { data: [] });
+        const ratingRes = valueOrDefault(results[3], { data: [] });
+        const helpRes = valueOrDefault(results[4], { data: [] });
+
+        const usersCount = Array.isArray(userRes.data) ? userRes.data.length : (userRes.data?.length || 0);
+        const ridesCount = Array.isArray(rideRes.data) ? rideRes.data.length : (rideRes.data?.length || 0);
+        const pendingCount = Array.isArray(pendingRes.data) ? pendingRes.data.length : (pendingRes.data?.length || 0);
+        const ratingsCount = Array.isArray(ratingRes.data) ? ratingRes.data.length : (ratingRes.data?.length || 0);
+        const helpCount = Array.isArray(helpRes.data) ? helpRes.data.length : (helpRes.data?.length || 0);
+
         setSummary([
-          { title: 'Users', value: userRes.data.length, link: '/admin/user-management', icon: <People />, color: '#1976D2' },
-          { title: 'Rides', value: rideRes.data.length, link: '/admin/ride-management', icon: <DirectionsBike />, color: '#388E3C' },
-          { title: 'Pending', value: pendingRes.data.length, link: '/admin/reports', icon: <Assessment />, color: '#F57C00' },
-          { title: 'Ratings', value: ratingRes.data.length, link: '/admin/ratings-review', icon: <StarRate />, color: '#D32F2F' },
-          { title: 'Help Tickets', value: helpRes.data.length, link: '/admin/help-management', icon: <Help />, color: '#7B1FA2' },
+          { title: 'Users', value: usersCount, link: '/admin/user-management', icon: <People />, color: '#1976D2' },
+          { title: 'Rides', value: ridesCount, link: '/admin/ride-management', icon: <DirectionsBike />, color: '#388E3C' },
+          { title: 'Pending', value: pendingCount, link: '/admin/reports', icon: <Assessment />, color: '#F57C00' },
+          { title: 'Ratings', value: ratingsCount, link: '/admin/ratings-review', icon: <StarRate />, color: '#D32F2F' },
+          { title: 'Help Tickets', value: helpCount, link: '/admin/help-management', icon: <Help />, color: '#7B1FA2' },
         ]);
       } catch (err) {
+        console.error('Failed to fetch admin summary:', err);
         setSummary([]);
       }
       setLoadingSummary(false);
