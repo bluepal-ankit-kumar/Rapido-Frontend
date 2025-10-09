@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react'; // useEffect has been removed
+import React, { useState, useRef } from 'react'; 
 import { Link } from 'react-router-dom';
 import useAuth from '../../hooks/useAuth.js';
 import {
@@ -39,10 +39,16 @@ export default function Header({ onSidebarToggle }) {
               <span className="font-bold text-2xl" style={{ color: darkColor }}>Rapido</span>
             </Link>
           </div>
-          {/* Right Nav: About, Help, User Section */}
+          
+          {/* Right Nav: About, Help (only for customers), User Section */}
           <div className="flex items-center space-x-6">
             <Link to="/about" className="text-gray-700 hover:text-yellow-400 font-medium">About</Link>
-            <Link to="/help" className="text-gray-700 hover:text-yellow-400 font-medium">Help</Link>
+            
+            {/* Only show Help link to logged-in customers */}
+            {user && userRole === 'CUSTOMER' && (
+              <Link to="/help" className="text-gray-700 hover:text-yellow-400 font-medium">Help</Link>
+            )}
+            
             {user ? (
               <div className="relative">
                 <button
@@ -66,7 +72,7 @@ export default function Header({ onSidebarToggle }) {
                 >
                   <div ref={dropdownRef} className="profile-dropdown absolute right-0 mt-2 bg-white rounded-xl shadow-xl z-50 border border-gray-100 animate-fade-in overflow-hidden">
                     <div className="flex flex-col h-full w-full justify-center items-center">
-                      {userRole === 'rider' ? <RiderProfile /> : <Profile />}
+                      {userRole === 'RIDER' ? <RiderProfile /> : <Profile />}
                     </div>
                   </div>
                 </CSSTransition>
@@ -95,7 +101,12 @@ export default function Header({ onSidebarToggle }) {
           <nav className="md:hidden mt-4 pb-4 border-t border-gray-200 pt-4">
             <div className="flex flex-col space-y-4">
               <Link to="/about" className="text-gray-700 hover:text-yellow-500 font-medium">About</Link>
-              <Link to="/help" className="text-gray-700 hover:text-yellow-500 font-medium">Help</Link>
+              
+              {/* Only show Help link to logged-in customers in mobile menu */}
+              {user && userRole === 'CUSTOMER' && (
+                <Link to="/help" className="text-gray-700 hover:text-yellow-500 font-medium">Help</Link>
+              )}
+              
               {user && (
                 <button
                   onClick={() => { setProfileDropdown((open) => !open); setMobileMenuOpen(false); }}

@@ -94,15 +94,15 @@ export default function RiderProfile() {
             <Typography variant="h5" fontWeight="medium">{profile.fullName}</Typography>
             <Typography variant="body2" color="textSecondary">{profile.email}</Typography>
             <Typography variant="body2" color="textSecondary">{profile.phone}</Typography>
-            <Typography variant="body2" color="textSecondary">{profile.address || 'No address provided'}</Typography>
+            {/* <Typography variant="body2" color="textSecondary">{profile.address || 'No address provided'}</Typography> */}
             <Box className="flex flex-col sm:flex-row justify-center items-center gap-3 mt-4">
-              <Button 
+              {/* <Button 
                 variant="contained" 
                 className="bg-yellow-500 hover:bg-yellow-600 shadow-md px-6 py-2 rounded-lg text-base font-semibold"
                 onClick={() => setEditModalOpen(true)}
               >
                 Edit Profile
-              </Button>
+              </Button> */}
               <Button 
                 variant="outlined" 
                 color="error" 
