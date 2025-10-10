@@ -157,20 +157,36 @@ export default function RideBooking() {
   //   }
   // };
 
+  // const reverseGeocode = async (lat, lon) => {
+  //   try {
+  //     const response = await axios.get('https://nominatim.openstreetmap.org/reverse', {
+  //       params: { lat, lon, format: 'json' },
+  //       timeout: 20000 // Keep the increased timeout, but be ready for it to fail.
+  //     });
+  //     return response.data.display_name || null;
+  //   } catch (err) {
+  //     // Log the error (timeout) for debugging
+  //     console.error("Nominatim reverse geocode failed:", err);
+  //     // **Crucial Change:** Return null on failure (timeout or network error)
+  //     return null;
+  //   }
+  // };
+
+
+
+
   const reverseGeocode = async (lat, lon) => {
-    try {
-      const response = await axios.get('https://nominatim.openstreetmap.org/reverse', {
-        params: { lat, lon, format: 'json' },
-        timeout: 20000 // Keep the increased timeout, but be ready for it to fail.
-      });
-      return response.data.display_name || null;
-    } catch (err) {
-      // Log the error (timeout) for debugging
-      console.error("Nominatim reverse geocode failed:", err);
-      // **Crucial Change:** Return null on failure (timeout or network error)
-      return null;
-    }
-  };
+  try {
+    const response = await axios.get("http://localhost:8080/api/maps/reverse", {
+      params: { lat, lon },
+    });
+    return response.data.display_name || "Unknown location";
+  } catch (err) {
+    console.error("Reverse geocode failed:", err);
+    return "Unknown location";
+  }
+};
+
 
   // --- Event Handlers ---
 

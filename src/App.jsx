@@ -45,7 +45,7 @@ import RideManagement from './pages/Admin/RideManagement.jsx';
 import Reports from './pages/Admin/Reports.jsx';
 import RatingsReview from './pages/Admin/RatingsReview.jsx';
 import HelpManagement from './pages/Admin/HelpManagement.jsx';
-import 'leaflet-routing-machine/dist/leaflet-routing-machine.css'; 
+import 'leaflet-routing-machine/dist/leaflet-routing-machine.css';
 import 'leaflet/dist/leaflet.css';
 
 

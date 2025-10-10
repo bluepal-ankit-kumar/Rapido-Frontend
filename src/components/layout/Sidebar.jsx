@@ -1,8 +1,7 @@
 import React from 'react';
-import { Close } from '@mui/icons-material';
+import { Close, Payment } from '@mui/icons-material';
 import { Link, useLocation } from 'react-router-dom';
-import useAuth from '../../hooks/useAuth.js';
-import { useNavigate } from 'react-router-dom';
+import useAuth from '../../hooks/useAuth';
 import {
   Dashboard,
   TwoWheeler,
@@ -15,21 +14,22 @@ import {
   StarRate,
   SupportAgent,
   Home,
-  ExitToApp
+  ExitToApp,
 } from '@mui/icons-material';
 
 const customerLinks = [
   { to: '/', label: 'Home', icon: <Home /> },
   { to: '/ride-booking', label: 'Book Ride', icon: <TwoWheeler /> },
   { to: '/ride-history', label: 'History', icon: <History /> },
-  // Profile, Help removed
+  { to: '/help', label: 'Help', icon: <Help /> },
 ];
 
 const riderLinks = [
   { to: '/rider/dashboard', label: 'Dashboard', icon: <Dashboard /> },
   { to: '/rider/accept-ride', label: 'Accept Ride', icon: <DirectionsBike /> },
   { to: '/rider/ride-history', label: 'Ride History', icon: <History /> },
-  // Profile, Help removed
+  { to: '/rider/profile', label: 'Profile', icon: <Person /> },
+  { to: '/rider/help', label: 'Help', icon: <Help /> },
 ];
 
 const adminLinks = [
@@ -38,27 +38,25 @@ const adminLinks = [
   { to: '/admin/ride-management', label: 'Rides', icon: <TwoWheeler /> },
   { to: '/admin/reports', label: 'Reports', icon: <Assessment /> },
   { to: '/admin/ratings-review', label: 'Ratings', icon: <StarRate /> },
-  // Help removed
+  { to: '/admin/help-management', label: 'Help', icon: <SupportAgent /> },
 ];
 
 export default function Sidebar({ open, onClose }) {
   const { user, userRole } = useAuth();
   const location = useLocation();
-  // Normalize role from either context.userRole or user.role
   const normalizedRole = ((userRole || user?.role || '') + '').toUpperCase();
   let links = customerLinks;
-  let roleTitle = "Customer";
+  let roleTitle = 'Customer';
   if (normalizedRole === 'RIDER') {
     links = riderLinks;
-    roleTitle = "Captain";
+    roleTitle = 'Captain';
   } else if (normalizedRole === 'ADMIN') {
     links = adminLinks;
-    roleTitle = "Administrator";
+    roleTitle = 'Administrator';
   }
-  // Sidebar is hidden by default, slides in on all screens when open
+
   return (
     <>
-      {/* Overlay for all screens */}
       {open && (
         <div className="fixed inset-0 bg-black bg-opacity-30 z-40" onClick={onClose}></div>
       )}
@@ -70,7 +68,6 @@ export default function Sidebar({ open, onClose }) {
         `}
         style={{ display: open ? 'flex' : 'none', top: 64 }}
       >
-        {/* Close Button (top right) */}
         <button
           className="absolute top-3 right-3 text-gray-500 hover:text-yellow-500 focus:outline-none"
           onClick={onClose}
@@ -78,7 +75,6 @@ export default function Sidebar({ open, onClose }) {
         >
           <Close />
         </button>
-        {/* Logo and Brand */}
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 rounded-full bg-yellow-400 flex items-center justify-center">
@@ -90,23 +86,25 @@ export default function Sidebar({ open, onClose }) {
             </div>
           </div>
         </div>
-        {/* Navigation */}
         <nav className="flex-1 py-6 px-4 overflow-y-auto">
           <ul className="space-y-1">
-            {links.map(link => (
+            {links.map((link) => (
               <li key={link.to}>
                 <Link
                   to={link.to}
+                  state={link.to === '/payment' ? { amount: 10.0 } : undefined} // Default amount for standalone payment
                   className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                    location.pathname === link.to 
-                      ? 'bg-yellow-50 text-yellow-600 font-medium' 
+                    location.pathname === link.to
+                      ? 'bg-yellow-50 text-yellow-600 font-medium'
                       : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                   }`}
                   onClick={onClose}
                 >
-                  <span className={`${
-                    location.pathname === link.to ? 'text-yellow-500' : 'text-gray-400'
-                  }`}>
+                  <span
+                    className={`${
+                      location.pathname === link.to ? 'text-yellow-500' : 'text-gray-400'
+                    }`}
+                  >
                     {link.icon}
                   </span>
                   <span>{link.label}</span>
@@ -118,5 +116,4 @@ export default function Sidebar({ open, onClose }) {
       </aside>
     </>
   );
-// ...existing code...
 }
