@@ -3,16 +3,17 @@ import {
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Typography, Button,
   Chip, Box, TextField, InputAdornment, IconButton, Menu, MenuItem, TablePagination, Avatar,
   Grid, Card, CardContent, Dialog, DialogTitle, DialogContent, DialogActions, FormControl, InputLabel, Select,
-  CircularProgress, Alert
+  CircularProgress, Alert, Divider
 } from '@mui/material';
 import { 
-  Search, FilterList, MoreVert, Visibility, Edit, Delete, PersonAdd, Block, CheckCircle,
+  Search, FilterList, MoreVert, Visibility, Edit, Delete, Block, CheckCircle,
   Email, Phone, CalendarToday, AdminPanelSettings, Person, TwoWheeler
 } from '@mui/icons-material';
 import { GetApp } from '@mui/icons-material';
 // import UserService if needed
 
 import UserService from '../../services/UserService';
+import DriverService from '../../services/DriverService';
 // ...existing code...
 
 const statusColors = { 'Active': '#4CAF50', 'Inactive': '#F44336', 'Pending': '#FF9800', 'Suspended': '#9E9E9E' };
@@ -21,6 +22,7 @@ const roleColors = { 'Customer': '#2196F3', 'Rider': '#FFC107', 'Admin': '#9C27B
 
 export default function UserManagement() {
   const [usersData, setUsersData] = useState([]);
+  const [viewMode, setViewMode] = useState('CUSTOMER'); // 'CUSTOMER' or 'RIDER'
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState('');
 
@@ -84,16 +86,18 @@ export default function UserManagement() {
   const [editMode, setEditMode] = useState(false);
   const [formData, setFormData] = useState({ name: '', email: '', phone: '', role: 'Customer', status: 'Active' });
 
-  // Keep only customers in this view
+  // Separate customers and riders so we can view/manage them independently
   const customers = usersData.filter(u => (u.userType || u.role || '').toString().toUpperCase() === 'CUSTOMER');
-  const totalUsers = customers.length;
-  const activeUsers = customers.filter(u => (u.status || '').toString().toLowerCase() === 'active').length;
-  const riderUsers = usersData.filter(u => (u.userType || u.role || '').toString().toUpperCase() === 'RIDER').length;
-  const customerUsers = customers.length;
+  const riders = usersData.filter(u => (u.userType || u.role || '').toString().toUpperCase() === 'RIDER');
+  const totalCustomers = customers.length;
+  const totalRiders = riders.length;
+  const activeCustomers = customers.filter(u => (u.status || '').toString().toLowerCase() === 'active').length;
+  const activeUsers = usersData.filter(u => (u.status || '').toString().toLowerCase() === 'active').length;
 
   // Filter users based on search and filters
-  // Work on customers array only
-  const filteredUsers = customers.filter(user => {
+  // Work on the selected view (customers or riders)
+  const sourceList = viewMode === 'CUSTOMER' ? customers : riders;
+  const filteredUsers = sourceList.filter(user => {
     const name = (user.fullName || user.username || '').toString();
     const matchesSearch = name.toLowerCase().includes(searchTerm.toLowerCase()) || 
                          (user.email || '').toString().toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -177,10 +181,58 @@ export default function UserManagement() {
   };
 
   // Add user
-  const handleAddUser = () => {
-    setFormData({ name: '', email: '', phone: '', role: 'Customer', status: 'Active' });
+  const handleAddUser = (role = 'Customer') => {
+    setFormData({ name: '', email: '', phone: '', role, status: 'Active' });
     setEditMode(false);
     setOpenDialog(true);
+  };
+
+  // Driver details dialog state (for Riders view)
+  const [driverDialogOpen, setDriverDialogOpen] = useState(false);
+  const [driverLoading, setDriverLoading] = useState(false);
+  const [driverDetails, setDriverDetails] = useState(null);
+  const [driverError, setDriverError] = useState('');
+  const [driverSection, setDriverSection] = useState('PROFILE'); // 'PROFILE' | 'VEHICLE'
+
+  const openDriverDetails = async (user) => {
+    if (!user) return;
+    setSelectedUser(user);
+    setDriverSection('PROFILE');
+    setDriverDialogOpen(true);
+    setDriverLoading(true);
+    setDriverError('');
+    setDriverDetails(null);
+    try {
+      // try with user.id — backend expects the userId in the route
+      const id = user.id || user.userId || user._id;
+      const data = await DriverService.getDriverByUserId(id);
+      // Normalize common API envelope shapes: { data: {...} } or { driver: {...} } or array
+      let payload = data && data.data !== undefined ? data.data : data;
+      if (payload && payload.driver) payload = payload.driver;
+      // If API nests driver under `user` or `request`, merge those fields for easier access
+      if (payload && payload.user && typeof payload.user === 'object') {
+        payload = { ...payload, ...payload.user };
+      }
+      if (payload && payload.request && typeof payload.request === 'object') {
+        payload = { ...payload, ...payload.request };
+      }
+      if (Array.isArray(payload) && payload.length > 0) payload = payload[0];
+      if (payload && payload.content && Array.isArray(payload.content) && payload.content.length > 0) payload = payload.content[0];
+      console.debug('Normalized driver details payload:', payload);
+      setDriverDetails(payload || data);
+    } catch (err) {
+      console.error('Failed to load driver details:', err);
+      setDriverError(err.message || 'Failed to load driver details');
+    } finally {
+      setDriverLoading(false);
+    }
+  };
+
+  const closeDriverDialog = () => {
+    setDriverDialogOpen(false);
+    setDriverDetails(null);
+    setDriverError('');
+    setDriverSection('PROFILE');
   };
 
   // Dialog actions
@@ -254,6 +306,29 @@ export default function UserManagement() {
     a.remove();
   };
 
+  // Derived/normalized driver fields for the dialog (covers multiple API shapes)
+  const resolvedDriver = driverDetails || {};
+  const drvName = resolvedDriver.fullName || resolvedDriver.name || selectedUser?.fullName || '—';
+  // also try nested locations (user.username, profile.name)
+  const drvNameAlt = resolvedDriver.user?.fullName || resolvedDriver.user?.name || resolvedDriver.user?.username || resolvedDriver.profile?.name || '';
+  const finalDrvName = drvNameAlt || drvName;
+  const drvEmail = resolvedDriver.email || selectedUser?.email || '—';
+  const drvPhone = resolvedDriver.phone || selectedUser?.phone || '—';
+  const drvDob = resolvedDriver.dob || (resolvedDriver.profile && resolvedDriver.profile.dob) || '—';
+  const drvPan = resolvedDriver.panNumber || resolvedDriver.pan || (resolvedDriver.identity && resolvedDriver.identity.pan) || '—';
+
+  // resolve license image from common locations
+  const drvLicenseUrl = resolvedDriver.licenseImageUrl || resolvedDriver.licenseImage || resolvedDriver.license?.url || (Array.isArray(resolvedDriver.documents) && (resolvedDriver.documents.find(d => /license|licence/i.test(d.type || d.name || ''))?.url)) || '';
+  const drvLicenseNumber = resolvedDriver.licenseNumber || resolvedDriver.license?.number || (resolvedDriver.licenseInfo && resolvedDriver.licenseInfo.number) || '—';
+  const drvLicenseExpiry = resolvedDriver.licenseExpiry || resolvedDriver.license?.expiry || (resolvedDriver.licenseInfo && resolvedDriver.licenseInfo.expiry) || '—';
+
+  const vehicleObj = resolvedDriver.vehicle || resolvedDriver.vehicleDetails || {};
+  const drvVehicleMakeModel = (vehicleObj.make ? `${vehicleObj.make} ${vehicleObj.model || ''}` : (vehicleObj.makeModel || vehicleObj.model || '—'));
+  const drvVehicleNumber = vehicleObj.number || vehicleObj.registrationNumber || resolvedDriver.vehicleNumber || '—';
+
+  // header name (show even when driverDetails not loaded)
+  const headerName = (driverDetails && (driverDetails.fullName || driverDetails.name || driverDetails.user?.fullName || driverDetails.user?.name)) || selectedUser?.fullName || selectedUser?.username || '—';
+
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       {loading && (
@@ -266,11 +341,16 @@ export default function UserManagement() {
       <Box className="mb-6 flex justify-between items-center">
         <div>
           <Typography variant="h4" className="font-bold text-gray-800 mb-2">User Management</Typography>
-          {/* <Typography variant="body1" className="text-gray-600">Manage all users in the system</Typography> */}
+          <Box className="mt-2 flex items-center gap-2">
+            <Button variant={viewMode === 'CUSTOMER' ? 'contained' : 'outlined'} size="small" onClick={() => setViewMode('CUSTOMER')}>Customers ({totalCustomers})</Button>
+            <Button variant={viewMode === 'RIDER' ? 'contained' : 'outlined'} size="small" onClick={() => setViewMode('RIDER')}>Riders ({totalRiders})</Button>
+          </Box>
         </div>
-        <Button variant="contained" startIcon={<GetApp />} onClick={() => openPdfPreviewFor('CUSTOMER')} className="bg-yellow-500 hover:bg-yellow-600">
-          Download PDF
-        </Button>
+        <Box className="flex items-center gap-3">
+          <Button variant="contained" startIcon={<GetApp />} onClick={() => openPdfPreviewFor(viewMode)} className="bg-yellow-500 hover:bg-yellow-600">
+            Download PDF
+          </Button>
+        </Box>
       </Box>
 
       {/* Statistics Cards */}
@@ -369,6 +449,11 @@ export default function UserManagement() {
                   </TableCell> */}
                   <TableCell>
                     <Box className="flex gap-1">
+                      {viewMode === 'RIDER' && (
+                        <IconButton size="small" color="primary" onClick={() => openDriverDetails(user)}>
+                          <Visibility />
+                        </IconButton>
+                      )}
                       <IconButton size="small" color="error" onClick={() => { setSelectedUser(user); setConfirmDeleteOpen(true); }}>
                         <Delete />
                       </IconButton>
@@ -429,6 +514,92 @@ export default function UserManagement() {
           <Button onClick={performDelete} color="error" variant="contained" disabled={deleting}>
             {deleting ? 'Deleting...' : 'Delete'}
           </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Driver Details Dialog (for Riders) */}
+      <Dialog open={driverDialogOpen} onClose={closeDriverDialog} maxWidth="md" fullWidth>
+        <DialogTitle>Driver Details</DialogTitle>
+        <DialogContent dividers>
+          {/* Header + section toggles (always visible) */}
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, mb: 1 }}>
+            <Box>
+              <Typography variant="h5" sx={{ fontWeight: 700 }}>{headerName || '—'}</Typography>
+              <Typography variant="body2" color="text.secondary">Driver profile</Typography>
+            </Box>
+            <Box>
+              <Button variant={driverSection === 'PROFILE' ? 'contained' : 'outlined'} size="small" onClick={() => setDriverSection('PROFILE')} sx={{ mr: 1 }}>Profile</Button>
+              <Button variant={driverSection === 'VEHICLE' ? 'contained' : 'outlined'} size="small" onClick={() => setDriverSection('VEHICLE')}>Vehicle</Button>
+            </Box>
+          </Box>
+
+          <Divider sx={{ mb: 2 }} />
+
+          {driverLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}><CircularProgress /></Box>
+          ) : driverError ? (
+            <Alert severity="error">{driverError}</Alert>
+          ) : driverDetails ? (
+            <Box>
+              {driverSection === 'PROFILE' && (
+                <Box>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} md={6}>
+                      <Typography variant="caption" color="text.secondary">Full name</Typography>
+                      <Typography variant="body1">{finalDrvName}</Typography>
+                    </Grid>
+                    <Grid item xs={12} md={6}>
+                      <Typography variant="caption" color="text.secondary">Date of birth</Typography>
+                      <Typography variant="body1">{drvDob}</Typography>
+                    </Grid>
+                    <Grid item xs={12} md={6}>
+                      <Typography variant="caption" color="text.secondary">Email</Typography>
+                      <Typography variant="body1">{drvEmail}</Typography>
+                    </Grid>
+                    <Grid item xs={12} md={6}>
+                      <Typography variant="caption" color="text.secondary">Phone</Typography>
+                      <Typography variant="body1">{drvPhone}</Typography>
+                    </Grid>
+                  </Grid>
+                </Box>
+              )}
+
+              {driverSection === 'VEHICLE' && (
+                <Box>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} md={6}>
+                      <Typography variant="caption" color="text.secondary">Make / Model</Typography>
+                      <Typography variant="body1">{drvVehicleMakeModel}</Typography>
+                    </Grid>
+                    <Grid item xs={12} md={6}>
+                      <Typography variant="caption" color="text.secondary">Registration No</Typography>
+                      <Typography variant="body1">{drvVehicleNumber}</Typography>
+                    </Grid>
+                    <Grid item xs={12} md={6}>
+                      <Typography variant="caption" color="text.secondary">License No</Typography>
+                      <Typography variant="body1">{drvLicenseNumber}</Typography>
+                    </Grid>
+                    <Grid item xs={12} md={6}>
+                      <Typography variant="caption" color="text.secondary">Valid Till</Typography>
+                      <Typography variant="body1">{drvLicenseExpiry}</Typography>
+                    </Grid>
+                    <Grid item xs={12}>
+                      {drvLicenseUrl ? (
+                        <Box component="img" src={drvLicenseUrl} alt="license" sx={{ maxWidth: 360, borderRadius: 1, boxShadow: 1 }} />
+                      ) : (
+                        <Typography>No license image available</Typography>
+                      )}
+                    </Grid>
+                  </Grid>
+                </Box>
+              )}
+            </Box>
+          ) : (
+            <Box sx={{ p: 2 }}>No details available</Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeDriverDialog}>Close</Button>
         </DialogActions>
       </Dialog>
 

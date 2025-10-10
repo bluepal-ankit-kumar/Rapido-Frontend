@@ -44,6 +44,7 @@ import {
 import { Delete, GetApp } from '@mui/icons-material';
 import { Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import UserService from '../../services/UserService';
+import RideService from '../../services/RideService';
 
 // Display riders list instead of mock rides
 const statusColors = {
@@ -60,7 +61,7 @@ const vehicleIcons = {
 };
 
 export default function RideManagement() {
-  const [ridersData, setRidersData] = useState([]);
+  const [ridesData, setRidesData] = useState([]);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
@@ -81,41 +82,41 @@ export default function RideManagement() {
 
   useEffect(() => {
     let mounted = true;
-    async function loadRiders() {
+    async function loadRides() {
       setLoading(true);
       setError('');
       try {
-        const res = await UserService.getAllUsers(0, 1000);
+        const res = await RideService.getAllRides();
         const payload = res && res.data !== undefined ? res.data : res;
-        let users = [];
-        if (Array.isArray(payload)) users = payload;
-        else if (payload && Array.isArray(payload.data)) users = payload.data;
-        else if (payload && payload.data && Array.isArray(payload.data.content)) users = payload.data.content;
-        else users = [];
-        const riders = users.filter(u => (u.userType || u.role || '').toString().toUpperCase() === 'RIDER');
-        if (mounted) setRidersData(riders);
+        let rides = [];
+        if (Array.isArray(payload)) rides = payload;
+        else if (payload && Array.isArray(payload.data)) rides = payload.data;
+        else if (payload && payload.data && Array.isArray(payload.data.content)) rides = payload.data.content;
+        else if (payload && Array.isArray(payload.rides)) rides = payload.rides;
+        else rides = [];
+        if (mounted) setRidesData(rides);
       } catch (err) {
-        console.error('Failed to load riders for RideManagement:', err);
-        setError(err.message || 'Failed to load riders');
+        console.error('Failed to load rides for RideManagement:', err);
+        setError(err.message || 'Failed to load rides');
       } finally {
         if (mounted) setLoading(false);
       }
     }
-    loadRiders();
+    loadRides();
     return () => { mounted = false; };
   }, []);
 
-  // Calculate statistics for riders
-  const totalRides = ridersData.length;
+  // Calculate statistics for rides
+  const totalRides = ridesData.length;
   const completedRides = 0;
   const ongoingRides = 0;
   const cancelledRides = 0;
   const totalRevenue = 0;
 
   // Handle search and filters
-  const filteredRides = ridersData.filter(user => {
-    const name = (user.fullName || user.username || '').toString();
-    const matchesSearch = name.toLowerCase().includes(searchTerm.toLowerCase()) || (user.email || '').toString().toLowerCase().includes(searchTerm.toLowerCase()) || (user.phone || '').toString().includes(searchTerm);
+  const filteredRides = ridesData.filter(ride => {
+    const customerName = ((ride.customer && (ride.customer.fullName || ride.customer.username)) || ride.customerName || '').toString();
+    const matchesSearch = customerName.toLowerCase().includes(searchTerm.toLowerCase()) || (ride.rideId || ride.id || '').toString().includes(searchTerm) || (ride.status || '').toString().toLowerCase().includes(searchTerm.toLowerCase());
     return matchesSearch;
   });
 
@@ -170,48 +171,71 @@ export default function RideManagement() {
   };
 
   // Delete flow (similar to UserManagement)
-  const promptDelete = (rider) => {
-    setSelectedItem(rider);
+  // Prompt cancel (admin action) for ride
+  const promptDelete = (ride) => {
+    setSelectedItem(ride);
     setConfirmDeleteOpen(true);
   };
 
+  // Cancel ride using RideService.updateRideStatus
   const performDelete = async () => {
-    if (!selectedItem || !selectedItem.id) {
-      setDeleteError('Invalid rider selected');
+    if (!selectedItem || !(selectedItem.id || selectedItem.rideId)) {
+      setDeleteError('Invalid ride selected');
       return;
     }
     setDeleting(true);
     setDeleteError('');
     try {
-      await UserService.deleteUser(selectedItem.id);
-      setRidersData(prev => prev.filter(r => r.id !== selectedItem.id));
+      const rideId = selectedItem.id || selectedItem.rideId;
+      await RideService.updateRideStatus({ rideId, status: 'CANCELLED' });
+      setRidesData(prev => prev.filter(r => (r.id || r.rideId) !== rideId));
       setConfirmDeleteOpen(false);
       setSelectedItem(null);
       setAnchorEl(null);
     } catch (err) {
-      console.error('Failed to delete rider:', err);
-      setDeleteError(err.response?.data?.message || err.message || 'Failed to delete rider');
+      console.error('Failed to cancel ride:', err);
+      setDeleteError(err.response?.data?.message || err.message || 'Failed to cancel ride');
     } finally {
       setDeleting(false);
     }
   };
 
   // Download single rider details as CSV fallback
-  const downloadRider = async (rider) => {
-    // Open PDF preview modal that fetches riders PDF from backend (userType=RIDER)
-    setPreviewLoading(true);
+  const downloadRider = async () => {
+    // Fallback: generate CSV from ridesData and download
     try {
-      const res = await UserService.downloadUsersPdf('RIDER');
-      const blob = new Blob([res.data], { type: res.headers?.['content-type'] || 'application/pdf' });
-      const url = window.URL.createObjectURL(blob);
-      setPreviewUrl(url);
-      setPreviewOpen(true);
+      if (!ridesData || ridesData.length === 0) return;
+      const fields = ['rideId', 'customerName', 'driverName', 'pickupAddress', 'dropAddress', 'status', 'fare', 'createdAt'];
+      const csvRows = [fields.join(',')];
+      for (const r of ridesData) {
+        const row = fields.map(f => {
+          let v = '';
+          if (f === 'rideId') v = r.rideId || r.id || '';
+          else if (f === 'customerName') v = (r.customer && (r.customer.fullName || r.customer.username)) || r.customerName || '';
+          else if (f === 'driverName') v = (r.driver && (r.driver.fullName || r.driver.username)) || r.driverName || '';
+          else if (f === 'pickupAddress') v = r.pickupAddress || (r.locationFrom && r.locationFrom.address) || '';
+          else if (f === 'dropAddress') v = r.dropAddress || (r.locationTo && r.locationTo.address) || '';
+          else if (f === 'status') v = r.status || '';
+          else if (f === 'fare') v = r.fare != null ? r.fare : '';
+          else if (f === 'createdAt') v = r.createdAt || '';
+          return `"${(v ?? '').toString().replace(/"/g, '""')}"`;
+        }).join(',');
+        csvRows.push(row);
+      }
+      const csv = csvRows.join('\n');
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `rides-${Date.now()}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
       setAnimatingDownload(true);
       setTimeout(() => setAnimatingDownload(false), 1400);
     } catch (err) {
-      console.error('Failed to fetch riders PDF:', err);
-    } finally {
-      setPreviewLoading(false);
+      console.error('Failed to export rides:', err);
     }
   };
 
@@ -342,41 +366,40 @@ export default function RideManagement() {
   <Paper sx={{ overflow: 'hidden', width: '100%', mt: { xs: 2, sm: 0 } }}>
         <TableContainer>
           <Table>
-            <TableHead sx={{ bgcolor: 'grey.100' }}>
-              <TableRow>
-                <TableCell>S.No</TableCell>
-                <TableCell>Rider</TableCell>
-                <TableCell>Email</TableCell>
-                <TableCell>Phone</TableCell>
-                <TableCell>Rating</TableCell>
-                <TableCell>Joined</TableCell>
-                <TableCell>Actions</TableCell>
-              </TableRow>
-            </TableHead>
+                      <TableHead sx={{ bgcolor: 'grey.100' }}>
+                        <TableRow>
+                          <TableCell>S.No</TableCell>
+                          <TableCell>Ride ID</TableCell>
+                          <TableCell>Customer</TableCell>
+                          <TableCell>Driver</TableCell>
+                          <TableCell>Pickup</TableCell>
+                          <TableCell>Drop</TableCell>
+                          <TableCell>Status</TableCell>
+                          <TableCell>Fare</TableCell>
+                          <TableCell>Created</TableCell>
+                          <TableCell>Actions</TableCell>
+                        </TableRow>
+                      </TableHead>
             <TableBody>
               {loading ? (
                 <TableRow><TableCell colSpan={7}><Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>Loading riders...</Box></TableCell></TableRow>
               ) : error ? (
                 <TableRow><TableCell colSpan={7}><Box sx={{ color: 'error.main', p: 2 }}>{error}</Box></TableCell></TableRow>
-              ) : filteredRides.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((rider, idx) => (
-                <TableRow key={rider.id || idx} hover>
+              ) : filteredRides.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((ride, idx) => (
+                <TableRow key={ride.id || ride.rideId || idx} hover>
                   <TableCell sx={{ fontWeight: 500 }}>{page * rowsPerPage + idx + 1}.</TableCell>
-                  <TableCell>
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                      <Box>
-                        <Typography variant="body2" sx={{ fontWeight: 500 }}>{rider.fullName || rider.username || '—'}</Typography>
-                        {/* <Typography variant="caption" sx={{ color: 'grey.500' }}>{rider.userType || rider.role}</Typography> */}
-                      </Box>
-                    </Box>
-                  </TableCell>
-                  <TableCell>{rider.email || '—'}</TableCell>
-                  <TableCell>{rider.phone || '—'}</TableCell>
-                  <TableCell>{rider.rating != null ? rider.rating : '—'}</TableCell>
-                  <TableCell>{rider.createdAt ? new Date(rider.createdAt).toLocaleDateString() : '—'}</TableCell>
+                  <TableCell>{ride.rideId || ride.id || '—'}</TableCell>
+                  <TableCell>{(ride.customer && (ride.customer.fullName || ride.customer.username)) || ride.customerName || '—'}</TableCell>
+                  <TableCell>{(ride.driver && (ride.driver.fullName || ride.driver.username)) || ride.driverName || '—'}</TableCell>
+                  <TableCell>{ride.pickupAddress || (ride.locationFrom && ride.locationFrom.address) || '—'}</TableCell>
+                  <TableCell>{ride.dropAddress || (ride.locationTo && ride.locationTo.address) || '—'}</TableCell>
+                  <TableCell>{ride.status || '—'}</TableCell>
+                  <TableCell>{ride.fare != null ? `₹${ride.fare}` : '—'}</TableCell>
+                  <TableCell>{ride.createdAt ? new Date(ride.createdAt).toLocaleDateString() : '—'}</TableCell>
                   <TableCell>
                     <Box sx={{ display: 'flex', gap: 1 }}>
-                      <Button size="small" variant="outlined" startIcon={<Visibility />} onClick={() => openView(rider)}>View</Button>
-                      <IconButton size="small" color="error" onClick={() => promptDelete(rider)} title="Delete"><Delete /></IconButton>
+                      <Button size="small" variant="outlined" startIcon={<Visibility />} onClick={() => openView(ride)}>View</Button>
+                      <IconButton size="small" color="error" onClick={() => promptDelete(ride)} title="Cancel"><Delete /></IconButton>
                     </Box>
                   </TableCell>
                 </TableRow>
