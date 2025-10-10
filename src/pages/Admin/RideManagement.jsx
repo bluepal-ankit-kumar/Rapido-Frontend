@@ -45,6 +45,7 @@ import { Delete, GetApp } from '@mui/icons-material';
 import { Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import UserService from '../../services/UserService';
 import RideService from '../../services/RideService';
+import { reverseGeocode } from '../../services/GeocodingService';
 
 // Display riders list instead of mock rides
 const statusColors = {
@@ -79,6 +80,9 @@ export default function RideManagement() {
   const [previewUrl, setPreviewUrl] = useState('');
   const [previewLoading, setPreviewLoading] = useState(false);
   const [animatingDownload, setAnimatingDownload] = useState(false);
+  // cached reverse-geocoded addresses for display (keyed by ride key)
+  const [pickupLookup, setPickupLookup] = useState({});
+  const [dropLookup, setDropLookup] = useState({});
 
   useEffect(() => {
     let mounted = true;
@@ -105,6 +109,184 @@ export default function RideManagement() {
     loadRides();
     return () => { mounted = false; };
   }, []);
+
+  // Run reverse geocode lookups when ridesData changes
+  useEffect(() => {
+    if (!ridesData || ridesData.length === 0) return undefined;
+    let mounted = true;
+    (async () => {
+      try {
+        for (let i = 0; i < ridesData.length; i++) {
+          const ride = ridesData[i];
+          const key = ride.id || ride.rideId || `r-${i}`;
+
+          const pLat = ride.startLatitude ?? ride.start_latitude ?? ride.startLat ?? ride.pickupLat ?? ride.pickup_lat ?? ride.originLat ?? ride.origin_lat;
+          const pLng = ride.startLongitude ?? ride.start_longitude ?? ride.startLng ?? ride.pickupLng ?? ride.pickup_lng ?? ride.originLng ?? ride.origin_lng;
+          const dLat = ride.endLatitude ?? ride.end_latitude ?? ride.endLat ?? ride.dropLat ?? ride.drop_lat ?? ride.destinationLat ?? ride.destination_lat;
+          const dLng = ride.endLongitude ?? ride.end_longitude ?? ride.endLng ?? ride.dropLng ?? ride.drop_lng ?? ride.destinationLng ?? ride.destination_lng;
+
+          if (pLat != null && pLng != null && !pickupLookup[key]) {
+            // eslint-disable-next-line no-await-in-loop
+            const label = await reverseGeocode(Number(pLat), Number(pLng));
+            if (!mounted) return;
+            setPickupLookup(prev => ({ ...prev, [key]: label }));
+            // small delay to be friendly
+            // eslint-disable-next-line no-await-in-loop
+            await new Promise(res => setTimeout(res, 150));
+          }
+
+          if (dLat != null && dLng != null && !dropLookup[key]) {
+            // eslint-disable-next-line no-await-in-loop
+            const label = await reverseGeocode(Number(dLat), Number(dLng));
+            if (!mounted) return;
+            setDropLookup(prev => ({ ...prev, [key]: label }));
+            // eslint-disable-next-line no-await-in-loop
+            await new Promise(res => setTimeout(res, 150));
+          }
+        }
+      } catch (e) {
+        console.debug('reverse geocode batch failed', e);
+      }
+    })();
+    return () => { mounted = false; };
+  }, [ridesData]);
+
+  // Helpers to normalize ride fields across different API shapes
+  const resolveAddress = (r) => {
+    if (!r) return '—';
+    // small helper to safely read nested values by dot path
+    const get = (obj, path) => path.split('.').reduce((o, k) => (o ? o[k] : undefined), obj);
+    const candidates = [
+      'pickupAddress', 'pickup_address', 'pickup', 'pickup.address', 'pickup.name', 'pickup.display_name',
+      'locationFrom', 'locationFrom.address', 'locationFrom.name',
+      'from', 'from.address', 'from.name', 'from.display_name',
+      'origin', 'origin.address', 'origin.name', 'origin.display_name',
+      'source', 'source.address', 'source.name',
+      'data.pickup', 'data.pickup.address', 'data.pickup.name', 'data.origin', 'data.origin.address', 'data.origin.name',
+      'pickupLocation', 'pickupLocation.address', 'pickupLocation.name', 'pickup_location', 'pickup_location.address', 'pickup_location.name'
+    ];
+    for (const p of candidates) {
+      const v = get(r, p);
+      if (v && typeof v === 'string' && v.trim() !== '') return v;
+      // if the node itself is an object with address/display_name/name
+      if (v && typeof v === 'object') {
+        if (v.address) return v.address;
+        if (v.name) return v.name;
+        if (v.display_name) return v.display_name;
+      }
+    }
+    // fallback: lat/lng pairs
+    if ((r.pickupLat || r.pickup_lat) && (r.pickupLng || r.pickup_lng)) {
+      const lat = r.pickupLat || r.pickup_lat;
+      const lng = r.pickupLng || r.pickup_lng;
+      return `${lat}, ${lng}`;
+    }
+    // common backend shape: startLatitude / startLongitude
+    if ((r.startLatitude || r.start_latitude || r.startLat) && (r.startLongitude || r.start_longitude || r.startLng)) {
+      const lat = r.startLatitude || r.start_latitude || r.startLat;
+      const lng = r.startLongitude || r.start_longitude || r.startLng;
+      return `${lat}, ${lng}`;
+    }
+    if ((r.originLat || r.origin_lat) && (r.originLng || r.origin_lng)) {
+      const lat = r.originLat || r.origin_lat;
+      const lng = r.originLng || r.origin_lng;
+      return `${lat}, ${lng}`;
+    }
+    return '—';
+  };
+
+  const resolveDropAddress = (r) => {
+    if (!r) return '—';
+    const get = (obj, path) => path.split('.').reduce((o, k) => (o ? o[k] : undefined), obj);
+    const candidates = [
+      'dropAddress', 'drop_address', 'drop', 'drop.address', 'drop.name', 'drop.display_name',
+      'locationTo', 'locationTo.address', 'locationTo.name',
+      'to', 'to.address', 'to.name', 'to.display_name',
+      'destination', 'destination.address', 'destination.name',
+      'data.drop', 'data.drop.address', 'data.drop.name', 'data.destination', 'data.destination.address'
+    ];
+    for (const p of candidates) {
+      const v = get(r, p);
+      if (v && typeof v === 'string' && v.trim() !== '') return v;
+      if (v && typeof v === 'object') {
+        if (v.address) return v.address;
+        if (v.name) return v.name;
+        if (v.display_name) return v.display_name;
+      }
+    }
+    if ((r.dropLat || r.drop_lat) && (r.dropLng || r.drop_lng)) {
+      const lat = r.dropLat || r.drop_lat;
+      const lng = r.dropLng || r.drop_lng;
+      return `${lat}, ${lng}`;
+    }
+    // common backend shape: endLatitude / endLongitude
+    if ((r.endLatitude || r.end_latitude || r.endLat) && (r.endLongitude || r.end_longitude || r.endLng)) {
+      const lat = r.endLatitude || r.end_latitude || r.endLat;
+      const lng = r.endLongitude || r.end_longitude || r.endLng;
+      return `${lat}, ${lng}`;
+    }
+    if ((r.destinationLat || r.destination_lat) && (r.destinationLng || r.destination_lng)) {
+      const lat = r.destinationLat || r.destination_lat;
+      const lng = r.destinationLng || r.destination_lng;
+      return `${lat}, ${lng}`;
+    }
+    return '—';
+  };
+
+  const resolveFare = (r) => {
+    if (!r) return null;
+    const candidates = [
+      'fare', 'fareAmount', 'fare_amount', 'amount', 'price', 'estimatedFare', 'estimated_fare',
+      'billing.fare', 'billing.amount', 'payment.amount', 'data.fare', 'fare.value'
+    ];
+    const get = (obj, path) => path.split('.').reduce((o, k) => (o ? o[k] : undefined), obj);
+    for (const p of candidates) {
+      const v = get(r, p);
+      if (v !== undefined && v !== null && v !== '') {
+        const num = typeof v === 'number' ? v : (typeof v === 'string' ? parseFloat(v.replace(/[^0-9.-]+/g, '')) : NaN);
+        if (!Number.isNaN(num)) return num;
+        // if it's an object with amount/fare
+        if (typeof v === 'object') {
+          if (v.amount && !Number.isNaN(Number(v.amount))) return Number(v.amount);
+          if (v.fare && !Number.isNaN(Number(v.fare))) return Number(v.fare);
+        }
+      }
+    }
+    return null;
+  };
+
+  const resolveCreated = (r) => {
+    if (!r) return null;
+    const get = (obj, path) => path.split('.').reduce((o, k) => (o ? o[k] : undefined), obj);
+    const candidates = [
+      'createdAt', 'created_at', 'created', 'created_on', 'createdDate', 'createdAtTimestamp', 'timestamp', 'time', 'dateCreated',
+      'meta.createdAt', 'meta.created_at', 'data.createdAt', 'data.created'
+    ];
+    let v;
+    for (const p of candidates) {
+      v = get(r, p);
+      if (v !== undefined && v !== null && v !== '') break;
+    }
+    if (v === undefined || v === null || v === '') return null;
+    // If it's already a Date
+    if (v instanceof Date) return v;
+    // If it's a numeric timestamp (seconds or ms)
+    if (typeof v === 'number') {
+      // if likely seconds (10 digits) convert to ms
+      if (v > 0 && v < 1e11) return new Date(v * 1000);
+      return new Date(v);
+    }
+    // If it's a string, try to parse; handle numeric strings too
+    const num = Number(v);
+    if (!Number.isNaN(num) && String(v).trim().length <= 13) {
+      // treat as timestamp
+      if (num > 0 && num < 1e11) return new Date(num * 1000);
+      return new Date(num);
+    }
+    const d = new Date(String(v));
+    if (!isNaN(d.getTime())) return d;
+    return null;
+  };
 
   // Calculate statistics for rides
   const totalRides = ridesData.length;
@@ -213,11 +395,16 @@ export default function RideManagement() {
           if (f === 'rideId') v = r.rideId || r.id || '';
           else if (f === 'customerName') v = (r.customer && (r.customer.fullName || r.customer.username)) || r.customerName || '';
           else if (f === 'driverName') v = (r.driver && (r.driver.fullName || r.driver.username)) || r.driverName || '';
-          else if (f === 'pickupAddress') v = r.pickupAddress || (r.locationFrom && r.locationFrom.address) || '';
-          else if (f === 'dropAddress') v = r.dropAddress || (r.locationTo && r.locationTo.address) || '';
+          else if (f === 'pickupAddress') v = resolveAddress(r) || '';
+          else if (f === 'dropAddress') v = resolveDropAddress(r) || '';
           else if (f === 'status') v = r.status || '';
-          else if (f === 'fare') v = r.fare != null ? r.fare : '';
-          else if (f === 'createdAt') v = r.createdAt || '';
+          else if (f === 'fare') {
+            const fv = resolveFare(r);
+            v = fv != null ? fv : '';
+          } else if (f === 'createdAt') {
+            const cd = resolveCreated(r);
+            v = cd ? cd.toISOString() : '';
+          }
           return `"${(v ?? '').toString().replace(/"/g, '""')}"`;
         }).join(',');
         csvRows.push(row);
@@ -391,11 +578,29 @@ export default function RideManagement() {
                   <TableCell>{ride.rideId || ride.id || '—'}</TableCell>
                   <TableCell>{(ride.customer && (ride.customer.fullName || ride.customer.username)) || ride.customerName || '—'}</TableCell>
                   <TableCell>{(ride.driver && (ride.driver.fullName || ride.driver.username)) || ride.driverName || '—'}</TableCell>
-                  <TableCell>{ride.pickupAddress || (ride.locationFrom && ride.locationFrom.address) || '—'}</TableCell>
-                  <TableCell>{ride.dropAddress || (ride.locationTo && ride.locationTo.address) || '—'}</TableCell>
+                  <TableCell>
+                    <Box>
+                      <Typography variant="body2">{resolveAddress(ride)}</Typography>
+                      {(() => {
+                        const key = ride.id || ride.rideId || `r-${page * rowsPerPage + idx}`;
+                        const label = pickupLookup[key];
+                        return label ? <Typography variant="caption" color="text.secondary">{label}</Typography> : null;
+                      })()}
+                    </Box>
+                  </TableCell>
+                  <TableCell>
+                    <Box>
+                      <Typography variant="body2">{resolveDropAddress(ride)}</Typography>
+                      {(() => {
+                        const key = ride.id || ride.rideId || `r-${page * rowsPerPage + idx}`;
+                        const label = dropLookup[key];
+                        return label ? <Typography variant="caption" color="text.secondary">{label}</Typography> : null;
+                      })()}
+                    </Box>
+                  </TableCell>
                   <TableCell>{ride.status || '—'}</TableCell>
-                  <TableCell>{ride.fare != null ? `₹${ride.fare}` : '—'}</TableCell>
-                  <TableCell>{ride.createdAt ? new Date(ride.createdAt).toLocaleDateString() : '—'}</TableCell>
+                  <TableCell>{resolveFare(ride) != null ? `₹${resolveFare(ride)}` : '—'}</TableCell>
+                  <TableCell>{resolveCreated(ride) ? resolveCreated(ride).toLocaleDateString() : '—'}</TableCell>
                   <TableCell>
                     <Box sx={{ display: 'flex', gap: 1 }}>
                       <Button size="small" variant="outlined" startIcon={<Visibility />} onClick={() => openView(ride)}>View</Button>
