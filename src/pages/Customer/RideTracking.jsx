@@ -1,814 +1,1491 @@
+// import useGeolocation from "../../hooks/useGeolocation";
+// import React, { useState, useEffect } from "react";
+// import { useNavigate, useLocation } from "react-router-dom";
+// import {
+//   Paper,
+//   Typography,
+//   Box,
+//   Grid,
+//   Card,
+//   CardContent,
+//   Button,
+//   Chip,
+//   Divider,
+//   LinearProgress,
+//   Avatar,
+//   IconButton,
+//   Alert,
+//   CircularProgress,
+//   Dialog,
+//   DialogTitle,
+//   DialogContent,
+//   DialogActions,
+// } from "@mui/material";
+// import {
+//   Person,
+//   Phone,
+//   Message,
+//   Star,
+//   DirectionsBike,
+//   LocalTaxi,
+//   AirportShuttle,
+//   LocationOn,
+//   AccessTime,
+//   NearMe,
+//   Share,
+//   Cancel,
+// } from "@mui/icons-material";
+// import MapDisplay from "../../components/shared/MapDisplay";
+
+// import RideService from "../../services/RideService.js";
+
+// export default function RideTracking() {
+//   const geo = useGeolocation();
+//   const navigate = useNavigate();
+//   const routerLocation = useLocation();
+//   const [ride, setRide] = useState(null);
+//   const [location, setLocation] = useState(null);
+//   const [loading, setLoading] = useState(true);
+//   const [currentCoords, setCurrentCoords] = useState(null); // { latitude, longitude }
+//   const [destinationCoords, setDestinationCoords] = useState(null);
+//   const [driverCoords, setDriverCoords] = useState(null);
+//   const [trackingDataState, setTrackingDataState] = useState([
+//     { id: 1, status: "REQUESTED", time: "", completed: false },
+//     { id: 2, status: "ACCEPTED", time: "", completed: false },
+//     { id: 3, status: "IN_PROGRESS", time: "", completed: false },
+//     { id: 4, status: "COMPLETED", time: "", completed: false },
+//   ]);
+//   const [currentStep, setCurrentStep] = useState(0);
+//   const [eta, setEta] = useState("");
+//   const [distance, setDistance] = useState("");
+
+//   // payment dialog state (was missing -> caused ReferenceError)
+//   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+//   const [paymentProcessing, setPaymentProcessing] = useState(false);
+
+//   // prevent repeated redirects to rating
+//   const [redirectedToRating, setRedirectedToRating] = useState(false);
+
+//   // Initialize ride from navigation state and current geolocation / backend response
+//   useEffect(() => {
+//     const state = routerLocation.state || {};
+//     const rideResp = state.ride || {};
+//     // Compose a local ride model using backend response
+//     const initialRide = {
+//       id: rideResp.id,
+//       pickup: state.pickup || "",
+//       destination: state.dropoff || "",
+//       fare: typeof rideResp.cost === "number" ? rideResp.cost : 0,
+//       status: rideResp.status || "REQUESTED",
+//       driver: {
+//         name: "Driver",
+//         rating: 4.8,
+//         vehicle: state.vehicleType || "Bike",
+//         licensePlate: "----",
+//       },
+//     };
+//     setRide(initialRide);
+//     // set coordinates from backend where available
+//     if (
+//       rideResp?.driverLocation &&
+//       typeof rideResp.driverLocation.latitude === "number" &&
+//       typeof rideResp.driverLocation.longitude === "number"
+//     ) {
+//       setDriverCoords({
+//         latitude: rideResp.driverLocation.latitude,
+//         longitude: rideResp.driverLocation.longitude,
+//       });
+//     }
+//     if (
+//       rideResp?.dropOffLocation &&
+//       typeof rideResp.dropOffLocation.latitude === "number" &&
+//       typeof rideResp.dropOffLocation.longitude === "number"
+//     ) {
+//       setDestinationCoords({
+//         latitude: rideResp.dropOffLocation.latitude,
+//         longitude: rideResp.dropOffLocation.longitude,
+//       });
+//     } else {
+//       const parsed =
+//         typeof state.dropoff === "string"
+//           ? state.dropoff.split(",").map((s) => parseFloat(s.trim()))
+//           : [];
+//       if (parsed.length === 2 && parsed.every((n) => !Number.isNaN(n))) {
+//         setDestinationCoords({ latitude: parsed[0], longitude: parsed[1] });
+//       }
+//     }
+//     if (
+//       geo &&
+//       typeof geo.latitude === "number" &&
+//       typeof geo.longitude === "number"
+//     ) {
+//       setCurrentCoords({ latitude: geo.latitude, longitude: geo.longitude });
+//       setLocation({ latitude: geo.latitude, longitude: geo.longitude });
+//     }
+//     setLoading(false);
+//   }, [routerLocation.state, geo]);
+
+//   // derive progress step from backend status
+//   useEffect(() => {
+//     const status = (ride?.status || "").toUpperCase();
+//     const map = { REQUESTED: 0, ACCEPTED: 1, IN_PROGRESS: 2, COMPLETED: 3 };
+//     if (status in map) setCurrentStep(map[status]);
+//   }, [ride?.status]);
+
+//   // Synchronize trackingData completed flags with currentStep
+//   useEffect(() => {
+//     setTrackingDataState((prev) =>
+//       prev.map((step, idx) => ({
+//         ...step,
+//         completed: idx < currentStep,
+//       }))
+//     );
+//   }, [currentStep]);
+
+//   // Compute live ETA/distance using haversine if we have coordinates
+//   const haversineKm = (a, b) => {
+//     const toRad = (deg) => (deg * Math.PI) / 180;
+//     const R = 6371; // km
+//     const dLat = toRad(b.latitude - a.latitude);
+//     const dLon = toRad(b.longitude - a.longitude);
+//     const lat1 = toRad(a.latitude);
+//     const lat2 = toRad(b.latitude);
+//     const h =
+//       Math.sin(dLat / 2) ** 2 +
+//       Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2;
+//     return 2 * R * Math.asin(Math.sqrt(h));
+//   };
+
+//   useEffect(() => {
+//     if (!ride) return;
+//     const dest = destinationCoords;
+//     const curr =
+//       driverCoords ||
+//       currentCoords ||
+//       location ||
+//       (geo &&
+//       typeof geo.latitude === "number" &&
+//       typeof geo.longitude === "number"
+//         ? { latitude: geo.latitude, longitude: geo.longitude }
+//         : null);
+//     if (dest && curr) {
+//       const km = haversineKm(curr, dest);
+//       setDistance(`${km.toFixed(1)} km`);
+//       const minutes = Math.max(1, Math.round((km / 25) * 60));
+//       setEta(`${minutes} min`);
+//     } else {
+//       setDistance("N/A");
+//       setEta("N/A");
+//     }
+//   }, [
+//     ride,
+//     driverCoords,
+//     currentCoords,
+//     destinationCoords,
+//     location,
+//     geo?.latitude,
+//     geo?.longitude,
+//   ]);
+
+//   // Poll backend for latest ride data as fallback to websocket
+//   useEffect(() => {
+//     if (!ride?.id) return;
+//     const interval = setInterval(async () => {
+//       try {
+//         const res = await RideService.getRide(ride.id);
+//         console.log("Customer received location data:", res.data); // <-- ADD THIS LOG
+
+//         const data = res?.data || res; // normalize ApiResponse vs direct
+//         if (
+//           data?.driverLocation &&
+//           typeof data.driverLocation.latitude === "number"
+//         ) {
+//           setDriverCoords({
+//             latitude: data.driverLocation.latitude,
+//             longitude: data.driverLocation.longitude,
+//           });
+//         }
+//         if (
+//           data?.dropOffLocation &&
+//           typeof data.dropOffLocation.latitude === "number"
+//         ) {
+//           setDestinationCoords({
+//             latitude: data.dropOffLocation.latitude,
+//             longitude: data.dropOffLocation.longitude,
+//           });
+//         }
+//         if (typeof data?.cost === "number") {
+//           setRide((prev) => (prev ? { ...prev, fare: data.cost } : prev));
+//         }
+//         if (typeof data?.status === "string") {
+//           setRide((prev) => (prev ? { ...prev, status: data.status } : prev));
+//         }
+//       } catch (e) {
+//         // swallow polling errors
+//       }
+//     }, 5000);
+//     return () => clearInterval(interval);
+//   }, [ride?.id]);
+
+
+
+//   // compute progress percent based on current step vs steps before final completion
+//   const totalProgressSteps = Math.max(1, trackingDataState.length - 1); // avoid divide by zero
+//   const progressPercent = Math.min(
+//     100,
+//     Math.round((currentStep / totalProgressSteps) * 100)
+//   );
+
+//   // Get vehicle icon based on type
+//   const getVehicleIcon = () => {
+//     if (
+//       ride?.driver?.vehicle?.toLowerCase().includes("bike") ||
+//       ride?.driver?.vehicle?.toLowerCase().includes("activa")
+//     ) {
+//       return <DirectionsBike className="text-yellow-500" />;
+//     } else if (ride?.driver?.vehicle?.toLowerCase().includes("auto")) {
+//       return <AirportShuttle className="text-yellow-500" />;
+//     } else {
+//       return <LocalTaxi className="text-yellow-500" />;
+//     }
+//   };
+
+//   // Get status color
+//   const getStatusColor = () => {
+//     switch ((ride?.status || "").toUpperCase()) {
+//       case "COMPLETED":
+//         return "#4CAF50";
+//       case "IN_PROGRESS":
+//         return "#2196F3";
+//       case "CANCELLED":
+//         return "#F44336";
+//       case "ACCEPTED":
+//         return "#FFB300";
+//       default:
+//         return "#FF9800";
+//     }
+//   };
+
+//   // load Razorpay checkout script
+//   const loadRazorpayScript = () => {
+//     return new Promise((resolve) => {
+//       const existing = document.getElementById("razorpay-sdk");
+//       if (existing) return resolve(true);
+//       const script = document.createElement("script");
+//       script.src = "https://checkout.razorpay.com/v1/checkout.js";
+//       script.id = "razorpay-sdk";
+//       script.onload = () => resolve(true);
+//       script.onerror = () => resolve(false);
+//       document.body.appendChild(script);
+//     });
+//   };
+
+//   const handlePay = async () => {
+//     if (!ride) return;
+//     setPaymentProcessing(true);
+//     const res = await loadRazorpayScript();
+//     const amountInPaise = Math.round((ride.fare || 0) * 100);
+
+//     if (!res) {
+//       alert("Razorpay SDK failed to load. Please try again later.");
+//       setPaymentProcessing(false);
+//       return;
+//     }
+
+//     const options = {
+//       key: "rzp_test_1234567890", // mock/test key
+//       amount: amountInPaise,
+//       currency: "INR",
+//       name: "Rapido",
+//       description: `Payment for ride #${ride.id}`,
+//       handler: function (response) {
+//         setPaymentProcessing(false);
+//         setShowPaymentDialog(false);
+//         alert("Payment successful. Redirecting to rating page.");
+//         navigate("/costumor/RatingPage");
+//       },
+//       prefill: {
+//         name: "Customer",
+//         email: "customer@example.com",
+//         contact: "9999999999",
+//       },
+//       theme: {
+//         color: "#1976d2",
+//       },
+//     };
+
+//     // eslint-disable-next-line no-undef
+//     const rzp = new window.Razorpay(options);
+//     rzp.on("payment.failed", function (response) {
+//       setPaymentProcessing(false);
+//       alert("Payment failed. Please try again.");
+//     });
+//     rzp.open();
+//   };
+
+//   if (loading) {
+//     return (
+//       <div className="p-6 bg-gray-50 min-h-screen flex items-center justify-center">
+//         <CircularProgress />
+//       </div>
+//     );
+//   }
+
+//   return (
+//     <>
+//       <div className="flex justify-center items-center min-h-screen bg-gray-50">
+//         <div className="max-w-6xl w-full">
+//           {/* Header */}
+//           <Box className="mb-8">
+//             <Typography variant="h4" className="font-bold text-gray-800">
+//               Track Your Ride
+//             </Typography>
+//             <Typography variant="body1" className="text-gray-600">
+//               Real-time tracking of your ride status and location
+//             </Typography>
+//           </Box>
+
+//           <Grid container spacing={4} style={{ minHeight: "70vh" }}>
+//             {/* Left Column - Map and Status */}
+//             <Grid
+//               item
+//               xs={12}
+//               md={6}
+//               style={{
+//                 display: "flex",
+//                 flexDirection: "column",
+//                 gap: "1.5rem",
+//                 flexBasis: "45%",
+//                 maxWidth: "45%",
+//               }}
+//             >
+//               {/* Status Card */}
+//               <Card
+//                 className="shadow-md rounded-xl mb-4"
+//                 style={{ maxHeight: 340, overflow: "auto" }}
+//               >
+//                 <CardContent className="p-6">
+//                   <Box className="flex justify-between items-center mb-6">
+//                     <Typography
+//                       variant="h6"
+//                       className="font-bold text-gray-800"
+//                     >
+//                       Ride Status
+//                     </Typography>
+//                     <Chip
+//                       label={ride.status}
+//                       size="medium"
+//                       style={{
+//                         backgroundColor: `${getStatusColor()}20`,
+//                         color: getStatusColor(),
+//                         fontWeight: "bold",
+//                       }}
+//                     />
+//                   </Box>
+
+//                   <Box className="mb-6">
+//                     <Typography variant="body2" className="text-gray-600 mb-1">
+//                       Route
+//                     </Typography>
+//                     <Box className="flex items-center">
+//                       <LocationOn className="text-gray-500 mr-2" />
+//                       <Typography variant="h6" className="font-medium">
+//                         {ride.pickup}
+//                       </Typography>
+//                     </Box>
+//                     <Box className="flex items-center my-1">
+//                       <div className="w-4 h-4 rounded-full bg-gray-300 mx-2"></div>
+//                       <div className="flex-1 h-0.5 bg-gray-300"></div>
+//                     </Box>
+//                     <Box className="flex items-center">
+//                       <LocationOn className="text-gray-500 mr-2" />
+//                       <Typography variant="h6" className="font-medium">
+//                         {ride.destination}
+//                       </Typography>
+//                     </Box>
+//                   </Box>
+
+//                   <Divider className="my-6" />
+
+//                   <Box className="flex justify-between items-center">
+//                     <Box>
+//                       <Typography variant="body2" className="text-gray-600">
+//                         Estimated Time
+//                       </Typography>
+//                       <Typography variant="h6" className="font-medium">
+//                         {eta}
+//                       </Typography>
+//                     </Box>
+//                     <Box>
+//                       <Typography variant="body2" className="text-gray-600">
+//                         Distance
+//                       </Typography>
+//                       <Typography variant="h6" className="font-medium">
+//                         {distance}
+//                       </Typography>
+//                     </Box>
+//                     <Box>
+//                       <Typography variant="body2" className="text-gray-600">
+//                         Fare
+//                       </Typography>
+//                       <Typography variant="h6" className="font-medium">
+//                         ₹{ride.fare}
+//                       </Typography>
+//                     </Box>
+//                   </Box>
+//                 </CardContent>
+//               </Card>
+
+//               {/* Map */}
+//               <Card className="shadow-md rounded-xl flex-1">
+//                 <CardContent className="p-0">
+//                   <Typography
+//                     variant="h6"
+//                     className="font-bold text-gray-800 p-4 pb-2"
+//                   >
+//                     Live Tracking
+//                   </Typography>
+//                   <Divider />
+//                   <MapDisplay
+//                     userLocation={
+//                       currentCoords
+//                         ? [currentCoords.latitude, currentCoords.longitude]
+//                         : geo && geo.latitude && geo.longitude
+//                         ? [geo.latitude, geo.longitude]
+//                         : location
+//                         ? [location.latitude, location.longitude]
+//                         : [12.9716, 77.5946]
+//                     }
+//                     riderLocation={
+//                       driverCoords
+//                         ? [driverCoords.latitude, driverCoords.longitude]
+//                         : destinationCoords
+//                         ? [
+//                             destinationCoords.latitude,
+//                             destinationCoords.longitude,
+//                           ]
+//                         : null
+//                     }
+//                     routePoints={
+//                       currentCoords && destinationCoords
+//                         ? [
+//                             [currentCoords.latitude, currentCoords.longitude],
+//                             [
+//                               destinationCoords.latitude,
+//                               destinationCoords.longitude,
+//                             ],
+//                           ]
+//                         : []
+//                     }
+//                   />
+//                 </CardContent>
+//               </Card>
+//             </Grid>
+
+//             {/* Right Column - Driver Info and Actions */}
+//             <Grid
+//               item
+//               xs={12}
+//               md={6}
+//               style={{
+//                 display: "flex",
+//                 flexDirection: "column",
+//                 gap: "1.5rem",
+//                 flexBasis: "40%",
+//                 maxWidth: "40%",
+//               }}
+//             >
+//               {/* Driver Info */}
+//               <Card
+//                 className="shadow-md rounded-xl mb-4"
+//                 style={{ maxHeight: 340, overflow: "auto" }}
+//               >
+//                 <CardContent className="p-6">
+//                   <Typography
+//                     variant="h6"
+//                     className="font-bold text-gray-800 mb-4"
+//                   >
+//                     Driver Information
+//                   </Typography>
+
+//                   <Box className="flex items-center mb-4">
+//                     <Avatar
+//                       className="mr-4"
+//                       src={`https://i.pravatar.cc/150?u=${ride.driver.name}`}
+//                     />
+//                     <Box>
+//                       <Typography variant="h6" className="font-medium">
+//                         {ride.driver.name}
+//                       </Typography>
+//                       <Box className="flex items-center">
+//                         <Star
+//                           className="text-yellow-500 mr-1"
+//                           fontSize="small"
+//                         />
+//                         <Typography variant="body2">
+//                           {ride.driver.rating}
+//                         </Typography>
+//                       </Box>
+//                     </Box>
+//                   </Box>
+
+//                   <Divider className="my-4" />
+
+//                   <Box className="space-y-3">
+//                     <Box className="flex items-center">
+//                       {getVehicleIcon()}
+//                       <Typography variant="body2" className="ml-2">
+//                         {ride.driver.vehicle}
+//                       </Typography>
+//                     </Box>
+//                     <Box className="flex items-center">
+//                       <Typography variant="body2" className="text-gray-600">
+//                         License Plate:
+//                       </Typography>
+//                       <Typography variant="body2" className="ml-2 font-medium">
+//                         {ride.driver.licensePlate}
+//                       </Typography>
+//                     </Box>
+//                   </Box>
+
+//                   <Divider className="my-4" />
+
+//                   <Box className="flex justify-between">
+//                     <Button
+//                       variant="contained"
+//                       className="bg-green-500 hover:bg-green-600 text-white"
+//                       startIcon={<Phone />}
+//                     >
+//                       Call
+//                     </Button>
+//                     <Button variant="outlined" startIcon={<Message />}>
+//                       Message
+//                     </Button>
+//                   </Box>
+//                 </CardContent>
+//               </Card>
+
+//               {/* Tracking Progress */}
+//               <Card className="shadow-md rounded-xl flex-1">
+//                 <CardContent className="p-6">
+//                   <Typography
+//                     variant="h6"
+//                     className="font-bold text-gray-800 mb-4"
+//                   >
+//                     Ride Progress
+//                   </Typography>
+
+//                   <Box className="space-y-4">
+//                     {trackingDataState.map((step, index) => (
+//                       <Box key={step.id} className="flex items-center">
+//                         <Box
+//                           className={`w-8 h-8 rounded-full flex items-center justify-center mr-3 ${
+//                             step.completed ? "bg-green-500" : "bg-gray-300"
+//                           }`}
+//                         >
+//                           {step.completed && (
+//                             <span className="text-white text-sm">✓</span>
+//                           )}
+//                         </Box>
+//                         <Box className="flex-1">
+//                           <Typography
+//                             variant="body2"
+//                             className={`${
+//                               step.completed ? "font-medium" : "text-gray-500"
+//                             }`}
+//                           >
+//                             {step.status}
+//                           </Typography>
+//                           <Typography
+//                             variant="caption"
+//                             className="text-gray-500"
+//                           >
+//                             {step.time}
+//                           </Typography>
+//                         </Box>
+//                       </Box>
+//                     ))}
+//                   </Box>
+
+//                   <Box className="mt-6">
+//                     <Typography variant="body2" className="text-gray-600 mb-2">
+//                       Driver is {eta} away
+//                     </Typography>
+//                     <LinearProgress
+//                       variant="determinate"
+//                       value={progressPercent}
+//                       className="h-2 rounded-lg"
+//                     />
+//                   </Box>
+
+//                   <Box className="mt-6 pt-4 border-t border-gray-200">
+//                     <Button
+//                       variant="contained"
+//                       className="w-full bg-red-500 hover:bg-red-600 text-white"
+//                       startIcon={<Cancel />}
+//                       onClick={() => {
+//                         setRide((prev) => ({ ...prev, status: "Cancelled" }));
+//                         setTimeout(() => {
+//                           navigate("/ride-booking");
+//                         }, 500);
+//                       }}
+//                     >
+//                       Cancel Ride
+//                     </Button>
+//                   </Box>
+//                 </CardContent>
+//               </Card>
+//             </Grid>
+//           </Grid>
+//         </div>
+//       </div>
+
+//       {/* Payment Dialog */}
+//       <Dialog
+//         open={showPaymentDialog}
+//         onClose={() => {
+//           if (!paymentProcessing) setShowPaymentDialog(false);
+//         }}
+//         maxWidth="xs"
+//         fullWidth
+//       >
+//         <DialogTitle>Pay for your ride</DialogTitle>
+//         <DialogContent>
+//           <Box className="py-2">
+//             <Typography variant="subtitle2" color="textSecondary">
+//               Amount to pay
+//             </Typography>
+//             <Typography variant="h4" className="font-bold">
+//               ₹{ride?.fare ?? "0.00"}
+//             </Typography>
+//             <Typography variant="caption" className="text-gray-600 mt-2">
+//               Complete payment to proceed to rating.
+//             </Typography>
+//           </Box>
+//         </DialogContent>
+//         <DialogActions>
+//           <Button
+//             onClick={() => {
+//               if (!paymentProcessing) setShowPaymentDialog(false);
+//             }}
+//             disabled={paymentProcessing}
+//           >
+//             Cancel
+//           </Button>
+//           <Button
+//             variant="contained"
+//             color="primary"
+//             onClick={handlePay}
+//             disabled={paymentProcessing}
+//           >
+//             {paymentProcessing ? "Processing..." : `Pay ₹${ride?.fare ?? "0"}`}
+//           </Button>
+//         </DialogActions>
+//       </Dialog>
+//     </>
+//   );
+// }
+
 import useGeolocation from "../../hooks/useGeolocation";
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
-  Paper,
-  Typography,
-  Box,
-  Grid,
-  Card,
-  CardContent,
-  Button,
-  Chip,
-  Divider,
-  LinearProgress,
-  Avatar,
-  IconButton,
-  Alert,
-  CircularProgress,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
+  Paper,
+  Typography,
+  Box,
+  Grid,
+  Card,
+  CardContent,
+  Button,
+  Chip,
+  Divider,
+  LinearProgress,
+  Avatar,
+  IconButton,
+  Alert,
+  CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from "@mui/material";
 import {
-  Person,
-  Phone,
-  Message,
-  Star,
-  DirectionsBike,
-  LocalTaxi,
-  AirportShuttle,
-  LocationOn,
-  AccessTime,
-  NearMe,
-  Share,
-  Cancel,
+  Person,
+  Phone,
+  Message,
+  Star,
+  DirectionsBike,
+  LocalTaxi,
+  AirportShuttle,
+  LocationOn,
+  AccessTime,
+  NearMe,
+  Share,
+  Cancel,
 } from "@mui/icons-material";
 import MapDisplay from "../../components/shared/MapDisplay";
 
 import RideService from "../../services/RideService.js";
 
 export default function RideTracking() {
-  const geo = useGeolocation();
-  const navigate = useNavigate();
-  const routerLocation = useLocation();
-  const [ride, setRide] = useState(null);
-  const [location, setLocation] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [currentCoords, setCurrentCoords] = useState(null); // { latitude, longitude }
-  const [destinationCoords, setDestinationCoords] = useState(null);
-  const [driverCoords, setDriverCoords] = useState(null);
-  const [trackingDataState, setTrackingDataState] = useState([
-    { id: 1, status: "REQUESTED", time: "", completed: false },
-    { id: 2, status: "ACCEPTED", time: "", completed: false },
-    { id: 3, status: "IN_PROGRESS", time: "", completed: false },
-    { id: 4, status: "COMPLETED", time: "", completed: false },
-  ]);
-  const [otp, setOtp] = useState(null);
-  const [currentStep, setCurrentStep] = useState(0);
-  const [eta, setEta] = useState("");
-  const [distance, setDistance] = useState("");
+  const geo = useGeolocation();
+  const navigate = useNavigate();
+  const routerLocation = useLocation();
+  const [ride, setRide] = useState(null);
+  const [location, setLocation] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [currentCoords, setCurrentCoords] = useState(null); // { latitude, longitude }
+  const [destinationCoords, setDestinationCoords] = useState(null);
+  const [driverCoords, setDriverCoords] = useState(null);
+  const [trackingDataState, setTrackingDataState] = useState([
+    { id: 1, status: "REQUESTED", time: "", completed: false },
+    { id: 2, status: "ACCEPTED", time: "", completed: false },
+    { id: 3, status: "IN_PROGRESS", time: "", completed: false },
+    { id: 4, status: "COMPLETED", time: "", completed: false },
+  ]);
+  const [otp, setOtp] = useState(null);
+  const [currentStep, setCurrentStep] = useState(0);
+  const [eta, setEta] = useState("");
+  const [distance, setDistance] = useState("");
 
-  // payment dialog state
-  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
-  const [paymentProcessing, setPaymentProcessing] = useState(false);
+  // payment dialog state (was missing -> caused ReferenceError)
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+  const [paymentProcessing, setPaymentProcessing] = useState(false);
 
-  // prevent repeated redirects to rating
-  const [redirectedToRating, setRedirectedToRating] = useState(false);
+  // prevent repeated redirects to rating
+  const [redirectedToRating, setRedirectedToRating] = useState(false);
 
-  // Initialize ride from navigation state and current geolocation / backend response
-  useEffect(() => {
-    const state = routerLocation.state || {};
-    const rideResp = state.ride || {};
-    // Compose a local ride model using backend response
-    const initialRide = {
-      id: rideResp.id,
-      pickup: state.pickup || "",
-      destination: state.dropoff || "",
-      fare: typeof rideResp.cost === "number" ? rideResp.cost : 0,
-      status: rideResp.status || "REQUESTED",
-    };
-    if (rideResp.driver) {
-      initialRide.driver = rideResp.driver;
-    }
-    setRide(initialRide);
-    // set coordinates from backend where available
-    if (
-      rideResp?.driverLocation &&
-      typeof rideResp.driverLocation.latitude === "number" &&
-      typeof rideResp.driverLocation.longitude === "number"
-    ) {
-      setDriverCoords({
-        latitude: rideResp.driverLocation.latitude,
-        longitude: rideResp.driverLocation.longitude,
-      });
-    }
-    if (
-      rideResp?.dropOffLocation &&
-      typeof rideResp.dropOffLocation.latitude === "number" &&
-      typeof rideResp.dropOffLocation.longitude === "number"
-    ) {
-      setDestinationCoords({
-        latitude: rideResp.dropOffLocation.latitude,
-        longitude: rideResp.dropOffLocation.longitude,
-      });
-    } else {
-      const parsed =
-        typeof state.dropoff === "string"
-          ? state.dropoff.split(",").map((s) => parseFloat(s.trim()))
-          : [];
-      if (parsed.length === 2 && parsed.every((n) => !Number.isNaN(n))) {
-        setDestinationCoords({ latitude: parsed[0], longitude: parsed[1] });
-      }
-    }
-    if (
-      geo &&
-      typeof geo.latitude === "number" &&
-      typeof geo.longitude === "number"
-    ) {
-      setCurrentCoords({ latitude: geo.latitude, longitude: geo.longitude });
-      setLocation({ latitude: geo.latitude, longitude: geo.longitude });
-    }
-    setLoading(false);
-  }, [routerLocation.state, geo]);
+  // Initialize ride from navigation state and current geolocation / backend response
+  useEffect(() => {
+    const state = routerLocation.state || {};
+    const rideResp = state.ride || {};
+    // Compose a local ride model using backend response
+    const initialRide = {
+      id: rideResp.id,
+      pickup: state.pickup || "",
+      destination: state.dropoff || "",
+      fare: typeof rideResp.cost === "number" ? rideResp.cost : 0,
+      status: rideResp.status || "REQUESTED",
+    };
+    if (rideResp.driver) {
+      initialRide.driver = rideResp.driver;
+    }
+    setRide(initialRide);
+    // set coordinates from backend where available
+    if (
+      rideResp?.driverLocation &&
+      typeof rideResp.driverLocation.latitude === "number" &&
+      typeof rideResp.driverLocation.longitude === "number"
+    ) {
+      setDriverCoords({
+        latitude: rideResp.driverLocation.latitude,
+        longitude: rideResp.driverLocation.longitude,
+      });
+    }
+    if (
+      rideResp?.dropOffLocation &&
+      typeof rideResp.dropOffLocation.latitude === "number" &&
+      typeof rideResp.dropOffLocation.longitude === "number"
+    ) {
+      setDestinationCoords({
+        latitude: rideResp.dropOffLocation.latitude,
+        longitude: rideResp.dropOffLocation.longitude,
+      });
+    } else {
+      const parsed =
+        typeof state.dropoff === "string"
+          ? state.dropoff.split(",").map((s) => parseFloat(s.trim()))
+          : [];
+      if (parsed.length === 2 && parsed.every((n) => !Number.isNaN(n))) {
+        setDestinationCoords({ latitude: parsed[0], longitude: parsed[1] });
+      }
+    }
+    if (
+      geo &&
+      typeof geo.latitude === "number" &&
+      typeof geo.longitude === "number"
+    ) {
+      setCurrentCoords({ latitude: geo.latitude, longitude: geo.longitude });
+      setLocation({ latitude: geo.latitude, longitude: geo.longitude });
+    }
+    setLoading(false);
+  }, [routerLocation.state, geo]);
 
-  useEffect(() => {
-    // Guard clause: Exit if we don't have the necessary data points.
-    if (!ride || !driverCoords || !currentCoords) {
-      setDistance("Calculating...");
-      setEta("Calculating...");
-      return;
-    }
+  useEffect(() => {
+    // Guard clause: Exit if we don't have the necessary data points.
+    if (!ride || !driverCoords || !currentCoords) {
+      setDistance("Calculating...");
+      setEta("Calculating...");
+      return;
+    }
 
-    let startingPoint = driverCoords;
-    let endPoint;
+    let startingPoint = driverCoords;
+    let endPoint;
 
-    // Determine the correct destination for the ETA calculation
-    if (ride.status === "ACCEPTED") {
-      // If the ride is accepted, the driver is coming to YOU (the customer).
-      // The target is your current location (the pickup point).
-      endPoint = currentCoords;
-    } else {
-      // If the ride is STARTED or later, the target is the final destination.
-      endPoint = destinationCoords;
-    }
+    // Determine the correct destination for the ETA calculation
+    if (ride.status === "ACCEPTED") {
+      // If the ride is accepted, the driver is coming to YOU (the customer).
+      // The target is your current location (the pickup point).
+      endPoint = currentCoords;
+    } else {
+      // If the ride is STARTED or later, the target is the final destination.
+      endPoint = destinationCoords;
+    }
 
-    // If we don't have a valid endpoint for some reason, exit.
-    if (!endPoint) return;
+    // If we don't have a valid endpoint for some reason, exit.
+    if (!endPoint) return;
 
-    // Now, calculate the distance and ETA based on the correct points.
-    const km = haversineKm(startingPoint, endPoint);
-    setDistance(`${km.toFixed(1)} km`);
+    // Now, calculate the distance and ETA based on the correct points.
+    const km = haversineKm(startingPoint, endPoint);
+    setDistance(`${km.toFixed(1)} km`);
 
-    // A simple ETA calculation (average speed of 25 km/h)
-    const minutes = Math.max(1, Math.round((km / 25) * 60));
-    setEta(`${minutes} min`);
-  }, [ride, driverCoords, currentCoords, destinationCoords]); // Dependency array is key
+    // A simple ETA calculation (average speed of 25 km/h)
+    const minutes = Math.max(1, Math.round((km / 25) * 60));
+    setEta(`${minutes} min`);
+  }, [ride, driverCoords, currentCoords, destinationCoords]); // Dependency array is key
 
-  // derive progress step from backend status
-  useEffect(() => {
-    const status = (ride?.status || "").toUpperCase();
-    const map = { REQUESTED: 0, ACCEPTED: 1, IN_PROGRESS: 2, COMPLETED: 3 };
-    if (status in map) setCurrentStep(map[status]);
-  }, [ride?.status]);
+  // derive progress step from backend status
+  useEffect(() => {
+    const status = (ride?.status || "").toUpperCase();
+    const map = { REQUESTED: 0, ACCEPTED: 1, IN_PROGRESS: 2, COMPLETED: 3 };
+    if (status in map) setCurrentStep(map[status]);
+  }, [ride?.status]);
 
-  // Synchronize trackingData completed flags with currentStep
-  useEffect(() => {
-    setTrackingDataState((prev) =>
-      prev.map((step, idx) => ({
-        ...step,
-        completed: idx < currentStep,
-      }))
-    );
-  }, [currentStep]);
-  
-  // --- NEW: Handle Ride Completion and Payment Dialog ---
-  useEffect(() => {
-    if (
-      ride?.status?.toUpperCase() === "COMPLETED" &&
-      !redirectedToRating
-    ) {
-      // Step 1: Show the payment dialog
-      setShowPaymentDialog(true);
-    }
-  }, [ride?.status, redirectedToRating]);
+  // Synchronize trackingData completed flags with currentStep
+  useEffect(() => {
+    setTrackingDataState((prev) =>
+      prev.map((step, idx) => ({
+        ...step,
+        completed: idx < currentStep,
+      }))
+    );
+  }, [currentStep]);
 
+  // Compute live ETA/distance using haversine if we have coordinates
+  const haversineKm = (a, b) => {
+    const toRad = (deg) => (deg * Math.PI) / 180;
+    const R = 6371; // km
+    const dLat = toRad(b.latitude - a.latitude);
+    const dLon = toRad(b.longitude - a.longitude);
+    const lat1 = toRad(a.latitude);
+    const lat2 = toRad(b.latitude);
+    const h =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2;
+    return 2 * R * Math.asin(Math.sqrt(h));
+  };
 
-  // Compute live ETA/distance using haversine if we have coordinates
-  const haversineKm = (a, b) => {
-    const toRad = (deg) => (deg * Math.PI) / 180;
-    const R = 6371; // km
-    const dLat = toRad(b.latitude - a.latitude);
-    const dLon = toRad(b.longitude - a.longitude);
-    const lat1 = toRad(a.latitude);
-    const lat2 = toRad(b.latitude);
-    const h =
-      Math.sin(dLat / 2) ** 2 +
-      Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2;
-    return 2 * R * Math.asin(Math.sqrt(h));
-  };
+  useEffect(() => {
+    if (!ride) return;
+    const dest = destinationCoords;
+    const curr =
+      driverCoords ||
+      currentCoords ||
+      location ||
+      (geo &&
+        typeof geo.latitude === "number" &&
+        typeof geo.longitude === "number"
+        ? { latitude: geo.latitude, longitude: geo.longitude }
+        : null);
+    if (dest && curr) {
+      const km = haversineKm(curr, dest);
+      setDistance(`${km.toFixed(1)} km`);
+      const minutes = Math.max(1, Math.round((km / 25) * 60));
+      setEta(`${minutes} min`);
+    } else {
+      setDistance("N/A");
+      setEta("N/A");
+    }
+  }, [
+    ride,
+    driverCoords,
+    currentCoords,
+    destinationCoords,
+    location,
+    geo?.latitude,
+    geo?.longitude,
+  ]);
 
-  useEffect(() => {
-    if (!ride) return;
-    const dest = destinationCoords;
-    const curr =
-      driverCoords ||
-      currentCoords ||
-      location ||
-      (geo &&
-      typeof geo.latitude === "number" &&
-      typeof geo.longitude === "number"
-        ? { latitude: geo.latitude, longitude: geo.longitude }
-        : null);
-    if (dest && curr) {
-      const km = haversineKm(curr, dest);
-      setDistance(`${km.toFixed(1)} km`);
-      const minutes = Math.max(1, Math.round((km / 25) * 60));
-      setEta(`${minutes} min`);
-    } else {
-      setDistance("N/A");
-      setEta("N/A");
-    }
-  }, [
-    ride,
-    driverCoords,
-    currentCoords,
-    destinationCoords,
-    location,
-    geo?.latitude,
-    geo?.longitude,
-  ]);
+  // Poll backend for latest ride data as fallback to websocket
+  useEffect(() => {
+    if (!ride?.id) return;
+    const interval = setInterval(async () => {
+      try {
+        const res = await RideService.getRide(ride.id);
+        const safeOtp = res?.data?.otp ?? null;
+        console.log("otp:- ", safeOtp);
+        setOtp(safeOtp);
+        console.log("Customer received location data:", res.data); // <-- ADD THIS LOG
 
-  // Poll backend for latest ride data as fallback to websocket
-  useEffect(() => {
-    if (!ride?.id) return;
-    const interval = setInterval(async () => {
-      try {
-        const res = await RideService.getRide(ride.id);
-        const safeOtp = res?.data?.otp ?? null;
-        console.log("otp:- ", safeOtp);
-        setOtp(safeOtp);
-        console.log("Customer received location data:", res.data); // <-- ADD THIS LOG
+        const data = res?.data || res; // normalize ApiResponse vs direct
+        if (
+          data?.driverLocation &&
+          typeof data.driverLocation.latitude === "number"
+        ) {
+          setDriverCoords({
+            latitude: data.driverLocation.latitude,
+            longitude: data.driverLocation.longitude,
+          });
+        }
+        if (
+          data?.dropOffLocation &&
+          typeof data.dropOffLocation.latitude === "number"
+        ) {
+          setDestinationCoords({
+            latitude: data.dropOffLocation.latitude,
+            longitude: data.dropOffLocation.longitude,
+          });
+        }
+        if (typeof data?.cost === "number") {
+          setRide((prev) => (prev ? { ...prev, fare: data.cost } : prev));
+        }
+        if (typeof data?.status === "string") {
+          setRide((prev) => (prev ? { ...prev, status: data.status } : prev));
+        }
 
-        const data = res?.data || res; // normalize ApiResponse vs direct
-        if (
-          data?.driverLocation &&
-          typeof data.driverLocation.latitude === "number"
-        ) {
-          setDriverCoords({
-            latitude: data.driverLocation.latitude,
-            longitude: data.driverLocation.longitude,
-          });
-        }
-        if (
-          data?.dropOffLocation &&
-          typeof data.dropOffLocation.latitude === "number"
-        ) {
-          setDestinationCoords({
-            latitude: data.dropOffLocation.latitude,
-            longitude: data.dropOffLocation.longitude,
-          });
-        }
-        if (typeof data?.cost === "number") {
-          setRide((prev) => (prev ? { ...prev, fare: data.cost } : prev));
-        }
-        if (typeof data?.status === "string") {
-          setRide((prev) => (prev ? { ...prev, status: data.status } : prev));
-        }
+        if (data?.driver) {
+          setRide((prev) => (prev ? { ...prev, driver: data.driver } : prev));
+        }
+      } catch (e) {
+        // swallow polling errors
+      }
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [ride?.id]);
 
-        if (data?.driver) {
-          setRide((prev) => (prev ? { ...prev, driver: data.driver } : prev));
-        }
-      } catch (e) {
-        // swallow polling errors
-      }
-    }, 5000);
-    return () => clearInterval(interval);
-  }, [ride?.id]);
+  // compute progress percent based on current step vs steps before final completion
+  const totalProgressSteps = Math.max(1, trackingDataState.length - 1); // avoid divide by zero
+  const progressPercent = Math.min(
+    100,
+    Math.round((currentStep / totalProgressSteps) * 100)
+  );
 
-  // compute progress percent based on current step vs steps before final completion
-  const totalProgressSteps = Math.max(1, trackingDataState.length - 1); // avoid divide by zero
-  const progressPercent = Math.min(
-    100,
-    Math.round((currentStep / totalProgressSteps) * 100)
-  );
+  // Get vehicle icon based on type
+  const getVehicleIcon = () => {
+    if (
+      ride?.driver?.vehicle?.toLowerCase().includes("bike") ||
+      ride?.driver?.vehicle?.toLowerCase().includes("activa")
+    ) {
+      return <DirectionsBike className="text-yellow-500" />;
+    } else if (ride?.driver?.vehicle?.toLowerCase().includes("auto")) {
+      return <AirportShuttle className="text-yellow-500" />;
+    } else {
+      return <LocalTaxi className="text-yellow-500" />;
+    }
+  };
 
-  // Get vehicle icon based on type
-  const getVehicleIcon = () => {
-    if (
-      ride?.driver?.vehicle?.toLowerCase().includes("bike") ||
-      ride?.driver?.vehicle?.toLowerCase().includes("activa")
-    ) {
-      return <DirectionsBike className="text-yellow-500" />;
-    } else if (ride?.driver?.vehicle?.toLowerCase().includes("auto")) {
-      return <AirportShuttle className="text-yellow-500" />;
-    } else {
-      return <LocalTaxi className="text-yellow-500" />;
-    }
-  };
+  // Get status color
+  const getStatusColor = () => {
+    switch ((ride?.status || "").toUpperCase()) {
+      case "COMPLETED":
+        return "#4CAF50";
+      case "IN_PROGRESS":
+        return "#2196F3";
+      case "CANCELLED":
+        return "#F44336";
+      case "ACCEPTED":
+        return "#FFB300";
+      default:
+        return "#FF9800";
+    }
+  };
 
-  // Get status color
-  const getStatusColor = () => {
-    switch ((ride?.status || "").toUpperCase()) {
-      case "COMPLETED":
-        return "#4CAF50";
-      case "IN_PROGRESS":
-        return "#2196F3";
-      case "CANCELLED":
-        return "#F44336";
-      case "ACCEPTED":
-        return "#FFB300";
-      default:
-        return "#FF9800";
-    }
-  };
+  // load Razorpay checkout script
+  const loadRazorpayScript = () => {
+    return new Promise((resolve) => {
+      const existing = document.getElementById("razorpay-sdk");
+      if (existing) return resolve(true);
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.id = "razorpay-sdk";
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
 
-  // load Razorpay checkout script
-  const loadRazorpayScript = () => {
-    return new Promise((resolve) => {
-      const existing = document.getElementById("razorpay-sdk");
-      if (existing) return resolve(true);
-      const script = document.createElement("script");
-      script.src = "https://checkout.razorpay.com/v1/checkout.js";
-      script.id = "razorpay-sdk";
-      script.onload = () => resolve(true);
-      script.onerror = () => resolve(false);
-      document.body.appendChild(script);
-    });
-  };
+  const handlePay = async () => {
+    if (!ride) return;
+    setPaymentProcessing(true);
+    const res = await loadRazorpayScript();
+    const amountInPaise = Math.round((ride.fare || 0) * 100);
 
-  const handlePay = async () => {
-    if (!ride) return;
-    setPaymentProcessing(true);
-    const res = await loadRazorpayScript();
-    const amountInPaise = Math.round((ride.fare || 0) * 100);
+    if (!res) {
+      alert("Razorpay SDK failed to load. Please try again later.");
+      setPaymentProcessing(false);
+      return;
+    }
 
-    if (!res) {
-      alert("Razorpay SDK failed to load. Please try again later.");
-      setPaymentProcessing(false);
-      return;
-    }
+    const options = {
+      key: "rzp_test_1234567890", // mock/test key
+      amount: amountInPaise,
+      currency: "INR",
+      name: "Rapido",
+      description: `Payment for ride #${ride.id}`,
+      handler: function (response) {
+        setPaymentProcessing(false);
+        setShowPaymentDialog(false);
+        alert("Payment successful. Redirecting to rating page.");
+        navigate("/costumor/RatingPage");
+      },
+      prefill: {
+        name: "Customer",
+        email: "customer@example.com",
+        contact: "9999999999",
+      },
+      theme: {
+        color: "#1976d2",
+      },
+    };
 
-    const options = {
-      key: "rzp_test_1234567890", // mock/test key
-      amount: amountInPaise,
-      currency: "INR",
-      name: "Rapido",
-      description: `Payment for ride #${ride.id}`,
-      handler: function (response) {
-        setPaymentProcessing(false);
-        setShowPaymentDialog(false);
-        alert("Payment successful. Redirecting to rating page.");
-        setRedirectedToRating(true); // Mark that we're redirecting
-        navigate("/costumor/RatingPage");
-      },
-      prefill: {
-        name: "Customer",
-        email: "customer@example.com",
-        contact: "9999999999",
-      },
-      theme: {
-        color: "#1976d2",
-      },
-    };
+    // eslint-disable-next-line no-undef
+    const rzp = new window.Razorpay(options);
+    rzp.on("payment.failed", function (response) {
+      setPaymentProcessing(false);
+      alert("Payment failed. Please try again.");
+    });
+    rzp.open();
+  };
 
-    // eslint-disable-next-line no-undef
-    const rzp = new window.Razorpay(options);
-    rzp.on("payment.failed", function (response) {
-      setPaymentProcessing(false);
-      alert("Payment failed. Please try again.");
-    });
-    rzp.open();
-  };
+  if (loading) {
+    return (
+      <div className="p-6 bg-gray-50 min-h-screen flex items-center justify-center">
+        <CircularProgress />
+      </div>
+    );
+  }
 
-  if (loading) {
-    return (
-      <div className="p-6 bg-gray-50 min-h-screen flex items-center justify-center">
-        <CircularProgress />
-      </div>
-    );
-  }
+  let routeToShow = { pickup: null, dropoff: null };
+  if (ride && driverCoords && currentCoords && destinationCoords) {
+    console.log("status:- ", ride.status);
+    if (ride.status === "ACCEPTED") {
+      // Show the route from the driver to the customer's pickup
+      routeToShow = {
+        pickup: [driverCoords.latitude, driverCoords.longitude],
+        dropoff: [currentCoords.latitude, currentCoords.longitude],
+      };
+    } else if (ride.status === "IN_PROGRESS" || ride.status === "STARTED") {
+      // Show the route from the customer's pickup to the final destination
+      routeToShow = {
+        pickup: [currentCoords.latitude, currentCoords.longitude],
+        dropoff: [destinationCoords.latitude, destinationCoords.longitude],
+      };
+    }
+  }
 
-  let routeToShow = { pickup: null, dropoff: null };
-  if (ride && driverCoords && currentCoords && destinationCoords) {
-    console.log("status:- ", ride.status);
-    if (ride.status === "ACCEPTED") {
-      // Show the route from the driver to the customer's pickup
-      routeToShow = {
-        pickup: [driverCoords.latitude, driverCoords.longitude],
-        dropoff: [currentCoords.latitude, currentCoords.longitude],
-      };
-    } else if (ride.status === "IN_PROGRESS" || ride.status === "STARTED") {
-      // Show the route from the customer's pickup to the final destination
-      routeToShow = {
-        pickup: [currentCoords.latitude, currentCoords.longitude],
-        dropoff: [destinationCoords.latitude, destinationCoords.longitude],
-      };
-    }
-  }
+  return (
+    <>
+      <div className="flex justify-center items-center min-h-screen bg-gray-50">
+        <div className="max-w-6xl w-full">
+          {/* Header */}
+          <Box className="mb-8">
+            <Typography variant="h4" className="font-bold text-gray-800">
+              Track Your Ride
+            </Typography>
+            <Typography variant="body1" className="text-gray-600">
+              Real-time tracking of your ride status and location
+            </Typography>
+          </Box>
 
-  return (
-    <>
-      <div className="flex justify-center items-center min-h-screen bg-gray-50">
-        <div className="max-w-6xl w-full">
-          {/* Header */}
-          <Box className="mb-8">
-            <Typography variant="h4" className="font-bold text-gray-800">
-              Track Your Ride
-            </Typography>
-            <Typography variant="body1" className="text-gray-600">
-              Real-time tracking of your ride status and location
-            </Typography>
-          </Box>
+          <Grid container spacing={4} style={{ minHeight: "70vh" }}>
+            {/* Left Column - Map and Status */}
+            <Grid
+              item
+              xs={12}
+              md={6}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "1.5rem",
+                flexBasis: "45%",
+                maxWidth: "45%",
+              }}
+            >
+              {/* Status Card */}
+              <Card
+                className="shadow-md rounded-xl mb-4"
+                style={{ maxHeight: 340, overflow: "auto" }}
+              >
+                <CardContent className="p-6">
+                  <Box className="flex justify-between items-center mb-6">
+                    <Typography
+                      variant="h6"
+                      className="font-bold text-gray-800"
+                    >
+                      Ride Status
+                    </Typography>
+                    <Chip
+                      label={ride.status}
+                      size="medium"
+                      style={{
+                        backgroundColor: `${getStatusColor()}20`,
+                        color: getStatusColor(),
+                        fontWeight: "bold",
+                      }}
+                    />
+                  </Box>
 
-          <Grid container spacing={4} style={{ minHeight: "70vh" }}>
-            {/* Left Column - Map and Status */}
-            <Grid
-              item
-              xs={12}
-              md={6}
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "1.5rem",
-                flexBasis: "45%",
-                maxWidth: "45%",
-              }}
-            >
-              {/* Status Card */}
-              <Card
-                className="shadow-md rounded-xl mb-4"
-                style={{ maxHeight: 340, overflow: "auto" }}
-              >
-                <CardContent className="p-6">
-                  <Box className="flex justify-between items-center mb-6">
-                    <Typography
-                      variant="h6"
-                      className="font-bold text-gray-800"
-                    >
-                      Ride Status
-                    </Typography>
-                    <Chip
-                      label={ride.status}
-                      size="medium"
-                      style={{
-                        backgroundColor: `${getStatusColor()}20`,
-                        color: getStatusColor(),
-                        fontWeight: "bold",
-                      }}
-                    />
-                  </Box>
+                  <Box className="mb-6">
+                    <Typography variant="body2" className="text-gray-600 mb-1">
+                      Route
+                    </Typography>
+                    <Box className="flex items-center">
+                      <LocationOn className="text-gray-500 mr-2" />
+                      <Typography variant="h6" className="font-medium">
+                        {ride.pickup}
+                      </Typography>
+                    </Box>
+                    <Box className="flex items-center my-1">
+                      <div className="w-4 h-4 rounded-full bg-gray-300 mx-2"></div>
+                      <div className="flex-1 h-0.5 bg-gray-300"></div>
+                    </Box>
+                    <Box className="flex items-center">
+                      <LocationOn className="text-gray-500 mr-2" />
+                      <Typography variant="h6" className="font-medium">
+                        {ride.destination}
+                      </Typography>
+                    </Box>
+                  </Box>
 
-                  <Box className="mb-6">
-                    <Typography variant="body2" className="text-gray-600 mb-1">
-                      Route
-                    </Typography>
-                    <Box className="flex items-center">
-                      <LocationOn className="text-gray-500 mr-2" />
-                      <Typography variant="h6" className="font-medium">
-                        {ride.pickup}
-                      </Typography>
-                    </Box>
-                    <Box className="flex items-center my-1">
-                      <div className="w-4 h-4 rounded-full bg-gray-300 mx-2"></div>
-                      <div className="flex-1 h-0.5 bg-gray-300"></div>
-                    </Box>
-                    <Box className="flex items-center">
-                      <LocationOn className="text-gray-500 mr-2" />
-                      <Typography variant="h6" className="font-medium">
-                        {ride.destination}
-                      </Typography>
-                    </Box>
-                  </Box>
+                  <Divider className="my-6" />
 
-                  <Divider className="my-6" />
+                  <Box className="flex justify-between items-center">
+                    <Box>
+                      <Typography variant="body2" className="text-gray-600">
+                        Estimated Time
+                      </Typography>
+                      <Typography variant="h6" className="font-medium">
+                        {eta}
+                      </Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="body2" className="text-gray-600">
+                        Distance
+                      </Typography>
+                      <Typography variant="h6" className="font-medium">
+                        {distance}
+                      </Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="body2" className="text-gray-600">
+                        Fare
+                      </Typography>
+                      <Typography variant="h6" className="font-medium">
+                        ₹{ride.fare}
+                      </Typography>
+                    </Box>
+                  </Box>
+                </CardContent>
+              </Card>
 
-                  <Box className="flex justify-between items-center">
-                    <Box>
-                      <Typography variant="body2" className="text-gray-600">
-                        Estimated Time
-                      </Typography>
-                      <Typography variant="h6" className="font-medium">
-                        {eta}
-                      </Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant="body2" className="text-gray-600">
-                        Distance
-                      </Typography>
-                      <Typography variant="h6" className="font-medium">
-                        {distance}
-                      </Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant="body2" className="text-gray-600">
-                        Fare
-                      </Typography>
-                      <Typography variant="h6" className="font-medium">
-                        ₹{ride.fare}
-                      </Typography>
-                    </Box>
-                  </Box>
-                </CardContent>
-              </Card>
+              {/* Map */}
+              <Card className="shadow-md rounded-xl flex-1">
+                <CardContent className="p-0">
+                  <Typography
+                    variant="h6"
+                    className="font-bold text-gray-800 p-4 pb-2"
+                  >
+                    Live Tracking
+                  </Typography>
+                  <Divider />
+                  <MapDisplay
+                    userLocation={
+                      currentCoords
+                        ? [currentCoords.latitude, currentCoords.longitude]
+                        : null
+                    }
+                    // The rider location is always the driver's live position
+                    riderLocation={
+                      driverCoords
+                        ? [driverCoords.latitude, driverCoords.longitude]
+                        : null
+                    }
+                    pickupCoords={routeToShow.pickup}
+                    dropoffCoords={routeToShow.dropoff}
+                  />
+                </CardContent>
+              </Card>
+            </Grid>
 
-              {/* Map */}
-              <Card className="shadow-md rounded-xl flex-1">
-                <CardContent className="p-0">
-                  <Typography
-                    variant="h6"
-                    className="font-bold text-gray-800 p-4 pb-2"
-                  >
-                    Live Tracking
-                  </Typography>
-                  <Divider />
-                  <MapDisplay
-                    userLocation={
-                      currentCoords
-                        ? [currentCoords.latitude, currentCoords.longitude]
-                        : null
-                    }
-                    // The rider location is always the driver's live position
-                    riderLocation={
-                      driverCoords
-                        ? [driverCoords.latitude, driverCoords.longitude]
-                        : null
-                    }
-                    pickupCoords={routeToShow.pickup}
-                    dropoffCoords={routeToShow.dropoff}
-                  />
-                </CardContent>
-              </Card>
-            </Grid>
+            {/* Right Column - Driver Info and Actions */}
+            <Grid
+              item
+              xs={12}
+              md={6}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "1.5rem",
+                flexBasis: "40%",
+                maxWidth: "40%",
+              }}
+            >
+              {/* Driver Info */}
+              <Card
+                className="shadow-md rounded-xl mb-4"
+                style={{ maxHeight: 340, overflow: "auto" }}
+              >
+                <CardContent className="p-6">
+                  <Typography
+                    variant="h6"
+                    className="font-bold text-gray-800 mb-4"
+                  >
+                    Driver Information
+                  </Typography>
 
-            {/* Right Column - Driver Info and Actions */}
-            <Grid
-              item
-              xs={12}
-              md={6}
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "1.5rem",
-                flexBasis: "40%",
-                maxWidth: "40%",
-              }}
-            >
-              {/* Driver Info */}
-              <Card
-                className="shadow-md rounded-xl mb-4"
-                style={{ maxHeight: 340, overflow: "auto" }}
-              >
-                <CardContent className="p-6">
-                  <Typography
-                    variant="h6"
-                    className="font-bold text-gray-800 mb-4"
-                  >
-                    Driver Information
-                  </Typography>
+                  {ride.status === "ACCEPTED" ||
+                    ride.status === "STARTED" ||
+                    ride.status === "IN_PROGRESS" ||
+                    ride.status === "COMPLETED" ? (
+                    // --- If YES, show the full driver details ---
+                    <>
+                      {ride.driver ? (
+                        <>
+                          <Box className="flex items-center mb-4">
+                            <Avatar
+                              className="mr-4"
+                              src={`https://i.pravatar.cc/150?u=${ride.driver.username}`}
+                            />
+                            <Box>
+                              <Typography variant="h6" className="font-medium">
+                                {ride.driver.username}
+                              </Typography>
+                              <Box className="flex items-center">
+                                <Star
+                                  className="text-yellow-500 mr-1"
+                                  fontSize="small"
+                                />
+                                <Typography variant="body2">
+                                  4.8 (Mock)
+                                </Typography>
+                              </Box>
+                            </Box>
+                          </Box>
 
-                  {ride.driver ? (
-                    <>
-                      <Box className="flex items-center mb-4">
-                        <Avatar
-                          className="mr-4"
-                          src={`https://i.pravatar.cc/150?u=${ride.driver.username}`}
-                        />
-                        <Box>
-                          <Typography variant="h6" className="font-medium">
-                            {ride.driver?.username}
-                          </Typography>
-                          <Box className="flex items-center">
-                            <Star
-                              className="text-yellow-500 mr-1"
-                              fontSize="small"
-                            />
-                            <Typography variant="body2">
-                              {ride.driver.rating}
-                            </Typography>
-                          </Box>
-                          {ride.status === "ACCEPTED" && (
-                            <Box
-                              sx={{
-                                p: 2,
-                                backgroundColor: "primary.light",
-                                borderRadius: 2,
-                                textAlign: "center",
-                                my: 2,
-                              }}
-                            >
-                              <Typography
-                                variant="body2"
-                                color="text.secondary"
-                              >
-                                Show this OTP to your driver to start the ride
-                              </Typography>
-                              <Typography
-                                variant="h4"
-                                fontWeight="bold"
-                                letterSpacing={4}
-                                mt={1}
-                              >
-                                {otp}
-                              </Typography>
-                            </Box>
-                          )}
-                        </Box>
-                      </Box>
+                          <Divider className="my-4" />
+                          <Box className="flex justify-between items-center">
+                            <Box className="flex justify-between">
+                              <Typography fontWeight="medium">
+                                {ride.driver.vehicleModel}
+                              </Typography>
+                              <Chip
+                                label={ride.driver.vehicleNumber || "N/A"}
+                                variant="outlined"
+                                sx={{
+                                  mt: 0.5,
+                                  fontWeight: "bold",
+                                  letterSpacing: 1,
+                                }}
+                              />
 
-                      <Divider className="my-4" />
+                              <Typography fontWeight="medium">
+                                Otp
+                              </Typography>
+                              <Chip
+                                label={otp || "N/A"}
+                                variant="outlined"
+                                sx={{
+                                  mt: 0.5,
+                                  fontWeight: "bold",
+                                  letterSpacing: 1,
+                                }}
+                              />
 
-                      <Box className="space-y-3">
-                        <Box className="flex items-center">
-                          {getVehicleIcon()}
-                          <Typography variant="body2" className="ml-2">
-                            {ride.driver.vehicle}
-                          </Typography>
-                        </Box>
-                        <Box className="flex items-center">
-                          <Typography variant="body2" className="text-gray-600">
-                            License Plate:
-                          </Typography>
-                          <Typography
-                            variant="body2"
-                            className="ml-2 font-medium"
-                          >
-                            {ride.driver.licensePlate}
-                          </Typography>
-                        </Box>
-                      </Box>
+                            </Box>
+                            {/* Use the getVehicleIcon function you already have */}
+                            {getVehicleIcon()}
+                          </Box>
+                          <Divider className="my-4" />
+                          {/* ... Other driver details like vehicle, license plate, etc. ... */}
+                          <Box className="flex justify-between">
+                            <Button startIcon={<Phone />}>Call Driver</Button>
+                            <Button variant="outlined" startIcon={<Message />}>
+                              Message
+                            </Button>
+                          </Box>
+                        </>
+                      ) : (
+                        // This is a fallback in case driver data is missing after acceptance
+                        <Typography color="text.secondary">
+                          Waiting for driver details...
+                        </Typography>
+                      )}
+                    </>
+                  ) : (
+                    // --- If NO (status is 'REQUESTED'), show a searching message ---
+                    <Box sx={{ textAlign: "center", p: 3 }}>
+                      <CircularProgress sx={{ mb: 2 }} />
+                      <Typography color="text.secondary">
+                        Searching for a nearby driver...
+                      </Typography>
+                      <Typography
+                        variant="caption"
+                        display="block"
+                        color="text.secondary"
+                      >
+                        We're connecting you with the best driver for your trip.
+                      </Typography>
+                    </Box>
+                  )}
+                </CardContent>
+              </Card>
 
-                      <Divider className="my-4" />
+              {/* Tracking Progress */}
+              <Card className="shadow-md rounded-xl flex-1">
+                <CardContent className="p-6">
+                  <Typography
+                    variant="h6"
+                    className="font-bold text-gray-800 mb-4"
+                  >
+                    Ride Progress
+                  </Typography>
 
-                      <Box className="flex justify-between">
-                        <Button
-                          variant="contained"
-                          className="bg-green-500 hover:bg-green-600 text-white"
-                          startIcon={<Phone />}
-                        >
-                          Call
-                        </Button>
-                        <Button variant="outlined" startIcon={<Message />}>
-                          Message
-                        </Button>
-                      </Box>
-                    </>
-                  ) : (
-                    // --- Show a message if the driver is not yet assigned ---
-                    <Typography color="text.secondary">
-                      Searching for a nearby driver...
-                    </Typography>
-                  )}
-                </CardContent>
-              </Card>
+                  <Box className="space-y-4">
+                    {trackingDataState.map((step, index) => (
+                      <Box key={step.id} className="flex items-center">
+                        <Box
+                          className={`w-8 h-8 rounded-full flex items-center justify-center mr-3 ${step.completed ? "bg-green-500" : "bg-gray-300"
+                            }`}
+                        >
+                          {step.completed && (
+                            <span className="text-white text-sm">✓</span>
+                          )}
+                        </Box>
+                        <Box className="flex-1">
+                          <Typography
+                            variant="body2"
+                            className={`${step.completed ? "font-medium" : "text-gray-500"
+                              }`}
+                          >
+                            {step.status}
+                          </Typography>
+                          <Typography
+                            variant="caption"
+                            className="text-gray-500"
+                          >
+                            {step.time}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    ))}
+                  </Box>
 
-              {/* Tracking Progress */}
-              <Card className="shadow-md rounded-xl flex-1">
-                <CardContent className="p-6">
-                  <Typography
-                    variant="h6"
-                    className="font-bold text-gray-800 mb-4"
-                  >
-                    Ride Progress
-                  </Typography>
+                  <Box className="mt-6">
+                    {/* Conditionally render the text based on the ride's status */}
+                    {ride.status === "ACCEPTED" && (
+                      <Typography
+                        variant="body2"
+                        className="text-gray-600 mb-2"
+                      >
+                        Your driver is approximately <b>{eta}</b> away (
+                        {distance}).
+                      </Typography>
+                    )}
 
-                  <Box className="space-y-4">
-                    {trackingDataState.map((step, index) => (
-                      <Box key={step.id} className="flex items-center">
-                        <Box
-                          className={`w-8 h-8 rounded-full flex items-center justify-center mr-3 ${
-                            step.completed ? "bg-green-500" : "bg-gray-300"
-                          }`}
-                        >
-                          {step.completed && (
-                            <span className="text-white text-sm">✓</span>
-                          )}
-                        </Box>
-                        <Box className="flex-1">
-                          <Typography
-                            variant="body2"
-                            className={`${
-                              step.completed ? "font-medium" : "text-gray-500"
-                            }`}
-                          >
-                            {step.status}
-                          </Typography>
-                          <Typography
-                            variant="caption"
-                            className="text-gray-500"
-                          >
-                            {step.time}
-                          </Typography>
-                        </Box>
-                      </Box>
-                    ))}
-                  </Box>
+                    {(ride.status === "IN_PROGRESS" ||
+                      ride.status === "STARTED") && (
+                        <Typography
+                          variant="body2"
+                          className="text-gray-600 mb-2"
+                        >
+                          You will reach your destination in approximately{" "}
+                          <b>{eta}</b>.
+                        </Typography>
+                      )}
 
-                  <Box className="mt-6">
-                    {/* Conditionally render the text based on the ride's status */}
-                    {ride.status === "ACCEPTED" && (
-                      <Typography
-                        variant="body2"
-                        className="text-gray-600 mb-2"
-                      >
-                        Your driver is approximately <b>{eta}</b> away (
-                        {distance}).
-                      </Typography>
-                    )}
+                    {ride.status === "REQUESTED" && (
+                      <Typography
+                        variant="body2"
+                        className="text-gray-600 mb-2"
+                      >
+                        Searching for a nearby driver...
+                      </Typography>
+                    )}
 
-                    {(ride.status === "IN_PROGRESS" ||
-                      ride.status === "STARTED") && (
-                      <Typography
-                        variant="body2"
-                        className="text-gray-600 mb-2"
-                      >
-                        You will reach your destination in approximately{" "}
-                        <b>{eta}</b>.
-                      </Typography>
-                    )}
+                    {ride.status === "COMPLETED" && (
+                      <Typography
+                        variant="body2"
+                        className="text-gray-600 mb-2"
+                        color="green"
+                      >
+                        You have arrived at your destination!
+                      </Typography>
+                    )}
 
-                    {ride.status === "REQUESTED" && (
-                      <Typography
-                        variant="body2"
-                        className="text-gray-600 mb-2"
-                      >
-                        Searching for a nearby driver...
-                      </Typography>
-                    )}
+                    <LinearProgress
+                      variant="determinate"
+                      value={progressPercent}
+                      className="h-2 rounded-lg"
+                    />
+                  </Box>
 
-                    {ride.status === "COMPLETED" && (
-                      <Typography
-                        variant="body2"
-                        className="text-gray-600 mb-2"
-                        color="green"
-                      >
-                        You have arrived at your destination!
-                      </Typography>
-                    )}
+                  <Box className="mt-6 pt-4 border-t border-gray-200">
+                    {ride?.status === "REQUESTED" && (
+                      <Button
+                        variant="contained"
+                        className="w-full bg-red-500 hover:bg-red-600 text-white"
+                        startIcon={<Cancel />}
+                        onClick={() => {
+                          setRide((prev) => ({ ...prev, status: "Cancelled" }));
+                          setTimeout(() => {
+                            navigate("/ride-booking");
+                          }, 500);
+                        }}
+                      >
+                        Cancel Ride
+                      </Button>
+                    )}
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+          </Grid>
+        </div>
+      </div>
 
-                    <LinearProgress
-                      variant="determinate"
-                      value={progressPercent}
-                      className="h-2 rounded-lg"
-                    />
-                  </Box>
-
-                  <Box className="mt-6 pt-4 border-t border-gray-200">
-                    <Button
-                      variant="contained"
-                      // REMOVED hover:bg-red-600 class
-                      className="w-full bg-red-500 text-white" 
-                      startIcon={<Cancel />}
-                      onClick={() => {
-                        setRide((prev) => ({ ...prev, status: "Cancelled" }));
-                        setTimeout(() => {
-                          navigate("/ride-booking");
-                        }, 500);
-                      }}
-                    >
-                      Cancel Ride
-                    </Button>
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
-          </Grid>
-        </div>
-      </div>
-
-      {/* Payment Dialog */}
-      <Dialog
-        open={showPaymentDialog}
-        onClose={() => {
-          if (!paymentProcessing) setShowPaymentDialog(false);
-        }}
-        maxWidth="xs"
-        fullWidth
-      >
-        <DialogTitle>Pay for your ride</DialogTitle>
-        <DialogContent>
-          <Box className="py-2">
-            <Typography variant="subtitle2" color="textSecondary">
-              Amount to pay
-            </Typography>
-            <Typography variant="h4" className="font-bold">
-              ₹{ride?.fare ?? "0.00"}
-            </Typography>
-            <Typography variant="caption" className="text-gray-600 mt-2">
-              Complete payment to proceed to rating.
-            </Typography>
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button
-            onClick={() => {
-              if (!paymentProcessing) setShowPaymentDialog(false);
-            }}
-            disabled={paymentProcessing}
-          >
-            Cancel
-          </Button>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={handlePay}
-            disabled={paymentProcessing}
-          >
-            {paymentProcessing ? "Processing..." : `Pay ₹${ride?.fare ?? "0"}`}
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </>
-  );
+      {/* Payment Dialog */}
+      <Dialog
+        open={showPaymentDialog}
+        onClose={() => {
+          if (!paymentProcessing) setShowPaymentDialog(false);
+        }}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>Pay for your ride</DialogTitle>
+        <DialogContent>
+          <Box className="py-2">
+            <Typography variant="subtitle2" color="textSecondary">
+              Amount to pay
+            </Typography>
+            <Typography variant="h4" className="font-bold">
+              ₹{ride?.fare ?? "0.00"}
+            </Typography>
+            <Typography variant="caption" className="text-gray-600 mt-2">
+              Complete payment to proceed to rating.
+            </Typography>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              if (!paymentProcessing) setShowPaymentDialog(false);
+            }}
+            disabled={paymentProcessing}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handlePay}
+            disabled={paymentProcessing}
+          >
+            {paymentProcessing ? "Processing..." : `Pay ₹${ride?.fare ?? "0"}`}
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
+  );
 }
+
