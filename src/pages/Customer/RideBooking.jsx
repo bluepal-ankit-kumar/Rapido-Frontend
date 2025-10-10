@@ -157,18 +157,20 @@ export default function RideBooking() {
   //   }
   // };
 
-const reverseGeocode = async (lat, lon) => {
-  try {
-    const response = await axios.get('https://nominatim.openstreetmap.org/reverse', {
-      params: { lat, lon, format: 'json' },
-      timeout: 10000
-    });
-    return response.data.display_name || null;
-  } catch (err) {
-    console.error("Nominatim reverse geocode failed:", err);
-    return `${lat.toFixed(6)}, ${lon.toFixed(6)}`; // Fallback to coordinates
-  }
-};
+  const reverseGeocode = async (lat, lon) => {
+    try {
+      const response = await axios.get('https://nominatim.openstreetmap.org/reverse', {
+        params: { lat, lon, format: 'json' },
+        timeout: 20000 // Keep the increased timeout, but be ready for it to fail.
+      });
+      return response.data.display_name || null;
+    } catch (err) {
+      // Log the error (timeout) for debugging
+      console.error("Nominatim reverse geocode failed:", err);
+      // **Crucial Change:** Return null on failure (timeout or network error)
+      return null;
+    }
+  };
 
   // --- Event Handlers ---
 
