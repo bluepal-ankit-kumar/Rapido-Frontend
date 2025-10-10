@@ -174,7 +174,6 @@ export default function RideBooking() {
 
 
 
-
   const reverseGeocode = async (lat, lon) => {
   try {
     const response = await axios.get("http://localhost:8080/api/maps/reverse", {
