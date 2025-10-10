@@ -117,11 +117,11 @@ export default function RideBooking() {
 
   const [pickupSuggestions, setPickupSuggestions] = useState([]);
   const [dropoffSuggestions, setDropoffSuggestions] = useState([]);
-  
+
   // The definitive source of truth for location coordinates
   const [pickupCoords, setPickupCoords] = useState(null);
   const [dropoffCoords, setDropoffCoords] = useState(null);
-  
+
   const [searching, setSearching] = useState({ pickup: false, dropoff: false });
   const [autofilledFromGeo, setAutofilledFromGeo] = useState(false);
 
@@ -145,18 +145,31 @@ export default function RideBooking() {
     }
   };
 
-  const reverseGeocode = async (lat, lon) => {
-    try {
-      const response = await axios.get('https://nominatim.openstreetmap.org/reverse', {
-        params: { lat, lon, format: 'json' }
-      });
-      return response.data.display_name || null;
-    } catch (err) {
-      console.error("Nominatim reverse geocode failed:", err);
-      return null;
-    }
-  };
-  
+  // const reverseGeocode = async (lat, lon) => {
+  //   try {
+  //     const response = await axios.get('https://nominatim.openstreetmap.org/reverse', {
+  //       params: { lat, lon, format: 'json' }
+  //     });
+  //     return response.data.display_name || null;
+  //   } catch (err) {
+  //     console.error("Nominatim reverse geocode failed:", err);
+  //     return null;
+  //   }
+  // };
+
+const reverseGeocode = async (lat, lon) => {
+  try {
+    const response = await axios.get('https://nominatim.openstreetmap.org/reverse', {
+      params: { lat, lon, format: 'json' },
+      timeout: 10000
+    });
+    return response.data.display_name || null;
+  } catch (err) {
+    console.error("Nominatim reverse geocode failed:", err);
+    return `${lat.toFixed(6)}, ${lon.toFixed(6)}`; // Fallback to coordinates
+  }
+};
+
   // --- Event Handlers ---
 
   const handleSearch = (query, setSuggestions, type) => {
@@ -189,14 +202,14 @@ export default function RideBooking() {
         } else {
           setError('Could not determine your address. Please search manually.');
         }
-      } catch(e) {
-          setError('Could not fetch address. Check your internet connection.');
+      } catch (e) {
+        setError('Could not fetch address. Check your internet connection.');
       }
     } else {
       setError('Location permissions not available or location is being determined. Please enable location or wait.');
     }
   };
-  
+
   useEffect(() => {
     if (!autofilledFromGeo && user?.id && geo?.latitude && !pickup) {
       useCurrentLocationForPickup();
@@ -256,7 +269,7 @@ export default function RideBooking() {
 
       const response = await RideService.bookRide(rideRequest);
       const rideResp = response?.data || response;
-      
+
       navigate('/ride-tracking', {
         state: {
           pickup,
@@ -267,7 +280,7 @@ export default function RideBooking() {
       });
 
     } catch (err) {
-      console.log("err:- ",err);
+      console.log("err:- ", err);
       setError(err.message || 'Unable to book the ride. Please check locations and try again.');
     } finally {
       setLoading(false);
@@ -283,7 +296,7 @@ export default function RideBooking() {
               <CardContent className="p-6 md:p-8">
                 <Typography variant="h5" sx={{ fontWeight: 700, mb: 3, textAlign: 'center' }}>Enter Your Trip Details</Typography>
                 {error && <Alert severity="error" sx={{ mb: 2, borderRadius: '12px' }}>{error}</Alert>}
-                
+
                 {/* Pickup Location */}
                 <Box sx={{ mb: 2 }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
@@ -327,8 +340,8 @@ export default function RideBooking() {
 
                 {/* Dropoff Location */}
                 <Box sx={{ mb: 3 }}>
-                   <Typography variant="body1" sx={{ fontWeight: 600, mb: 1 }}>Dropoff Location</Typography>
-                   <Autocomplete
+                  <Typography variant="body1" sx={{ fontWeight: 600, mb: 1 }}>Dropoff Location</Typography>
+                  <Autocomplete
                     freeSolo
                     options={dropoffSuggestions}
                     getOptionLabel={(option) => (typeof option === 'string' ? option : option.label)}
@@ -362,38 +375,38 @@ export default function RideBooking() {
                     )}
                   />
                 </Box>
-                
+
                 <Box sx={{ mb: 3, textAlign: 'center' }}>
-                    <Typography variant="body1" sx={{ fontWeight: 600, mb: 1.5 }}>Select Vehicle Type</Typography>
-                    <VehicleTypeSelector selected={selectedType} onSelect={setSelectedType} />
+                  <Typography variant="body1" sx={{ fontWeight: 600, mb: 1.5 }}>Select Vehicle Type</Typography>
+                  <VehicleTypeSelector selected={selectedType} onSelect={setSelectedType} />
                 </Box>
 
                 <Box sx={{ mb: 3 }}>
-                  <LeafletMapDisplay 
+                  <LeafletMapDisplay
                     userLocation={pickupCoords || (geo?.latitude ? [geo.latitude, geo.longitude] : null)}
                     routePoints={(pickupCoords && dropoffCoords) ? [pickupCoords, dropoffCoords] : []}
                   />
                 </Box>
-                
-                 <Box sx={{ mt: 'auto', width: '100%', display: 'flex', justifyContent: 'center' }}>
-                  <Button 
-                    variant="contained" 
+
+                <Box sx={{ mt: 'auto', width: '100%', display: 'flex', justifyContent: 'center' }}>
+                  <Button
+                    variant="contained"
                     fullWidth
                     size="large"
-                    sx={{ 
-                      background: 'linear-gradient(90deg, #6366f1, #8b5cf6)', 
-                      fontSize: '1rem', 
-                      fontWeight: 600, 
+                    sx={{
+                      background: 'linear-gradient(90deg, #6366f1, #8b5cf6)',
+                      fontSize: '1rem',
+                      fontWeight: 600,
                       borderRadius: '12px',
                       boxShadow: '0 10px 15px -3px rgba(99, 102, 241, 0.3)',
-                      '&:hover': { 
-                        background: 'linear-gradient(90deg, #4f46e5, #7c3aed)', 
-                        boxShadow: '0 20px 25px -5px rgba(99, 102, 241, 0.4)' 
+                      '&:hover': {
+                        background: 'linear-gradient(90deg, #4f46e5, #7c3aed)',
+                        boxShadow: '0 20px 25px -5px rgba(99, 102, 241, 0.4)'
                       }
-                    }} 
-                    onClick={handleBook} 
+                    }}
+                    onClick={handleBook}
                     disabled={loading || !pickup || !dropoff} // Button is enabled as long as text fields are filled
-                    startIcon={loading ? <CircularProgress size={20} color="inherit" /> : null} 
+                    startIcon={loading ? <CircularProgress size={20} color="inherit" /> : null}
                     endIcon={!loading ? <ArrowForward /> : null}
                   >
                     {loading ? 'Booking...' : 'Confirm Booking'}
