@@ -25,8 +25,8 @@ const RideService = {
     }
   },
 
-  updateRideStatus: async (request,token) => {
-    console.log("request",request);
+  updateRideStatus: async (request, token) => {
+    console.log("request", request);
     try {
       const response = await api.post("/rides/status", request, {
         headers: {
@@ -60,6 +60,29 @@ const RideService = {
       return response.data;
     } catch (error) {
       throw new Error(error.response?.data?.message || "Failed to fetch rides");
+    }
+  },
+
+  verifyOtp: async (rideId, otp, token) => {
+    console.log("rideId:- ",rideId , "otp:- ",otp , "token:- ",token)
+    try {
+      const config = {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      };
+
+      const requestBody = { otp: otp };
+
+      const response = await api.post(
+        `/rides/${rideId}/verify-otp`,
+        requestBody,
+        config
+      );
+
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || "Failed to verify OTP");
     }
   },
 };

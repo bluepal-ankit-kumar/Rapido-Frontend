@@ -55,6 +55,7 @@ export default function RideTracking() {
     { id: 3, status: "IN_PROGRESS", time: "", completed: false },
     { id: 4, status: "COMPLETED", time: "", completed: false },
   ]);
+  const [otp, setOtp] = useState(null);
   const [currentStep, setCurrentStep] = useState(0);
   const [eta, setEta] = useState("");
   const [distance, setDistance] = useState("");
@@ -77,13 +78,10 @@ export default function RideTracking() {
       destination: state.dropoff || "",
       fare: typeof rideResp.cost === "number" ? rideResp.cost : 0,
       status: rideResp.status || "REQUESTED",
-      driver: {
-        name: "Driver",
-        rating: 4.8,
-        vehicle: state.vehicleType || "Bike",
-        licensePlate: "----",
-      },
     };
+    if (rideResp.driver) {
+      initialRide.driver = rideResp.driver;
+    }
     setRide(initialRide);
     // set coordinates from backend where available
     if (
@@ -124,6 +122,39 @@ export default function RideTracking() {
     }
     setLoading(false);
   }, [routerLocation.state, geo]);
+
+  useEffect(() => {
+    // Guard clause: Exit if we don't have the necessary data points.
+    if (!ride || !driverCoords || !currentCoords) {
+      setDistance("Calculating...");
+      setEta("Calculating...");
+      return;
+    }
+
+    let startingPoint = driverCoords;
+    let endPoint;
+
+    // Determine the correct destination for the ETA calculation
+    if (ride.status === "ACCEPTED") {
+      // If the ride is accepted, the driver is coming to YOU (the customer).
+      // The target is your current location (the pickup point).
+      endPoint = currentCoords;
+    } else {
+      // If the ride is STARTED or later, the target is the final destination.
+      endPoint = destinationCoords;
+    }
+
+    // If we don't have a valid endpoint for some reason, exit.
+    if (!endPoint) return;
+
+    // Now, calculate the distance and ETA based on the correct points.
+    const km = haversineKm(startingPoint, endPoint);
+    setDistance(`${km.toFixed(1)} km`);
+
+    // A simple ETA calculation (average speed of 25 km/h)
+    const minutes = Math.max(1, Math.round((km / 25) * 60));
+    setEta(`${minutes} min`);
+  }, [ride, driverCoords, currentCoords, destinationCoords]); // Dependency array is key
 
   // derive progress step from backend status
   useEffect(() => {
@@ -193,6 +224,9 @@ export default function RideTracking() {
     const interval = setInterval(async () => {
       try {
         const res = await RideService.getRide(ride.id);
+        const safeOtp = res?.data?.otp ?? null;
+        console.log("otp:- ", safeOtp);
+        setOtp(safeOtp);
         console.log("Customer received location data:", res.data); // <-- ADD THIS LOG
 
         const data = res?.data || res; // normalize ApiResponse vs direct
@@ -220,14 +254,16 @@ export default function RideTracking() {
         if (typeof data?.status === "string") {
           setRide((prev) => (prev ? { ...prev, status: data.status } : prev));
         }
+
+        if (data?.driver) {
+          setRide((prev) => (prev ? { ...prev, driver: data.driver } : prev));
+        }
       } catch (e) {
         // swallow polling errors
       }
     }, 5000);
     return () => clearInterval(interval);
   }, [ride?.id]);
-
-  
 
   // compute progress percent based on current step vs steps before final completion
   const totalProgressSteps = Math.max(1, trackingDataState.length - 1); // avoid divide by zero
@@ -329,6 +365,24 @@ export default function RideTracking() {
         <CircularProgress />
       </div>
     );
+  }
+
+  let routeToShow = { pickup: null, dropoff: null };
+  if (ride && driverCoords && currentCoords && destinationCoords) {
+    console.log("status:- ", ride.status);
+    if (ride.status === "ACCEPTED") {
+      // Show the route from the driver to the customer's pickup
+      routeToShow = {
+        pickup: [driverCoords.latitude, driverCoords.longitude],
+        dropoff: [currentCoords.latitude, currentCoords.longitude],
+      };
+    } else if (ride.status === "IN_PROGRESS" || ride.status === "STARTED") {
+      // Show the route from the customer's pickup to the final destination
+      routeToShow = {
+        pickup: [currentCoords.latitude, currentCoords.longitude],
+        dropoff: [destinationCoords.latitude, destinationCoords.longitude],
+      };
+    }
   }
 
   return (
@@ -450,33 +504,16 @@ export default function RideTracking() {
                     userLocation={
                       currentCoords
                         ? [currentCoords.latitude, currentCoords.longitude]
-                        : geo && geo.latitude && geo.longitude
-                        ? [geo.latitude, geo.longitude]
-                        : location
-                        ? [location.latitude, location.longitude]
-                        : [12.9716, 77.5946]
+                        : null
                     }
+                    // The rider location is always the driver's live position
                     riderLocation={
                       driverCoords
                         ? [driverCoords.latitude, driverCoords.longitude]
-                        : destinationCoords
-                        ? [
-                            destinationCoords.latitude,
-                            destinationCoords.longitude,
-                          ]
                         : null
                     }
-                    routePoints={
-                      currentCoords && destinationCoords
-                        ? [
-                            [currentCoords.latitude, currentCoords.longitude],
-                            [
-                              destinationCoords.latitude,
-                              destinationCoords.longitude,
-                            ],
-                          ]
-                        : []
-                    }
+                    pickupCoords={routeToShow.pickup}
+                    dropoffCoords={routeToShow.dropoff}
                   />
                 </CardContent>
               </Card>
@@ -508,60 +545,99 @@ export default function RideTracking() {
                     Driver Information
                   </Typography>
 
-                  <Box className="flex items-center mb-4">
-                    <Avatar
-                      className="mr-4"
-                      src={`https://i.pravatar.cc/150?u=${ride.driver.name}`}
-                    />
-                    <Box>
-                      <Typography variant="h6" className="font-medium">
-                        {ride.driver.name}
-                      </Typography>
-                      <Box className="flex items-center">
-                        <Star
-                          className="text-yellow-500 mr-1"
-                          fontSize="small"
+                  {ride.driver ? (
+                    <>
+                      <Box className="flex items-center mb-4">
+                        <Avatar
+                          className="mr-4"
+                          src={`https://i.pravatar.cc/150?u=${ride.driver.username}`}
                         />
-                        <Typography variant="body2">
-                          {ride.driver.rating}
-                        </Typography>
+                        <Box>
+                          <Typography variant="h6" className="font-medium">
+                            {ride.driver?.username}
+                          </Typography>
+                          <Box className="flex items-center">
+                            <Star
+                              className="text-yellow-500 mr-1"
+                              fontSize="small"
+                            />
+                            <Typography variant="body2">
+                              {ride.driver.rating}
+                            </Typography>
+                          </Box>
+                          {ride.status === "ACCEPTED" && (
+                            <Box
+                              sx={{
+                                p: 2,
+                                backgroundColor: "primary.light",
+                                borderRadius: 2,
+                                textAlign: "center",
+                                my: 2,
+                              }}
+                            >
+                              <Typography
+                                variant="body2"
+                                color="text.secondary"
+                              >
+                                Show this OTP to your driver to start the ride
+                                
+                              </Typography>
+                              <Typography
+                                variant="h4"
+                                fontWeight="bold"
+                                letterSpacing={4}
+                                mt={1}
+                              >
+                                {otp}
+                              </Typography>
+                            </Box>
+                          )}
+                        </Box>
                       </Box>
-                    </Box>
-                  </Box>
 
-                  <Divider className="my-4" />
+                      <Divider className="my-4" />
 
-                  <Box className="space-y-3">
-                    <Box className="flex items-center">
-                      {getVehicleIcon()}
-                      <Typography variant="body2" className="ml-2">
-                        {ride.driver.vehicle}
-                      </Typography>
-                    </Box>
-                    <Box className="flex items-center">
-                      <Typography variant="body2" className="text-gray-600">
-                        License Plate:
-                      </Typography>
-                      <Typography variant="body2" className="ml-2 font-medium">
-                        {ride.driver.licensePlate}
-                      </Typography>
-                    </Box>
-                  </Box>
+                      <Box className="space-y-3">
+                        <Box className="flex items-center">
+                          {getVehicleIcon()}
+                          <Typography variant="body2" className="ml-2">
+                            {ride.driver.vehicle}
+                          </Typography>
+                        </Box>
+                        <Box className="flex items-center">
+                          <Typography variant="body2" className="text-gray-600">
+                            License Plate:
+                          </Typography>
+                          <Typography
+                            variant="body2"
+                            className="ml-2 font-medium"
+                          >
+                            {ride.driver.licensePlate}
+                          </Typography>
+                        </Box>
+                      </Box>
 
-                  <Divider className="my-4" />
+                      <Divider className="my-4" />
 
-                  <Box className="flex justify-between">
-                    <Button
-                      variant="contained"
-                      className="bg-green-500 hover:bg-green-600 text-white"
-                      startIcon={<Phone />}
-                    >
-                      Call
-                    </Button>
-                    <Button variant="outlined" startIcon={<Message />}>
-                      Message
-                    </Button>
-                  </Box>
+                      <Box className="flex justify-between">
+                        <Button
+                          variant="contained"
+                          className="bg-green-500 hover:bg-green-600 text-white"
+                          startIcon={<Phone />}
+                        >
+                          Call
+                        </Button>
+                        <Button variant="outlined" startIcon={<Message />}>
+                          Message
+                        </Button>
+                      </Box>
+                    </>
+                  ) : (
+                    // --- Show a message if the driver is not yet assigned ---
+                    <Typography color="text.secondary">
+                      Searching for a nearby driver...
+                    </Typography>
+                  )}
                 </CardContent>
               </Card>
 
@@ -608,9 +684,47 @@ export default function RideTracking() {
                   </Box>
 
                   <Box className="mt-6">
-                    <Typography variant="body2" className="text-gray-600 mb-2">
-                      Driver is {eta} away
-                    </Typography>
+                    {/* Conditionally render the text based on the ride's status */}
+                    {ride.status === "ACCEPTED" && (
+                      <Typography
+                        variant="body2"
+                        className="text-gray-600 mb-2"
+                      >
+                        Your driver is approximately <b>{eta}</b> away (
+                        {distance}).
+                      </Typography>
+                    )}
+
+                    {(ride.status === "IN_PROGRESS" ||
+                      ride.status === "STARTED") && (
+                      <Typography
+                        variant="body2"
+                        className="text-gray-600 mb-2"
+                      >
+                        You will reach your destination in approximately{" "}
+                        <b>{eta}</b>.
+                      </Typography>
+                    )}
+
+                    {ride.status === "REQUESTED" && (
+                      <Typography
+                        variant="body2"
+                        className="text-gray-600 mb-2"
+                      >
+                        Searching for a nearby driver...
+                      </Typography>
+                    )}
+
+                    {ride.status === "COMPLETED" && (
+                      <Typography
+                        variant="body2"
+                        className="text-gray-600 mb-2"
+                        color="green"
+                      >
+                        You have arrived at your destination!
+                      </Typography>
+                    )}
+
                     <LinearProgress
                       variant="determinate"
                       value={progressPercent}

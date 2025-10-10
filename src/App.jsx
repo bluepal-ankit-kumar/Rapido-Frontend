@@ -45,6 +45,10 @@ import RideManagement from './pages/Admin/RideManagement.jsx';
 import Reports from './pages/Admin/Reports.jsx';
 import RatingsReview from './pages/Admin/RatingsReview.jsx';
 import HelpManagement from './pages/Admin/HelpManagement.jsx';
+import 'leaflet-routing-machine/dist/leaflet-routing-machine.css'; 
+import 'leaflet/dist/leaflet.css';
+
+
 
 import NotFound from './pages/NotFound.jsx';
 
@@ -95,7 +99,7 @@ function AppLayout({ sidebarOpen, setSidebarOpen }) {
             {/* Rider routes */}
             <Route path="/rider/dashboard" element={<RequireAuth><RiderDashboard /></RequireAuth>} />
             <Route path="/rider/accept-ride" element={<RequireAuth><AcceptRide /></RequireAuth>} />
-            <Route path="/rider/ride-in-progress" element={<RequireAuth><RideInProgress /></RequireAuth>} />
+            <Route path="/rider/ride-in-progress/:rideId" element={<RequireAuth><RideInProgress /></RequireAuth>} />
             <Route path="/rider/ride-to-destination" element={<RequireAuth><RideToDestination /></RequireAuth>} />
             <Route path="/rider/ride-history" element={<RequireAuth><RiderRideHistory /></RequireAuth>} />
             <Route path="/rider/profile" element={<RequireAuth><RiderProfile /></RequireAuth>} />
