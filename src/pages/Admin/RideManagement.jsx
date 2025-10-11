@@ -22,7 +22,8 @@ import {
   Badge,
   Grid,
   IconButton,
-  CircularProgress
+  CircularProgress,
+  Divider
 } from '@mui/material';
 import { 
   Search, 
@@ -41,6 +42,7 @@ import {
   Cancel,
   Directions
 } from '@mui/icons-material';
+import { Popper, Fade } from '@mui/material';
 import { Delete, GetApp } from '@mui/icons-material';
 import { Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import UserService from '../../services/UserService';
@@ -83,6 +85,47 @@ export default function RideManagement() {
   // cached reverse-geocoded addresses for display (keyed by ride key)
   const [pickupLookup, setPickupLookup] = useState({});
   const [dropLookup, setDropLookup] = useState({});
+  const [addressDialog, setAddressDialog] = useState({ open: false, title: '', text: '' });
+  // popper state for hover overlay (doesn't affect row height)
+  const [popperOpen, setPopperOpen] = useState(false);
+  const [popperAnchorEl, setPopperAnchorEl] = useState(null);
+  const [popperText, setPopperText] = useState('');
+  const popperCloseTimer = React.useRef(null);
+
+  const handlePopperOpen = async (anchorEl, { lat, lng, key }) => {
+    if (popperCloseTimer.current) {
+      clearTimeout(popperCloseTimer.current);
+      popperCloseTimer.current = null;
+    }
+    setPopperAnchorEl(anchorEl);
+    // check cache first
+    const cached = pickupLookup[key] || dropLookup[key];
+    if (cached) {
+      setPopperText(cached);
+      setPopperOpen(true);
+      return;
+    }
+    setPopperText('Loading address...');
+    setPopperOpen(true);
+    try {
+      const label = await reverseGeocode(Number(lat), Number(lng));
+      // cache
+      setPickupLookup(prev => ({ ...prev, [key]: prev[key] || label }));
+      setDropLookup(prev => ({ ...prev, [key]: prev[key] || label }));
+      setPopperText(label);
+    } catch (e) {
+      setPopperText(`${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+    }
+  };
+
+  const handlePopperClose = () => {
+    if (popperCloseTimer.current) clearTimeout(popperCloseTimer.current);
+    popperCloseTimer.current = setTimeout(() => {
+      setPopperOpen(false);
+      setPopperAnchorEl(null);
+      setPopperText('');
+    }, 180);
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -150,6 +193,25 @@ export default function RideManagement() {
     })();
     return () => { mounted = false; };
   }, [ridesData]);
+
+  // show full address in a dialog (on-demand lookup if necessary)
+  const openAddressDialog = async ({ lat, lng, key, title }) => {
+    if (!lat || !lng) return;
+    let label = pickupLookup[key] || dropLookup[key];
+    if (!label) {
+      try {
+        label = await reverseGeocode(Number(lat), Number(lng));
+        // cache into appropriate map
+        setPickupLookup(prev => ({ ...prev, [key]: prev[key] || label }));
+        setDropLookup(prev => ({ ...prev, [key]: prev[key] || label }));
+      } catch (e) {
+        label = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+      }
+    }
+    setAddressDialog({ open: true, title: title || 'Location', text: label });
+  };
+
+  const closeAddressDialog = () => setAddressDialog({ open: false, title: '', text: '' });
 
   // Helpers to normalize ride fields across different API shapes
   const resolveAddress = (r) => {
@@ -313,6 +375,51 @@ export default function RideManagement() {
     setPage(0);
   };
 
+
+// Download single rider details as CSV fallback
+  const downloadRider = async () => {
+    // Fallback: generate CSV from ridesData and download
+    try {
+      if (!ridesData || ridesData.length === 0) return;
+      const fields = ['rideId', 'customerName', 'driverName', 'pickupAddress', 'dropAddress', 'status', 'fare', 'createdAt'];
+      const csvRows = [fields.join(',')];
+      for (const r of ridesData) {
+        const row = fields.map(f => {
+          let v = '';
+          if (f === 'rideId') v = r.rideId || r.id || '';
+          else if (f === 'customerName') v = (r.customer && (r.customer.fullName || r.customer.username)) || r.customerName || '';
+          else if (f === 'driverName') v = (r.driver && (r.driver.fullName || r.driver.username)) || r.driverName || '';
+          else if (f === 'pickupAddress') v = resolveAddress(r) || '';
+          else if (f === 'dropAddress') v = resolveDropAddress(r) || '';
+          else if (f === 'status') v = r.status || '';
+          else if (f === 'fare') {
+            const fv = resolveFare(r);
+            v = fv != null ? fv : '';
+          } else if (f === 'createdAt') {
+            const cd = resolveCreated(r);
+            v = cd ? cd.toISOString() : '';
+          }
+          return `"${(v ?? '').toString().replace(/"/g, '""')}"`;
+        }).join(',');
+        csvRows.push(row);
+      }
+      const csv = csvRows.join('\n');
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `rides-${Date.now()}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      setAnimatingDownload(true);
+      setTimeout(() => setAnimatingDownload(false), 1400);
+    } catch (err) {
+      console.error('Failed to export rides:', err);
+    }
+  };
+
   // (no status update for riders list)
 
   // Handle menu open
@@ -382,49 +489,7 @@ export default function RideManagement() {
     }
   };
 
-  // Download single rider details as CSV fallback
-  const downloadRider = async () => {
-    // Fallback: generate CSV from ridesData and download
-    try {
-      if (!ridesData || ridesData.length === 0) return;
-      const fields = ['rideId', 'customerName', 'driverName', 'pickupAddress', 'dropAddress', 'status', 'fare', 'createdAt'];
-      const csvRows = [fields.join(',')];
-      for (const r of ridesData) {
-        const row = fields.map(f => {
-          let v = '';
-          if (f === 'rideId') v = r.rideId || r.id || '';
-          else if (f === 'customerName') v = (r.customer && (r.customer.fullName || r.customer.username)) || r.customerName || '';
-          else if (f === 'driverName') v = (r.driver && (r.driver.fullName || r.driver.username)) || r.driverName || '';
-          else if (f === 'pickupAddress') v = resolveAddress(r) || '';
-          else if (f === 'dropAddress') v = resolveDropAddress(r) || '';
-          else if (f === 'status') v = r.status || '';
-          else if (f === 'fare') {
-            const fv = resolveFare(r);
-            v = fv != null ? fv : '';
-          } else if (f === 'createdAt') {
-            const cd = resolveCreated(r);
-            v = cd ? cd.toISOString() : '';
-          }
-          return `"${(v ?? '').toString().replace(/"/g, '""')}"`;
-        }).join(',');
-        csvRows.push(row);
-      }
-      const csv = csvRows.join('\n');
-      const blob = new Blob([csv], { type: 'text/csv' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `rides-${Date.now()}.csv`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-      setAnimatingDownload(true);
-      setTimeout(() => setAnimatingDownload(false), 1400);
-    } catch (err) {
-      console.error('Failed to export rides:', err);
-    }
-  };
+  
 
   const closePreview = () => {
     setPreviewOpen(false);
@@ -562,7 +627,7 @@ export default function RideManagement() {
                           <TableCell>Pickup</TableCell>
                           <TableCell>Drop</TableCell>
                           <TableCell>Status</TableCell>
-                          <TableCell>Fare</TableCell>
+                          {/* <TableCell>Fare</TableCell> */}
                           <TableCell>Created</TableCell>
                           <TableCell>Actions</TableCell>
                         </TableRow>
@@ -580,31 +645,62 @@ export default function RideManagement() {
                   <TableCell>{(ride.driver && (ride.driver.fullName || ride.driver.username)) || ride.driverName || '—'}</TableCell>
                   <TableCell>
                     <Box>
-                      <Typography variant="body2">{resolveAddress(ride)}</Typography>
                       {(() => {
+                        const raw = resolveAddress(ride);
+                        // If resolver returned coords like "lat, lng" show clickable
+                        const coordMatch = typeof raw === 'string' && raw.match(/^\s*-?\d+\.?\d*\s*,\s*-?\d+\.?\d*\s*$/);
                         const key = ride.id || ride.rideId || `r-${page * rowsPerPage + idx}`;
-                        const label = pickupLookup[key];
-                        return label ? <Typography variant="caption" color="text.secondary">{label}</Typography> : null;
+                        if (coordMatch) {
+                          const [lat, lng] = raw.split(',').map(s => s.trim());
+                          return (
+                            <Box>
+                              <Button
+                                variant="text"
+                                size="small"
+                                onClick={() => openAddressDialog({ lat, lng, key, title: 'Pickup Location' })}
+                                onMouseEnter={(e) => handlePopperOpen(e.currentTarget, { lat, lng, key })}
+                                onMouseLeave={() => handlePopperClose()}
+                              >{raw}</Button>
+                              
+                            </Box>
+                          );
+                        }
+                        return <Typography variant="body2">{raw}</Typography>;
                       })()}
                     </Box>
                   </TableCell>
                   <TableCell>
                     <Box>
-                      <Typography variant="body2">{resolveDropAddress(ride)}</Typography>
                       {(() => {
+                        const raw = resolveDropAddress(ride);
+                        const coordMatch = typeof raw === 'string' && raw.match(/^\s*-?\d+\.?\d*\s*,\s*-?\d+\.?\d*\s*$/);
                         const key = ride.id || ride.rideId || `r-${page * rowsPerPage + idx}`;
-                        const label = dropLookup[key];
-                        return label ? <Typography variant="caption" color="text.secondary">{label}</Typography> : null;
+                        if (coordMatch) {
+                          const [lat, lng] = raw.split(',').map(s => s.trim());
+                          return (
+                            <Box>
+                              <Button
+                                variant="text"
+                                size="small"
+                                onClick={() => openAddressDialog({ lat, lng, key, title: 'Drop Location' })}
+                                onMouseEnter={(e) => handlePopperOpen(e.currentTarget, { lat, lng, key })}
+                                onMouseLeave={() => handlePopperClose()}
+                              >{raw}</Button>
+                              
+                            </Box>
+                          );
+                        }
+                        return <Typography variant="body2">{raw}</Typography>;
                       })()}
                     </Box>
                   </TableCell>
                   <TableCell>{ride.status || '—'}</TableCell>
-                  <TableCell>{resolveFare(ride) != null ? `₹${resolveFare(ride)}` : '—'}</TableCell>
+                  {/* <TableCell>{resolveFare(ride) != null ? `₹${resolveFare(ride)}` : '—'}</TableCell> */}
                   <TableCell>{resolveCreated(ride) ? resolveCreated(ride).toLocaleDateString() : '—'}</TableCell>
                   <TableCell>
                     <Box sx={{ display: 'flex', gap: 1 }}>
-                      <Button size="small" variant="outlined" startIcon={<Visibility />} onClick={() => openView(ride)}>View</Button>
-                      <IconButton size="small" color="error" onClick={() => promptDelete(ride)} title="Cancel"><Delete /></IconButton>
+                      <IconButton size="small" color="primary" variant="outlined" startIcon={<Visibility />} onClick={() => openView(ride)}><Visibility /></IconButton>
+
                     </Box>
                   </TableCell>
                 </TableRow>
@@ -625,23 +721,92 @@ export default function RideManagement() {
       </Paper>
 
       {/* View Rider Dialog */}
-      <Dialog open={viewOpen} onClose={closeView} maxWidth="sm" fullWidth>
-        <DialogTitle>Rider details</DialogTitle>
+      <Dialog open={viewOpen} onClose={closeView} maxWidth="md" fullWidth>
+        <DialogTitle>Ride Details</DialogTitle>
         <DialogContent>
           {selectedItem ? (
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-              <Typography><strong>Name:</strong> {selectedItem.fullName || selectedItem.username || '—'}</Typography>
-              <Typography><strong>Email:</strong> {selectedItem.email || '—'}</Typography>
-              <Typography><strong>Phone:</strong> {selectedItem.phone || '—'}</Typography>
-              <Typography><strong>Joined:</strong> {selectedItem.createdAt ? new Date(selectedItem.createdAt).toLocaleString() : '—'}</Typography>
-              <Typography><strong>Rating:</strong> {selectedItem.rating != null ? selectedItem.rating : '—'}</Typography>
-              <Typography sx={{ mt: 2 }}><strong>Raw JSON:</strong></Typography>
-              <Paper variant="outlined" sx={{ p: 1, whiteSpace: 'pre-wrap', fontFamily: 'monospace', fontSize: 12 }}>
-                {JSON.stringify(selectedItem, null, 2)}
-              </Paper>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, py: 1 }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>General</Typography>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+                <Box>
+                  <Typography variant="body2"><strong>Ride ID:</strong> {selectedItem.rideId || selectedItem.id || '—'}</Typography>
+                  <Typography variant="body2"><strong>Status:</strong> {selectedItem.status || selectedItem.rideStatus || '—'}</Typography>
+                  <Typography variant="body2"><strong>Created:</strong> {(() => { const d = resolveCreated(selectedItem); return d ? d.toLocaleString() : '—'; })()}</Typography>
+                  {/* <Typography variant="body2"><strong>Fare:</strong> {(() => { const fare = resolveFare(selectedItem); return fare != null ? `₹${fare}` : '—'; })()}</Typography> */}
+                </Box>
+                {/* <Box>
+                  <Typography variant="body2"><strong>Customer:</strong> {((selectedItem.customer && (selectedItem.customer.fullName || selectedItem.customer.username)) || selectedItem.customerName || selectedItem.customer_name || selectedItem.customer || '—')}</Typography>
+                  <Typography variant="body2"><strong>Driver:</strong> {((selectedItem.driver && (selectedItem.driver.fullName || selectedItem.driver.username)) || selectedItem.driverName || selectedItem.driver_name || selectedItem.driver || '—')}</Typography>
+                  {selectedItem.rating != null && <Typography variant="body2"><strong>Rating:</strong> {selectedItem.rating}</Typography>}
+                </Box> */}
+              </Box>
+
+              {/* Customer Details Section */}
+              {selectedItem.customer && typeof selectedItem.customer === 'object' && (
+                <>
+                  <Divider sx={{ my: 2 }} />
+                  <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>Customer Details</Typography>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+                    {Object.entries(selectedItem.customer)
+                      .filter(([k, v]) =>
+                        !['userType','rating','createdAt','updatedAt','vehicleNumber','vehicleModel'].includes(k) &&
+                        !(k === 'email' && (v === null || v === undefined))
+                      )
+                      .map(([k, v]) => (
+                        <Box key={k}>
+                          <Typography variant="body2"><strong>{k}:</strong> {typeof v === 'object' ? JSON.stringify(v) : String(v)}</Typography>
+                        </Box>
+                      ))}
+                  </Box>
+                </>
+              )}
+
+              {/* Driver Details Section */}
+              {selectedItem.driver && typeof selectedItem.driver === 'object' && (
+                <>
+                  <Divider sx={{ my: 2 }} />
+                  <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>Driver Details</Typography>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+                    {Object.entries(selectedItem.driver)
+                      .filter(([k]) => !['rating','createdAt','updatedAt'].includes(k))
+                      .map(([k, v]) => (
+                        <Box key={k}>
+                          <Typography variant="body2"><strong>{k}:</strong> {typeof v === 'object' ? JSON.stringify(v) : String(v)}</Typography>
+                        </Box>
+                      ))}
+                  </Box>
+                </>
+              )}
+
+              <Divider sx={{ my: 2 }} />
+              <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>Locations</Typography>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+                <Box>
+                  <Typography variant="body2"><strong>Pickup:</strong> {resolveAddress(selectedItem) || '—'}</Typography>
+                </Box>
+                <Box>
+                  <Typography variant="body2"><strong>Drop:</strong> {resolveDropAddress(selectedItem) || '—'}</Typography>
+                </Box>
+              </Box>
+              
+              {/* Show payment info if present */}
+              {/* {(selectedItem.paymentMode || selectedItem.paymentStatus || selectedItem.payment) && (
+                <>
+                  <Divider sx={{ my: 2 }} />
+                  <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>Payment</Typography>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+                    <Box>
+                      <Typography variant="body2"><strong>Mode:</strong> {selectedItem.paymentMode || (selectedItem.payment && selectedItem.payment.mode) || '—'}</Typography>
+                      <Typography variant="body2"><strong>Status:</strong> {selectedItem.paymentStatus || (selectedItem.payment && selectedItem.payment.status) || '—'}</Typography>
+                      <Typography variant="body2"><strong>Amount:</strong> {(() => { const v = (selectedItem.payment && selectedItem.payment.amount); return v != null ? `₹${v}` : '—'; })()}</Typography>
+                    </Box>
+                  </Box>
+                </>
+              )} */}
+              
             </Box>
           ) : (
-            <Box sx={{ py: 2 }}>No rider selected</Box>
+            <Box sx={{ py: 2 }}>No ride selected</Box>
           )}
         </DialogContent>
         <DialogActions>
@@ -649,21 +814,7 @@ export default function RideManagement() {
         </DialogActions>
       </Dialog>
 
-      {/* Delete confirmation dialog */}
-      <Dialog open={confirmDeleteOpen} onClose={() => setConfirmDeleteOpen(false)} maxWidth="xs" fullWidth>
-        <DialogTitle>Confirm delete</DialogTitle>
-        <DialogContent>
-          <Typography>Are you sure you want to permanently delete <strong>{selectedItem?.fullName || selectedItem?.username}</strong>?</Typography>
-          {deleteError && <Box sx={{ color: 'error.main', mt: 2 }}>{deleteError}</Box>}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setConfirmDeleteOpen(false)} disabled={deleting}>Cancel</Button>
-          <Button onClick={performDelete} color="error" variant="contained" disabled={deleting}>
-            {deleting ? 'Deleting...' : 'Delete'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
+      
       {/* PDF Preview Dialog */}
       <Dialog open={previewOpen} onClose={closePreview} maxWidth="lg" fullWidth>
         <DialogTitle>Riders PDF Preview</DialogTitle>
@@ -685,7 +836,7 @@ export default function RideManagement() {
         </Box>
       )}
 
-      {/* Action Menu */}
+      {/* Action Menu
       <Menu
         anchorEl={anchorEl}
         open={Boolean(anchorEl)}
@@ -709,7 +860,17 @@ export default function RideManagement() {
           <Directions className="mr-2" fontSize="small" />
           Track Ride
         </MenuItem>
-      </Menu>
+      </Menu> */}
+      {/* Floating Popper for address preview (doesn't change row layout) */}
+      <Popper open={popperOpen} anchorEl={popperAnchorEl} transition disablePortal placement="right-start" modifiers={[{ name: 'offset', options: { offset: [0, 8] } }]}>
+        {({ TransitionProps }) => (
+          <Fade {...TransitionProps} timeout={180}>
+            <Paper onMouseEnter={() => { if (popperCloseTimer.current) { clearTimeout(popperCloseTimer.current); popperCloseTimer.current = null; } }} onMouseLeave={() => handlePopperClose()} sx={{ p: 1, maxWidth: 320, boxShadow: 6 }}>
+              <Typography variant="body2">{popperText}</Typography>
+            </Paper>
+          </Fade>
+        )}
+      </Popper>
   </Box>
   );
 }

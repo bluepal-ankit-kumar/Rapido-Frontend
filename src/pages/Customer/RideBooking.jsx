@@ -6,6 +6,9 @@ import RideService from '../../services/RideService.js';
 import useAuth from '../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import L from 'leaflet';
+import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
+import 'leaflet-routing-machine';
 
 import {
   Typography,
@@ -25,6 +28,76 @@ import {
   Directions,
   ArrowForward,
 } from '@mui/icons-material';
+
+// --- Leaflet Icon Fix ---
+// This is a common fix to ensure Leaflet's default marker icons load correctly.
+import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
+import markerIcon from 'leaflet/dist/images/marker-icon.png';
+import markerShadow from 'leaflet/dist/images/marker-shadow.png';
+
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: markerIcon2x,
+  iconUrl: markerIcon,
+  shadowUrl: markerShadow,
+});
+
+// --- Leaflet Map Components (Integrated) ---
+
+const RoutingMachine = ({ routePoints }) => {
+  const map = useMap();
+
+  useEffect(() => {
+    // FIX for 'removeLayer' error: First, remove any existing routing control.
+    if (map.routingControl) {
+      map.removeControl(map.routingControl);
+    }
+
+    if (!routePoints || routePoints.length < 2) return;
+
+    const [pickup, dropoff] = routePoints;
+    const waypoints = [
+      L.latLng(pickup[0], pickup[1]),
+      L.latLng(dropoff[0], dropoff[1])
+    ];
+
+    const routingControl = L.Routing.control({
+      waypoints,
+      routeWhileDragging: false,
+      show: false, // Hide the turn-by-turn instruction panel
+      addWaypoints: false,
+      fitSelectedRoutes: true,
+      lineOptions: {
+        styles: [{ color: '#6366f1', opacity: 0.8, weight: 6 }]
+      },
+      createMarker: () => null, // We use our own markers
+    }).addTo(map);
+
+    // Store the control instance on the map to allow for removal later
+    map.routingControl = routingControl;
+
+  }, [map, routePoints]);
+
+  return null;
+};
+
+const LeafletMapDisplay = ({ userLocation, routePoints }) => {
+  const center = userLocation ? [userLocation[0], userLocation[1]] : [17.3850, 78.4867]; // Default to Hyderabad
+  const [pickupCoords, dropoffCoords] = routePoints || [];
+
+  return (
+    <MapContainer center={center} zoom={12} style={{ height: '250px', width: '100%', borderRadius: '12px' }}>
+      <TileLayer
+        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      />
+      {pickupCoords && <Marker position={pickupCoords}></Marker>}
+      {dropoffCoords && <Marker position={dropoffCoords}></Marker>}
+      {routePoints && routePoints.length === 2 && <RoutingMachine routePoints={routePoints} />}
+    </MapContainer>
+  );
+};
+
 
 // --- Main RideBooking Component ---
 
@@ -232,81 +305,20 @@ export default function RideBooking() {
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
-      {/* Background Image with Overlay */}
-      <div 
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat z-0"
-        style={{
-          backgroundImage: `url('https://images.unsplash.com/photo-1511345624864-d6cf46344e8c?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&q=80&w=764')`,
-        }}
-      >
-        <div className="absolute inset-0 bg-gradient-to-br from-gray-900/60 to-indigo-900/50"></div>
-      </div>
-      
-      <div className="relative z-10 max-w-6xl mx-auto p-4 md:p-8 min-h-screen flex flex-col justify-center">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      <div className="max-w-6xl mx-auto p-4 md:p-8">
         <Grid container justifyContent="center">
           <Grid item xs={12} md={8} lg={6}>
-            <Card 
-              className="shadow-2xl rounded-3xl w-full max-w-xl mx-auto overflow-hidden backdrop-blur-lg"
-              sx={{ 
-                background: 'rgba(255, 255, 255, 0.5)',
-                backdropFilter: 'blur(6px)',
-                border: '1px solid rgba(255, 255, 255, 0.4)',
-                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.3)'
-              }}
-            >
+            <Card className="shadow-xl rounded-2xl w-full max-w-xl mx-auto">
               <CardContent className="p-6 md:p-8">
-                <div className="text-center mb-6">
-                  <Typography 
-                    variant="h4" 
-                    sx={{ 
-                      fontWeight: 800, 
-                      mb: 2, 
-                      background: 'linear-gradient(90deg, #6366f1, #8b5cf6)',
-                      WebkitBackgroundClip: 'text',
-                      WebkitTextFillColor: 'transparent'
-                    }}
-                  >
-                    Premium Ride Booking
-                  </Typography>
-                  <Typography variant="body1" sx={{ color: ' #8b5cf6', fontWeight: 500 }}>
-                    Experience luxury transportation at your fingertips
-                  </Typography>
-                </div>
-                
-                {error && (
-                  <Alert 
-                    severity="error" 
-                    sx={{ 
-                      mb: 4, 
-                      borderRadius: '12px',
-                      background: 'rgba(244, 67, 54, 0.2)',
-                      color: '#d32f2f',
-                      border: '1px solid rgba(244, 67, 54, 0.3)',
-                      fontWeight: 500
-                    }}
-                  >
-                    {error}
-                  </Alert>
-                )}
+                <Typography variant="h5" sx={{ fontWeight: 700, mb: 3, textAlign: 'center' }}>Enter Your Trip Details</Typography>
+                {error && <Alert severity="error" sx={{ mb: 2, borderRadius: '12px' }}>{error}</Alert>}
 
                 {/* Pickup Location */}
-                <Box sx={{ mb: 3 }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
-                    <Typography variant="body1" sx={{ fontWeight: 700, color: '#334155' }}>Pickup Location</Typography>
-                    <Button 
-                      size="small" 
-                      variant="text" 
-                      onClick={useCurrentLocationForPickup}
-                      sx={{ 
-                        fontWeight: 600, 
-                        color: '#6366f1',
-                        textTransform: 'none',
-                        '&:hover': { background: 'rgba(99, 10, 150, 0.1)' }
-                      }}
-                    >
-                      Use current location
-                    </Button>
+                <Box sx={{ mb: 2 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                    <Typography variant="body1" sx={{ fontWeight: 600 }}>Pickup Location</Typography>
+                    <Button size="small" variant="text" onClick={useCurrentLocationForPickup}>Use current location</Button>
                   </Box>
                   <Autocomplete
                     freeSolo
@@ -327,25 +339,10 @@ export default function RideBooking() {
                       }
                     }}
                     renderInput={(params) => (
-                      <TextField 
-                        {...params} 
-                        placeholder="Search pickup location"
-                        sx={{
-                          '& .MuiOutlinedInput-root': {
-                            borderRadius: '12px',
-                            backgroundColor: 'rgba(255, 255, 255, 0.6)',
-                            '& fieldset': { borderColor: 'rgba(99, 102, 241, 0.3)' },
-                            '&:hover fieldset': { borderColor: 'rgba(99, 102, 241, 0.5)' },
-                            '&.Mui-focused fieldset': { borderColor: '#6366f1' },
-                          }
-                        }}
+                      <TextField {...params} placeholder="Search pickup location"
                         InputProps={{
                           ...params.InputProps,
-                          startAdornment: (
-                            <div className="bg-indigo-100 p-2 rounded-l-lg">
-                              <LocationOn color="primary" sx={{ color: '#6366f1' }} />
-                            </div>
-                          ),
+                          startAdornment: (<LocationOn color="warning" sx={{ mr: 1 }} />),
                           endAdornment: (
                             <>
                               {searching.pickup ? <CircularProgress color="inherit" size={20} /> : null}
@@ -359,8 +356,8 @@ export default function RideBooking() {
                 </Box>
 
                 {/* Dropoff Location */}
-                <Box sx={{ mb: 4 }}>
-                  <Typography variant="body1" sx={{ fontWeight: 700, color: '#334155', mb: 1.5 }}>Dropoff Location</Typography>
+                <Box sx={{ mb: 3 }}>
+                  <Typography variant="body1" sx={{ fontWeight: 600, mb: 1 }}>Dropoff Location</Typography>
                   <Autocomplete
                     freeSolo
                     options={dropoffSuggestions}
@@ -380,25 +377,10 @@ export default function RideBooking() {
                       }
                     }}
                     renderInput={(params) => (
-                      <TextField 
-                        {...params} 
-                        placeholder="Search dropoff location"
-                        sx={{
-                          '& .MuiOutlinedInput-root': {
-                            borderRadius: '12px',
-                            backgroundColor: 'rgba(255, 255, 255, 0.6)',
-                            '& fieldset': { borderColor: 'rgba(99, 102, 241, 0.3)' },
-                            '&:hover fieldset': { borderColor: 'rgba(99, 102, 241, 0.5)' },
-                            '&.Mui-focused fieldset': { borderColor: '#6366f1' },
-                          }
-                        }}
+                      <TextField {...params} placeholder="Search dropoff location"
                         InputProps={{
                           ...params.InputProps,
-                          startAdornment: (
-                            <div className="bg-indigo-100 p-2 rounded-l-lg">
-                              <Directions color="primary" sx={{ color: '#6366f1' }} />
-                            </div>
-                          ),
+                          startAdornment: (<Directions color="warning" sx={{ mr: 1 }} />),
                           endAdornment: (
                             <>
                               {searching.dropoff ? <CircularProgress color="inherit" size={20} /> : null}
@@ -411,9 +393,16 @@ export default function RideBooking() {
                   />
                 </Box>
 
-                <Box sx={{ mb: 5, textAlign: 'center' }}>
-                  <Typography variant="body1" sx={{ fontWeight: 700, color: '#334155', mb: 2 }}>Select Vehicle Type</Typography>
+                <Box sx={{ mb: 3, textAlign: 'center' }}>
+                  <Typography variant="body1" sx={{ fontWeight: 600, mb: 1.5 }}>Select Vehicle Type</Typography>
                   <VehicleTypeSelector selected={selectedType} onSelect={setSelectedType} />
+                </Box>
+
+                <Box sx={{ mb: 3 }}>
+                  <LeafletMapDisplay
+                    userLocation={pickupCoords || (geo?.latitude ? [geo.latitude, geo.longitude] : null)}
+                    routePoints={(pickupCoords && dropoffCoords) ? [pickupCoords, dropoffCoords] : []}
+                  />
                 </Box>
 
                 <Box sx={{ mt: 'auto', width: '100%', display: 'flex', justifyContent: 'center' }}>
@@ -423,24 +412,17 @@ export default function RideBooking() {
                     size="large"
                     sx={{
                       background: 'linear-gradient(90deg, #6366f1, #8b5cf6)',
-                      fontSize: '1.1rem',
-                      fontWeight: 700,
-                      borderRadius: '16px',
-                      boxShadow: '0 10px 25px -5px rgba(99, 102, 241, 0.5)',
-                      py: 1.8,
-                      textTransform: 'none',
-                      transition: 'all 0.3s ease',
+                      fontSize: '1rem',
+                      fontWeight: 600,
+                      borderRadius: '12px',
+                      boxShadow: '0 10px 15px -3px rgba(99, 102, 241, 0.3)',
                       '&:hover': {
                         background: 'linear-gradient(90deg, #4f46e5, #7c3aed)',
-                        boxShadow: '0 20px 30px -10px rgba(99, 102, 241, 0.6)',
-                        transform: 'translateY(-2px)'
-                      },
-                      '&:active': {
-                        transform: 'translateY(1px)'
+                        boxShadow: '0 20px 25px -5px rgba(99, 102, 241, 0.4)'
                       }
                     }}
                     onClick={handleBook}
-                    disabled={loading || !pickup || !dropoff}
+                    disabled={loading || !pickup || !dropoff} // Button is enabled as long as text fields are filled
                     startIcon={loading ? <CircularProgress size={20} color="inherit" /> : null}
                     endIcon={!loading ? <ArrowForward /> : null}
                   >
