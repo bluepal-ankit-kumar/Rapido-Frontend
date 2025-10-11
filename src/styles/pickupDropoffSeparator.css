@@ -1,0 +1,13 @@
+.pickup-dropoff-separator {
+  width: 55vw;
+  height: 1px;
+  border: 1px solid #e0e3e6;
+  margin-left: 40px;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  background: #fff;
+  z-index: 1;
+}

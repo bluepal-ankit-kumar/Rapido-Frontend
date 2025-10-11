@@ -1,6 +1,7 @@
 import useGeolocation from '../../hooks/useGeolocation';
 import React, { useState, useEffect, useRef } from 'react';
 import VehicleTypeSelector from '../../components/common/VehicleTypeSelector';
+import '../../styles/pickupDropoffSeparator.css';
 import Button from '../../components/common/Button';
 import RideService from '../../services/RideService.js';
 import useAuth from '../../hooks/useAuth';
@@ -27,6 +28,7 @@ import {
   LocationOn,
   Directions,
   ArrowForward,
+  MyLocation,
 } from '@mui/icons-material';
 
 // --- Leaflet Icon Fix ---
@@ -306,133 +308,221 @@ export default function RideBooking() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      <div className="max-w-6xl mx-auto p-4 md:p-8">
-        <Grid container justifyContent="center">
-          <Grid item xs={12} md={8} lg={6}>
-            <Card className="shadow-xl rounded-2xl w-full max-w-xl mx-auto">
-              <CardContent className="p-6 md:p-8">
-                <Typography variant="h5" sx={{ fontWeight: 700, mb: 3, textAlign: 'center' }}>Enter Your Trip Details</Typography>
-                {error && <Alert severity="error" sx={{ mb: 2, borderRadius: '12px' }}>{error}</Alert>}
+      <div className="w-screen h-screen min-h-screen min-w-full p-0 m-0">
+        <Card
+          elevation={0}
+          sx={{
+            width: '100vw',
+            minHeight: '100vh',
+            borderRadius: 0,
+            background: '#f8fafc',
+            border: 'none',
+            boxShadow: 'none',
+            p: 0,
+            m: 0,
+          }}
+        >
+          <CardContent sx={{ p: 0, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <Typography variant="h5" sx={{ fontWeight: 700, mb: 1, mt: 2, textAlign: 'center', color: '#1e293b', letterSpacing: 0.5 }}>Enter Your Trip Details</Typography>
+                
 
-                {/* Pickup Location */}
-                <Box sx={{ mb: 2 }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                    <Typography variant="body1" sx={{ fontWeight: 600 }}>Pickup Location</Typography>
-                    <Button size="small" variant="text" onClick={useCurrentLocationForPickup}>Use current location</Button>
+
+                
+
+                {/* Pickup & Dropoff Grouped Box */}
+                <Box sx={{
+                  mb: 2,
+                  width: '100%',
+                  maxWidth: 1100,
+                  background: '#f6f7f9',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '16px',
+                  p: 0,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  boxShadow: '0 2px 8px 0 rgba(0,0,0,0.03)'
+                  
+                }} >
+                  {/* Pickup & Dropoff Icons with Dotted Line */}
+                  <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'stretch', p: 2, pb: 2 }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mr: 2, mt: 2, minWidth: 32, justifyContent: 'center', height: '100%' }}>
+                      <LocationOn color="success" sx={{ fontSize: 28, mb: 0.5 }} />
+                      <Box sx={{ flex: 1, width: 2, minHeight: 24, borderRight: '2px dotted #94a3b8', my: 0.5 }} />
+                      <Directions color="error" sx={{ fontSize: 28, mt: 0.5 }} />
+                    </Box>
+                    <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', position: 'relative' }}>
+                      <Autocomplete
+                        freeSolo
+                        options={pickupSuggestions}
+                        getOptionLabel={(option) => (typeof option === 'string' ? option : option.label)}
+                        loading={searching.pickup}
+                        value={pickup}
+                        onInputChange={(e, newValue) => {
+                          setPickup(newValue);
+                          setPickupCoords(null);
+                          handleSearch(newValue, setPickupSuggestions, 'pickup');
+                        }}
+                        onChange={(e, newValue) => {
+                          if (newValue && typeof newValue === 'object') {
+                            setPickup(newValue.label);
+                            setPickupCoords([newValue.lat, newValue.lon]);
+                            setPickupSuggestions([]);
+                          }
+                        }}
+                        renderInput={(params) => (
+                          <TextField
+                            {...params}
+                            placeholder="Search pickup location"
+                            InputProps={{
+                              ...params.InputProps,
+                              style: {
+                                color: 'transparent',
+                                caretColor: '#2563eb',
+                                background: 'transparent',
+                              },
+                              endAdornment: (
+                                <>
+                                  <MyLocation
+                                    sx={{ cursor: 'pointer', color: '#2563eb', mr: 1 }}
+                                    fontSize="medium"
+                                    onClick={useCurrentLocationForPickup}
+                                  />
+                                  {searching.pickup ? <CircularProgress color="inherit" size={20} /> : null}
+                                  {params.InputProps.endAdornment}
+                                </>
+                              )
+                            }}
+                            sx={{
+                              background: 'transparent',
+                              borderRadius: '8px',
+                              '& .MuiOutlinedInput-notchedOutline': { border: 'none' },
+                              '& .MuiInputBase-input::placeholder': {
+                                color: '#64748b',
+                                opacity: 1,
+                              },
+                              '& .MuiInputBase-input': {
+                                color: 'transparent',
+                                textShadow: '0 0 0 #000',
+                              },
+                            }}
+                          />
+                        )}
+                      />
+                      <div className="pickup-dropoff-separator" />
+                      <Autocomplete
+                        freeSolo
+                        options={dropoffSuggestions}
+                        getOptionLabel={(option) => (typeof option === 'string' ? option : option.label)}
+                        loading={searching.dropoff}
+                        value={dropoff}
+                        onInputChange={(e, newValue) => {
+                          setDropoff(newValue);
+                          setDropoffCoords(null);
+                          handleSearch(newValue, setDropoffSuggestions, 'dropoff');
+                        }}
+                        onChange={(e, newValue) => {
+                          if (newValue && typeof newValue === 'object') {
+                            setDropoff(newValue.label);
+                            setDropoffCoords([newValue.lat, newValue.lon]);
+                            setDropoffSuggestions([]);
+                          }
+                        }}
+                        renderInput={(params) => (
+                          <TextField
+                            {...params}
+                            placeholder="Search dropoff location"
+                            InputProps={{
+                              ...params.InputProps,
+                              style: {
+                                color: 'transparent',
+                                caretColor: '#2563eb',
+                                background: 'transparent',
+                              },
+                              endAdornment: (
+                                <>
+                                  {searching.dropoff ? <CircularProgress color="inherit" size={20} /> : null}
+                                  {params.InputProps.endAdornment}
+                                </>
+                              )
+                            }}
+                            sx={{
+                              background: 'transparent',
+                              borderRadius: '8px',
+                              '& .MuiOutlinedInput-notchedOutline': { border: 'none' },
+                              '& .MuiInputBase-input::placeholder': {
+                                color: '#64748b',
+                                opacity: 1,
+                              },
+                              '& .MuiInputBase-input': {
+                                color: 'transparent',
+                                textShadow: '0 0 0 #000',
+                              },
+                            }}
+                          />
+                        )}
+                      />
+                    </Box>
                   </Box>
-                  <Autocomplete
-                    freeSolo
-                    options={pickupSuggestions}
-                    getOptionLabel={(option) => (typeof option === 'string' ? option : option.label)}
-                    loading={searching.pickup}
-                    value={pickup}
-                    onInputChange={(e, newValue) => {
-                      setPickup(newValue);
-                      setPickupCoords(null); // Invalidate coords when user types manually
-                      handleSearch(newValue, setPickupSuggestions, 'pickup');
-                    }}
-                    onChange={(e, newValue) => {
-                      if (newValue && typeof newValue === 'object') {
-                        setPickup(newValue.label);
-                        setPickupCoords([newValue.lat, newValue.lon]);
-                        setPickupSuggestions([]);
-                      }
-                    }}
-                    renderInput={(params) => (
-                      <TextField {...params} placeholder="Search pickup location"
-                        InputProps={{
-                          ...params.InputProps,
-                          startAdornment: (<LocationOn color="warning" sx={{ mr: 1 }} />),
-                          endAdornment: (
-                            <>
-                              {searching.pickup ? <CircularProgress color="inherit" size={20} /> : null}
-                              {params.InputProps.endAdornment}
-                            </>
-                          )
-                        }}
-                      />
-                    )}
-                  />
                 </Box>
 
-                {/* Dropoff Location */}
-                <Box sx={{ mb: 3 }}>
-                  <Typography variant="body1" sx={{ fontWeight: 600, mb: 1 }}>Dropoff Location</Typography>
-                  <Autocomplete
-                    freeSolo
-                    options={dropoffSuggestions}
-                    getOptionLabel={(option) => (typeof option === 'string' ? option : option.label)}
-                    loading={searching.dropoff}
-                    value={dropoff}
-                    onInputChange={(e, newValue) => {
-                      setDropoff(newValue);
-                      setDropoffCoords(null); // Invalidate coords when user types manually
-                      handleSearch(newValue, setDropoffSuggestions, 'dropoff');
-                    }}
-                    onChange={(e, newValue) => {
-                      if (newValue && typeof newValue === 'object') {
-                        setDropoff(newValue.label);
-                        setDropoffCoords([newValue.lat, newValue.lon]);
-                        setDropoffSuggestions([]);
-                      }
-                    }}
-                    renderInput={(params) => (
-                      <TextField {...params} placeholder="Search dropoff location"
-                        InputProps={{
-                          ...params.InputProps,
-                          startAdornment: (<Directions color="warning" sx={{ mr: 1 }} />),
-                          endAdornment: (
-                            <>
-                              {searching.dropoff ? <CircularProgress color="inherit" size={20} /> : null}
-                              {params.InputProps.endAdornment}
-                            </>
-                          )
-                        }}
-                      />
-                    )}
-                  />
+                <Box sx={{ mb: 3, textAlign: 'center', width: '100%', maxWidth: 1100 }}>
+                  {/* <Typography variant="body1" sx={{ fontWeight: 600, mb: 1.5, color: '#334155' }}>Select Vehicle Type</Typography> */}
+                  <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                      <Box sx={{ width: '100%', maxWidth: 1100 }}>
+                        <VehicleTypeSelector selected={selectedType} onSelect={setSelectedType} />
+                      </Box>
+                  </Box>
                 </Box>
 
-                <Box sx={{ mb: 3, textAlign: 'center' }}>
-                  <Typography variant="body1" sx={{ fontWeight: 600, mb: 1.5 }}>Select Vehicle Type</Typography>
-                  <VehicleTypeSelector selected={selectedType} onSelect={setSelectedType} />
-                </Box>
-
-                <Box sx={{ mb: 3 }}>
+                <Box sx={{ mb: 3, width: '100%', maxWidth: 1100 }}>
                   <LeafletMapDisplay
                     userLocation={pickupCoords || (geo?.latitude ? [geo.latitude, geo.longitude] : null)}
                     routePoints={(pickupCoords && dropoffCoords) ? [pickupCoords, dropoffCoords] : []}
                   />
                 </Box>
 
-                <Box sx={{ mt: 'auto', width: '100%', display: 'flex', justifyContent: 'center' }}>
+                <Box sx={{ mt: 'auto', width: '100%', maxWidth: 1100, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+                  <Box sx={{ width: '100%', borderTop: '1px solid #facc15', mb: 3, mt: 1, opacity: 1.7 }} />
                   <Button
                     variant="contained"
                     fullWidth
                     size="large"
+                    disableElevation
                     sx={{
-                      background: 'linear-gradient(90deg, #6366f1, #8b5cf6)',
+                      backgroundColor: '#fde047 !important',
+                      color: '#2e2a2a !important',
                       fontSize: '1rem',
                       fontWeight: 600,
                       borderRadius: '12px',
-                      boxShadow: '0 10px 15px -3px rgba(99, 102, 241, 0.3)',
+                      boxShadow: '0 4px 12px 0 rgba(250,204,21,0.10)',
+                      transition: 'all 0.2s',
                       '&:hover': {
-                        background: 'linear-gradient(90deg, #4f46e5, #7c3aed)',
-                        boxShadow: '0 20px 25px -5px rgba(99, 102, 241, 0.4)'
+                        backgroundColor: '#facc15 !important',
+                        boxShadow: '0 8px 24px 0 rgba(250,204,21,0.13)',
+                        transform: 'scale(1.03)',
+                        filter: 'brightness(1.05)'
+                      },
+                      '&:active': {
+                        filter: 'brightness(0.97)'
+                      },
+                      '&.Mui-disabled': {
+                        backgroundColor: '#fef9c3 !important',
+                        color: '#bdbdbd !important'
                       }
                     }}
                     onClick={handleBook}
-                    disabled={loading || !pickup || !dropoff} // Button is enabled as long as text fields are filled
+                    disabled={loading || !pickup || !dropoff}
                     startIcon={loading ? <CircularProgress size={20} color="inherit" /> : null}
                     endIcon={!loading ? <ArrowForward /> : null}
                   >
                     {loading ? 'Booking...' : 'Confirm Booking'}
                   </Button>
                 </Box>
+                
               </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
+              {error && <Alert severity="error" sx={{ mt: 2, borderRadius: '12px' }}>{error}</Alert>}
+        </Card>
+        
       </div>
     </div>
   );
