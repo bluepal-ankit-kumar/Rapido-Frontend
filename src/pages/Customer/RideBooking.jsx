@@ -88,15 +88,21 @@ const LeafletMapDisplay = ({ userLocation, routePoints }) => {
   const [pickupCoords, dropoffCoords] = routePoints || [];
 
   return (
-    <MapContainer center={center} zoom={12} style={{ height: '250px', width: '100%', borderRadius: '12px' }}>
-      <TileLayer
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-      />
-      {pickupCoords && <Marker position={pickupCoords}></Marker>}
-      {dropoffCoords && <Marker position={dropoffCoords}></Marker>}
-      {routePoints && routePoints.length === 2 && <RoutingMachine routePoints={routePoints} />}
-    </MapContainer>
+    <div style={{ position: 'relative', width: '100%', borderRadius: '12px', overflow: 'hidden', zIndex: 1 }}>
+      <MapContainer
+        center={center}
+        zoom={12}
+        style={{ height: '250px', width: '100%', borderRadius: '12px', position: 'relative', zIndex: 1 }}
+      >
+        <TileLayer
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        />
+        {pickupCoords && <Marker position={pickupCoords}></Marker>}
+        {dropoffCoords && <Marker position={dropoffCoords}></Marker>}
+        {routePoints && routePoints.length === 2 && <RoutingMachine routePoints={routePoints} />}
+      </MapContainer>
+    </div>
   );
 };
 
