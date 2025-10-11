@@ -21,32 +21,44 @@ export default function Header({ onSidebarToggle }) {
   
   const darkColor = '#212121';
 
-  // The useEffect for handleClickOutside has been removed.
-  
   return (
-    <header className="sticky top-0 z-50 bg-white shadow-md">
+    <header className="sticky top-0 z-50 bg-gradient-to-r from-gray-50 to-gray-100 shadow-lg backdrop-blur-sm bg-opacity-90">
       <div className="container mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
           {/* Logo and Sidebar Toggle */}
-          <div className="flex items-center space-x-2">
-            <button className="mr-2" onClick={onSidebarToggle} aria-label="Open sidebar">
-              <Menu className="text-yellow-400" />
+          <div className="flex items-center space-x-3">
+            <button 
+              className="p-2 rounded-full hover:bg-gray-200 transition-all duration-300 transform hover:scale-105" 
+              onClick={onSidebarToggle} 
+              aria-label="Open sidebar"
+            >
+              <Menu className="text-yellow-500 text-xl" />
             </button>
-            <Link to="/" className="flex items-center space-x-2">
-              <div className="w-10 h-10 rounded-full bg-yellow-400 flex items-center justify-center">
-                <TwoWheeler className="text-white text-xl" />
+            <Link to="/" className="flex items-center space-x-3 group">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-r from-yellow-400 to-yellow-500 flex items-center justify-center shadow-lg transform transition-transform duration-300 group-hover:scale-110">
+                <TwoWheeler className="text-white text-2xl" />
               </div>
               <span className="font-bold text-2xl" style={{ color: darkColor }}>Rapido</span>
             </Link>
           </div>
           
           {/* Right Nav: About, Help (only for customers), User Section */}
-          <div className="flex items-center space-x-6">
-            <Link to="/about" className="text-gray-700 hover:text-yellow-400 font-medium">About</Link>
+          <div className="flex items-center space-x-8">
+            <Link 
+              to="/about" 
+              className="text-gray-700 hover:text-yellow-500 font-medium transition-colors duration-300 relative after:content-[''] after:absolute after:w-0 after:h-0.5 after:bg-yellow-500 after:left-0 after:-bottom-1 after:transition-all after:duration-300 hover:after:w-full"
+            >
+              About
+            </Link>
             
             {/* Only show Help link to logged-in customers */}
             {user && userRole === 'CUSTOMER' && (
-              <Link to="/help" className="text-gray-700 hover:text-yellow-400 font-medium">Help</Link>
+              <Link 
+                to="/help" 
+                className="text-gray-700 hover:text-yellow-500 font-medium transition-colors duration-300 relative after:content-[''] after:absolute after:w-0 after:h-0.5 after:bg-yellow-500 after:left-0 after:-bottom-1 after:transition-all after:duration-300 hover:after:w-full"
+              >
+                Help
+              </Link>
             )}
             
             {user ? (
@@ -56,12 +68,11 @@ export default function Header({ onSidebarToggle }) {
                   className="flex items-center space-x-2 group focus:outline-none"
                   aria-label="Open profile dropdown"
                 >
-                  <div className="w-10 h-10 rounded-2xl bg-gray-200 flex items-center justify-center border-2 border-yellow-400 group-hover:border-yellow-500 transition-colors">
+                  <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center border-2 border-yellow-400 group-hover:border-yellow-500 transition-all duration-300 shadow-md group-hover:shadow-lg transform group-hover:scale-105">
                     <span className="font-bold text-gray-700">
                       {user.name ? user.name.charAt(0).toUpperCase() : 'P'}
                     </span>
                   </div>
-                
                 </button>
                 <CSSTransition
                   in={profileDropdown}
@@ -80,7 +91,7 @@ export default function Header({ onSidebarToggle }) {
             ) : (
               <Link 
                 to="/login" 
-                className="bg-yellow-400 hover:bg-yellow-500 text-white px-5 py-2 rounded-full font-medium transition-colors duration-200 shadow-sm flex items-center space-x-1"
+                className="bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-white px-6 py-2.5 rounded-full font-medium transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105 flex items-center space-x-2"
               >
                 <AccountCircle fontSize="small" />
                 <span>Login</span>
@@ -88,29 +99,39 @@ export default function Header({ onSidebarToggle }) {
             )}
             {/* Mobile Menu Button */}
             <button 
-              className="md:hidden text-gray-700 focus:outline-none" 
+              className="md:hidden text-gray-700 focus:outline-none p-2 rounded-full hover:bg-gray-200 transition-all duration-300" 
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             >
-              {mobileMenuOpen ? <Close fontSize="large" /> : <Menu fontSize="large" />}
+              {mobileMenuOpen ? <Close fontSize="large" className="text-yellow-500" /> : <Menu fontSize="large" className="text-yellow-500" />}
             </button>
           </div>
         </div>
         
         {/* Mobile Navigation */}
         {mobileMenuOpen && (
-          <nav className="md:hidden mt-4 pb-4 border-t border-gray-200 pt-4">
+          <nav className="md:hidden mt-4 pb-4 border-t border-gray-200 pt-4 animate-fadeIn">
             <div className="flex flex-col space-y-4">
-              <Link to="/about" className="text-gray-700 hover:text-yellow-500 font-medium">About</Link>
+              <Link 
+                to="/about" 
+                className="text-gray-700 hover:text-yellow-500 font-medium transition-colors duration-300 py-2 px-4 rounded-lg hover:bg-gray-100"
+              >
+                About
+              </Link>
               
               {/* Only show Help link to logged-in customers in mobile menu */}
               {user && userRole === 'CUSTOMER' && (
-                <Link to="/help" className="text-gray-700 hover:text-yellow-500 font-medium">Help</Link>
+                <Link 
+                  to="/help" 
+                  className="text-gray-700 hover:text-yellow-500 font-medium transition-colors duration-300 py-2 px-4 rounded-lg hover:bg-gray-100"
+                >
+                  Help
+                </Link>
               )}
               
               {user && (
                 <button
                   onClick={() => { setProfileDropdown((open) => !open); setMobileMenuOpen(false); }}
-                  className="text-left text-gray-700 hover:text-yellow-500 font-medium"
+                  className="text-left text-gray-700 hover:text-yellow-500 font-medium transition-colors duration-300 py-2 px-4 rounded-lg hover:bg-gray-100"
                 >
                   My Profile
                 </button>

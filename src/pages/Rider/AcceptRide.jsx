@@ -1,3 +1,286 @@
+// import React, { useState, useEffect } from "react";
+// import { useNavigate, useLocation } from "react-router-dom";
+// import DriverService from "../../services/DriverService";
+// import RideService from "../../services/RideService";
+// import useAuth from "../../hooks/useAuth";
+// import {
+//   Typography,
+//   Paper,
+//   Button,
+//   Box,
+//   Grid,
+//   Card,
+//   CardContent,
+//   Chip,
+//   Divider,
+//   Alert,
+//   CircularProgress,
+//   Avatar,
+//   IconButton,
+//   List,
+//   ListItem,
+//   ListItemText,
+//   ListItemAvatar,
+// } from "@mui/material";
+// import {
+//   Person,
+//   LocationOn,
+//   Directions,
+//   AccessTime,
+//   AttachMoney,
+//   CheckCircle,
+//   Phone,
+//   Message,
+//   Star,
+//   TwoWheeler,
+//   LocalTaxi,
+//   CurrencyRupee,
+//   Straighten,
+//   AirportShuttle,
+// } from "@mui/icons-material";
+// import MapDisplay from "../../components/shared/MapDisplay";
+// import useGeolocation from "../../hooks/useGeolocation"; // To show the driver's own location
+
+// export default function AcceptRide() {
+//   const navigate = useNavigate();
+//   const location = useLocation(); // <-- Get the location object
+//   const { token } = useAuth();
+//   const [accepted, setAccepted] = useState(false);
+//   const [loading, setLoading] = useState(false);
+//   const [countdown, setCountdown] = useState(30); // 30 seconds to accept
+//   const [selectedRider, setSelectedRider] = useState(null);
+//   const rideDetails = location.state?.rideDetails;
+//   const [error, setError] = useState(""); // State for handling errors
+//   const geo = useGeolocation(); // Get the driver's current location
+
+//   const pickupCoords = [rideDetails.startLatitude, rideDetails.startLongitude];
+//   const dropoffCoords = [rideDetails.endLatitude, rideDetails.endLongitude];
+//   // const driverCoords = geo.latitude ? [geo.latitude, geo.longitude] : null;
+//   const driverCoords = [rideDetails.endLatitude, rideDetails.endLongitude];
+
+//   useEffect(() => {
+//     console.log(rideDetails);
+//     if (!rideDetails) {
+//       console.error("No ride details found. Redirecting to dashboard.");
+//       navigate("/rider/dashboard");
+//     }
+//   }, [rideDetails, navigate]);
+
+//   // Simulate countdown timer
+//   useEffect(() => {
+//     if (!accepted && countdown > 0) {
+//       const timer = setTimeout(() => {
+//         setCountdown((prev) => prev - 1);
+//       }, 1000);
+//       return () => clearTimeout(timer);
+//     } else if (countdown === 0 && !accepted) {
+//       // Auto-reject when timer expires
+//       setAccepted(true);
+//       navigate("/rider/dashboard");
+//     }
+//   }, [accepted, countdown]);
+
+//   // const handleAccept = () => {
+//   //   setLoading(true);
+//   //   // Simulate API call
+//   //   setTimeout(() => {
+//   //     setAccepted(true);
+//   //     setLoading(false);
+//   //     // Redirect to Ride In Progress after accepting
+//   //     navigate("/rider/ride-in-progress");
+//   //   }, 1000);
+//   // };
+
+//   const handleAccept = async () => {
+//     setLoading(true);
+//     setError("");
+//     console.log("requestRideId:- ", rideDetails.userId);
+//     try {
+//       const request = {
+//         rideId: rideDetails.id,
+//         status: "ACCEPTED",
+//       };
+//       // Call the REAL API to accept the ride
+//       await RideService.updateRideStatus(request, token);
+//       alert("Ride Started");
+//       setAccepted(true);
+//       // Navigate to the next screen upon successful acceptance
+//       navigate(`/rider/ride-in-progress/${rideDetails.id}`); // Pass ride ID
+//     } catch (err) {
+//       console.error("Failed to accept ride:", err);
+//       setError(
+//         err.message ||
+//           "Failed to accept ride. It might have been taken by another driver."
+//       );
+//       // You might want to automatically navigate back after a few seconds
+//       setTimeout(() => navigate("/rider/dashboard"), 3000);
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   const handleReject = () => {
+//     setAccepted(true);
+//     navigate("/rider/dashboard");
+//   };
+
+//   const getVehicleIcon = (type) => {
+//     switch (type) {
+//       case "Bike":
+//         return <TwoWheeler className="text-yellow-500" />;
+//       case "Auto":
+//         return <AirportShuttle className="text-yellow-500" />;
+//       case "Cab":
+//         return <LocalTaxi className="text-yellow-500" />;
+//       default:
+//         return <TwoWheeler className="text-yellow-500" />;
+//     }
+//   };
+
+//   // No need for accepted state UI, as we redirect to RideInProgress
+//   if (accepted) {
+//     return null;
+//   }
+//   const cost = rideDetails.cost?.toFixed(2) ?? "0.00";
+//   const distance = rideDetails.distance?.toFixed(1) ?? "0.0";
+//   return (
+
+//     <div className="p-6 bg-gray-50 min-h-screen">
+//       <div className="max-w-6xl mx-auto">
+//         <Box className="mb-8">
+//           <Typography variant="h4" fontWeight="bold">
+//             Ride Details (ID: {rideDetails.id})
+//           </Typography>
+//         </Box>
+//         <Grid container spacing={3}>
+//           {/* Left Column: Details */}
+//           <Grid item xs={12} md={5}>
+//             <Card sx={{ borderRadius: 3 }}>
+//               <CardContent sx={{ p: 3 }}>
+//                 <Box
+//                   display="flex"
+//                   justifyContent="space-between"
+//                   alignItems="center"
+//                   mb={2}
+//                 >
+//                   {rideDetails.customer ? (
+//                     <Typography variant="h6" fontWeight="bold">
+//                       Customer: {rideDetails.customer.username}
+//                     </Typography>
+//                   ) : (
+//                     <Typography variant="h6" fontWeight="bold">
+//                       Customer ID: {rideDetails.userId}
+//                     </Typography>
+//                   )}
+//                   <Chip
+//                     label={`${countdown}s`}
+//                     color={countdown < 10 ? "error" : "primary"}
+//                   />
+//                 </Box>
+//                 {/* To show customer name/rating, you need to add that to your RideResponse DTO */}
+//                 <Divider sx={{ my: 2 }} />
+//                 <Box display="flex" alignItems="center" mb={2}>
+//                   <LocationOn color="primary" sx={{ mr: 2 }} />
+//                   <Box>
+//                     <Typography variant="body2" color="text.secondary">
+//                       Pickup
+//                     </Typography>
+//                         <Typography fontWeight="medium">{rideDetails.pickupName || 'Loading...'}</Typography>
+
+//                   </Box>
+//                 </Box>
+//                 <Box display="flex" alignItems="center">
+//                   <Directions color="secondary" sx={{ mr: 2 }} />
+//                   <Box>
+//                     <Typography variant="body2" color="text.secondary">
+//                       Dropoff
+//                     </Typography>
+//                        <Typography fontWeight="medium">{rideDetails.dropoffName || 'Loading...'}</Typography>
+
+//                   </Box>
+//                 </Box>
+//                 <Divider sx={{ my: 2 }} />
+//                 <Grid container spacing={1}>
+//                   <Grid
+//                     item
+//                     xs={6}
+//                     display="flex"
+//                     alignItems="center"
+//                     gap={1.5}
+//                   >
+//                     <CurrencyRupee color="action" />
+//                     <Typography fontWeight="bold">
+//                       ₹{rideDetails.cost?.toFixed(2) ?? " "}
+//                     </Typography>
+//                   </Grid>
+//                   <Grid
+//                     item
+//                     xs={6}
+//                     display="flex"
+//                     alignItems="center"
+//                     gap={1.5}
+//                   >
+//                     <Straighten color="action" />
+//                     <Typography fontWeight="bold">
+//                       {rideDetails.distance?.toFixed(1) ?? ""} km
+//                     </Typography>
+//                   </Grid>
+//                 </Grid>
+//               </CardContent>
+//             </Card>
+//           </Grid>
+//           {/* Right Column: Map & Actions */}
+//           <Grid item xs={20} md={12}>
+//             <Card sx={{ borderRadius: 3, mb: 3 }}>
+//               <MapDisplay
+//                 userLocation={driverCoords}
+//                 // Pass the pickup and dropoff coords to draw the route
+//                 pickupCoords={pickupCoords}
+//                 dropoffCoords={dropoffCoords}
+//               />
+//             </Card>
+//             <Card sx={{ borderRadius: 3, p: 2 }}>
+//               <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
+//                 Confirm Action
+//               </Typography>
+//               {error && (
+//                 <Alert severity="error" sx={{ mb: 2 }}>
+//                   {error}
+//                 </Alert>
+//               )}
+//               <Box display="flex" gap={2}>
+//                 <Button
+//                   fullWidth
+//                   variant="contained"
+//                   color="success"
+//                   onClick={handleAccept}
+//                   disabled={loading}
+//                 >
+//                   {loading ? (
+//                     <CircularProgress size={24} color="inherit" />
+//                   ) : (
+//                     "Accept Ride"
+//                   )}
+//                 </Button>
+//                 <Button
+//                   fullWidth
+//                   variant="outlined"
+//                   color="error"
+//                   onClick={handleReject}
+//                 >
+//                   Reject
+//                 </Button>
+//               </Box>
+//             </Card>
+//           </Grid>
+//         </Grid>
+//       </div>
+//     </div>
+//   );
+// }
+
+
+
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import DriverService from "../../services/DriverService";
@@ -41,73 +324,41 @@ import {
 import MapDisplay from "../../components/shared/MapDisplay";
 import useGeolocation from "../../hooks/useGeolocation"; // To show the driver's own location
 
-const rideRequest = {
-  id: 201,
-  pickup: "MG Road, Bangalore",
-  drop: "Koramangala, Bangalore",
-  fare: 120,
-  distance: "5.2 km",
-  estimatedTime: "15 min",
-  customer: {
-    name: "John Doe",
-    phone: "+91 9876543210",
-    rating: 4.5,
-    totalRides: 24,
-  },
-  pickupLocation: { lat: 12.9716, lng: 77.5946 },
-  dropLocation: { lat: 12.9279, lng: 77.6271 },
-};
-
-const mockNearbyRiders = [
-  {
-    id: 1,
-    name: "Rahul Kumar",
-    location: { lat: 12.975, lng: 77.59 },
-    distance: "0.5 km",
-    eta: "3 min",
-  },
-  {
-    id: 2,
-    name: "Vikram Singh",
-    location: { lat: 12.97, lng: 77.595 },
-    distance: "0.8 km",
-    eta: "5 min",
-  },
-  {
-    id: 3,
-    name: "Amit Sharma",
-    location: { lat: 12.965, lng: 77.6 },
-    distance: "1.2 km",
-    eta: "7 min",
-  },
-];
-
 export default function AcceptRide() {
   const navigate = useNavigate();
-  const location = useLocation(); // <-- Get the location object
+  const location = useLocation();
   const { token } = useAuth();
   const [accepted, setAccepted] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [countdown, setCountdown] = useState(30); // 30 seconds to accept
+  const [countdown, setCountdown] = useState(30);
   const [selectedRider, setSelectedRider] = useState(null);
   const rideDetails = location.state?.rideDetails;
-  const [error, setError] = useState(""); // State for handling errors
-  const geo = useGeolocation(); // Get the driver's current location
+  const [error, setError] = useState("");
+  const geo = useGeolocation();
+
+  // Defensive check for rideDetails
+  if (!rideDetails) {
+    // Navigate away or show an error if rideDetails are missing.
+    // This prevents the component from crashing.
+    useEffect(() => {
+      navigate('/rider/dashboard');
+    }, [navigate]);
+    return null; // Render nothing while redirecting
+  }
 
   const pickupCoords = [rideDetails.startLatitude, rideDetails.startLongitude];
   const dropoffCoords = [rideDetails.endLatitude, rideDetails.endLongitude];
-  // const driverCoords = geo.latitude ? [geo.latitude, geo.longitude] : null;
-  const driverCoords = [rideDetails.endLatitude, rideDetails.endLongitude];
+  const driverCoords =
+    geo && geo.latitude && geo.longitude ? [geo.latitude, geo.longitude] : null;
+
 
   useEffect(() => {
-    console.log(rideDetails);
     if (!rideDetails) {
       console.error("No ride details found. Redirecting to dashboard.");
       navigate("/rider/dashboard");
     }
   }, [rideDetails, navigate]);
 
-  // Simulate countdown timer
   useEffect(() => {
     if (!accepted && countdown > 0) {
       const timer = setTimeout(() => {
@@ -115,45 +366,29 @@ export default function AcceptRide() {
       }, 1000);
       return () => clearTimeout(timer);
     } else if (countdown === 0 && !accepted) {
-      // Auto-reject when timer expires
       setAccepted(true);
       navigate("/rider/dashboard");
     }
-  }, [accepted, countdown]);
-
-  // const handleAccept = () => {
-  //   setLoading(true);
-  //   // Simulate API call
-  //   setTimeout(() => {
-  //     setAccepted(true);
-  //     setLoading(false);
-  //     // Redirect to Ride In Progress after accepting
-  //     navigate("/rider/ride-in-progress");
-  //   }, 1000);
-  // };
+  }, [accepted, countdown, navigate]);
 
   const handleAccept = async () => {
     setLoading(true);
     setError("");
-    console.log("requestRideId:- ", rideDetails.userId);
     try {
       const request = {
         rideId: rideDetails.id,
         status: "ACCEPTED",
       };
-      // Call the REAL API to accept the ride
       await RideService.updateRideStatus(request, token);
       alert("Ride Started");
       setAccepted(true);
-      // Navigate to the next screen upon successful acceptance
-      navigate(`/rider/ride-in-progress/${rideDetails.id}`); // Pass ride ID
+      navigate(`/rider/ride-in-progress/${rideDetails.id}`);
     } catch (err) {
       console.error("Failed to accept ride:", err);
       setError(
         err.message ||
-          "Failed to accept ride. It might have been taken by another driver."
+        "Failed to accept ride. It might have been taken by another driver."
       );
-      // You might want to automatically navigate back after a few seconds
       setTimeout(() => navigate("/rider/dashboard"), 3000);
     } finally {
       setLoading(false);
@@ -168,276 +403,20 @@ export default function AcceptRide() {
   const getVehicleIcon = (type) => {
     switch (type) {
       case "Bike":
-        return <TwoWheeler className="text-yellow-500" />;
+        return <TwoWheeler color="action" />;
       case "Auto":
-        return <AirportShuttle className="text-yellow-500" />;
+        return <AirportShuttle color="action" />;
       case "Cab":
-        return <LocalTaxi className="text-yellow-500" />;
+        return <LocalTaxi color="action" />;
       default:
-        return <TwoWheeler className="text-yellow-500" />;
+        return <TwoWheeler color="action" />;
     }
   };
 
-  // No need for accepted state UI, as we redirect to RideInProgress
-  if (accepted) {
-    return null;
-  }
   const cost = rideDetails.cost?.toFixed(2) ?? "0.00";
   const distance = rideDetails.distance?.toFixed(1) ?? "0.0";
+
   return (
-    // <div
-    //   className="p-6 bg-gray-50 min-h-screen"
-    //   style={{
-    //     marginTop: "clamp(64px, 8vw, 88px)",
-    //     zIndex: 1,
-    //     position: "relative",
-    //   }}
-    // >
-    //   <div className="max-w-6xl mx-auto">
-    //     {/* Header */}
-    //     <Box className="mb-8">
-    //       <Typography variant="h4" className="font-bold text-gray-800">
-    //         New Ride Request
-    //       </Typography>
-    //       <Typography variant="body1" className="text-gray-600">
-    //         Accept or reject the ride request within the time limit
-    //       </Typography>
-    //     </Box>
-
-    //     <Grid container spacing={3}>
-    //       {/* Left Column - Request Details */}
-    //       <Grid item xs={12} md={5} minHeight={610}>
-    //         <Card className="shadow-md rounded-xl" style={{ height: "100%" }}>
-    //           <CardContent className="p-6">
-    //             <Box className="flex justify-between items-center mb-30 ">
-    //               <Typography variant="h6" className="font-bold text-gray-800 ">
-    //                 Ride Details
-    //               </Typography>
-    //               <Chip
-    //                 label={`${countdown}s`}
-    //                 color={countdown < 10 ? "error" : "primary"}
-    //                 variant="outlined"
-    //               />
-    //             </Box>
-
-    //             <Box className="mb-10">
-    //               <Typography variant="body2" className="text-gray-600 mb-3">
-    //                 Customer
-    //               </Typography>
-    //               <Box className="flex items-center">
-    //                 <Avatar
-    //                   className="mr-3"
-    //                   src={`https://i.pravatar.cc/150?u=${rideRequest.customer.name}`}
-    //                 />
-    //                 <Box>
-    //                   <Typography variant="h6" className="font-medium">
-    //                     {rideRequest.customer.name}
-    //                   </Typography>
-    //                   <Box className="flex items-center">
-    //                     <Star
-    //                       className="text-yellow-500 mr-1"
-    //                       fontSize="small"
-    //                     />
-
-    //                     <Typography variant="body2">
-    //                       {rideRequest.customer.rating}
-    //                     </Typography>
-    //                     <Typography variant="body2" className="mx-2">
-    //                       •
-    //                     </Typography>
-    //                     <Typography variant="body2">
-    //                       {rideRequest.customer.totalRides} rides
-    //                     </Typography>
-    //                   </Box>
-    //                 </Box>
-    //               </Box>
-    //             </Box>
-
-    //             <Divider className="my-4" />
-
-    //             <Box className="space-y-4 mb-6 mt-6">
-    //               <Box className="flex items-center">
-    //                 <LocationOn className="text-gray-500 mr-3" />
-    //                 <Box>
-    //                   <Typography variant="body2" className="text-gray-600">
-    //                     Pickup
-    //                   </Typography>
-    //                   <Typography variant="h6" className="font-medium">
-    //                     {rideRequest.pickup}
-    //                   </Typography>
-    //                 </Box>
-    //               </Box>
-
-    //               <Box className="flex items-center mt-6">
-    //                 <Directions className="text-gray-500 mr-3" />
-    //                 <Box>
-    //                   <Typography variant="body2" className="text-gray-600">
-    //                     Destination
-    //                   </Typography>
-    //                   <Typography variant="h6" className="font-medium">
-    //                     {rideRequest.drop}
-    //                   </Typography>
-    //                 </Box>
-    //               </Box>
-    //             </Box>
-
-    //             <Divider className="my-4" />
-
-    //             <Grid container spacing={2} className="mt-6">
-    //               <Grid item xs={6}>
-    //                 <Box className="flex items-center">
-    //                   <AttachMoney className="text-gray-500 mr-2" />
-    //                   <Box>
-    //                     <Typography variant="body2" className="text-gray-600">
-    //                       Fare
-    //                     </Typography>
-    //                     <Typography variant="h6" className="font-medium">
-    //                       ₹{rideRequest.fare}
-    //                     </Typography>
-    //                   </Box>
-    //                 </Box>
-    //               </Grid>
-    //               <Grid item xs={6}>
-    //                 <Box className="flex items-center">
-    //                   <AccessTime className="text-gray-500 mr-2" />
-    //                   <Box>
-    //                     <Typography variant="body2" className="text-gray-600">
-    //                       Est. Time
-    //                     </Typography>
-    //                     <Typography variant="h6" className="font-medium">
-    //                       {rideRequest.estimatedTime}
-    //                     </Typography>
-    //                   </Box>
-    //                 </Box>
-    //               </Grid>
-    //               <Grid item xs={6}>
-    //                 <Box className="flex items-center">
-    //                   <TwoWheeler className="text-gray-500 mr-2" />
-    //                   <Box>
-    //                     <Typography variant="body2" className="text-gray-600">
-    //                       Distance
-    //                     </Typography>
-    //                     <Typography variant="h6" className="font-medium">
-    //                       {rideRequest.distance}
-    //                     </Typography>
-    //                   </Box>
-    //                 </Box>
-    //               </Grid>
-    //               <Grid item xs={6}>
-    //                 <Box className="flex items-center">
-    //                   <Person className="text-gray-500 mr-2" />
-    //                   <Box>
-    //                     <Typography variant="body2" className="text-gray-600">
-    //                       Customer Phone
-    //                     </Typography>
-    //                     <Typography variant="h6" className="font-medium">
-    //                       {rideRequest.customer.phone}
-    //                     </Typography>
-    //                   </Box>
-    //                 </Box>
-    //               </Grid>
-    //             </Grid>
-
-    //             <Box className="mt-6 pt-4 border-t border-gray-200">
-    //               <Typography
-    //                 variant="body2"
-    //                 className="text-gray-600 mb-3 mt-6"
-    //               >
-    //                 Customer Contact
-    //               </Typography>
-    //               <Box className="flex gap-2 mt-6">
-    //                 <Button
-    //                   variant="outlined"
-    //                   startIcon={<Phone />}
-    //                   className="flex-1"
-    //                 >
-    //                   Call
-    //                 </Button>
-    //                 <Button
-    //                   variant="outlined"
-    //                   startIcon={<Message />}
-    //                   className="flex-1"
-    //                 >
-    //                   Message
-    //                 </Button>
-    //               </Box>
-    //             </Box>
-    //           </CardContent>
-    //         </Card>
-    //       </Grid>
-
-    //       {/* Right Column - Map and Action */}
-    //       <Grid item xs={12} md={7} minWidth={600} height={200}>
-    //         {/* Map */}
-    //         <Card className="shadow-md rounded-xl mb-2">
-    //           <CardContent className="p-0">
-    //             <Typography
-    //               variant="h6"
-    //               className="font-bold text-gray-800 p-4 pb-2 "
-    //             >
-    //               Route Map
-    //             </Typography>
-    //             <Divider />
-    //             <MapDisplay
-    //               userLocation={rideRequest.pickupLocation}
-    //               nearbyRiders={mockNearbyRiders}
-    //             />
-    //           </CardContent>
-    //         </Card>
-
-    //         {/* Action */}
-    //         <Card className="shadow-md rounded-xl">
-    //           <CardContent className="p-6">
-    //             <Typography
-    //               variant="h6"
-    //               className="font-bold text-gray-800 mb-4"
-    //             >
-    //               Take Action
-    //             </Typography>
-
-    //             <Box className="mb-6">
-    //               <Typography variant="body2" className="text-gray-600 mb-2">
-    //                 Accept or reject this ride request
-    //               </Typography>
-    //               <Typography variant="body2" className="text-gray-500">
-    //                 You have {countdown} seconds to respond
-    //               </Typography>
-    //             </Box>
-
-    //             <Box className="flex gap-4">
-    //               <Button
-    //                 variant="contained"
-    //                 className="flex-1 bg-green-500 hover:bg-green-600 text-white"
-    //                 onClick={handleAccept}
-    //                 disabled={loading}
-    //                 startIcon={
-    //                   loading ? (
-    //                     <CircularProgress size={20} color="inherit" />
-    //                   ) : null
-    //                 }
-    //               >
-    //                 {loading ? "Processing..." : "Accept Ride"}
-    //               </Button>
-    //               <Button
-    //                 variant="outlined"
-    //                 className="flex-1 border-red-500 text-red-500 hover:bg-red-50"
-    //                 onClick={handleReject}
-    //               >
-    //                 Reject
-    //               </Button>
-    //             </Box>
-
-    //             {countdown < 10 && (
-    //               <Alert severity="warning" className="mt-4">
-    //                 Hurry! You have only {countdown} seconds left to respond.
-    //               </Alert>
-    //             )}
-    //           </CardContent>
-    //         </Card>
-    //       </Grid>
-    //     </Grid>
-    //   </div>
-    // </div>
     <div className="p-6 bg-gray-50 min-h-screen">
       <div className="max-w-6xl mx-auto">
         <Box className="mb-8">
@@ -446,7 +425,6 @@ export default function AcceptRide() {
           </Typography>
         </Box>
         <Grid container spacing={3}>
-          {/* Left Column: Details */}
           <Grid item xs={12} md={5}>
             <Card sx={{ borderRadius: 3 }}>
               <CardContent sx={{ p: 3 }}>
@@ -456,21 +434,14 @@ export default function AcceptRide() {
                   alignItems="center"
                   mb={2}
                 >
-                  {rideDetails.customer ? (
-                    <Typography variant="h6" fontWeight="bold">
-                      Customer: {rideDetails.customer.username}
-                    </Typography>
-                  ) : (
-                    <Typography variant="h6" fontWeight="bold">
-                      Customer ID: {rideDetails.userId}
-                    </Typography>
-                  )}
+                  <Typography variant="h6" fontWeight="bold">
+                    Customer ID: {rideDetails.userId}
+                  </Typography>
                   <Chip
                     label={`${countdown}s`}
                     color={countdown < 10 ? "error" : "primary"}
                   />
                 </Box>
-                {/* To show customer name/rating, you need to add that to your RideResponse DTO */}
                 <Divider sx={{ my: 2 }} />
                 <Box display="flex" alignItems="center" mb={2}>
                   <LocationOn color="primary" sx={{ mr: 2 }} />
@@ -478,8 +449,7 @@ export default function AcceptRide() {
                     <Typography variant="body2" color="text.secondary">
                       Pickup
                     </Typography>
-                        <Typography fontWeight="medium">{rideDetails.pickupName || 'Loading...'}</Typography>
-
+                    <Typography fontWeight="medium">{rideDetails.pickupName || 'Loading...'}</Typography>
                   </Box>
                 </Box>
                 <Box display="flex" alignItems="center">
@@ -488,46 +458,39 @@ export default function AcceptRide() {
                     <Typography variant="body2" color="text.secondary">
                       Dropoff
                     </Typography>
-                       <Typography fontWeight="medium">{rideDetails.dropoffName || 'Loading...'}</Typography>
-
+                    <Typography fontWeight="medium">{rideDetails.dropoffName || 'Loading...'}</Typography>
                   </Box>
                 </Box>
                 <Divider sx={{ my: 2 }} />
                 <Grid container spacing={1}>
-                  <Grid
-                    item
-                    xs={6}
-                    display="flex"
-                    alignItems="center"
-                    gap={1.5}
-                  >
+                  <Grid item xs={6} display="flex" alignItems="center" gap={1.5}>
                     <CurrencyRupee color="action" />
                     <Typography fontWeight="bold">
-                      ₹{rideDetails.cost?.toFixed(2) ?? " "}
+                      ₹{cost}
                     </Typography>
                   </Grid>
-                  <Grid
-                    item
-                    xs={6}
-                    display="flex"
-                    alignItems="center"
-                    gap={1.5}
-                  >
+                  <Grid item xs={6} display="flex" alignItems="center" gap={1.5}>
                     <Straighten color="action" />
                     <Typography fontWeight="bold">
-                      {rideDetails.distance?.toFixed(1) ?? ""} km
+                      {distance} km
                     </Typography>
                   </Grid>
+                  {/* --- NEWLY ADDED CODE --- */}
+                  <Grid item xs={12} display="flex" alignItems="center" gap={1.5} sx={{ mt: 1 }}>
+                    {getVehicleIcon(rideDetails.vehicleType)}
+                    <Typography fontWeight="bold">
+                      {rideDetails.vehicleType}
+                    </Typography>
+                  </Grid>
+                  {/* --- END OF NEW CODE --- */}
                 </Grid>
               </CardContent>
             </Card>
           </Grid>
-          {/* Right Column: Map & Actions */}
-          <Grid item xs={20} md={12}>
+          <Grid item xs={12} md={7}>
             <Card sx={{ borderRadius: 3, mb: 3 }}>
               <MapDisplay
                 userLocation={driverCoords}
-                // Pass the pickup and dropoff coords to draw the route
                 pickupCoords={pickupCoords}
                 dropoffCoords={dropoffCoords}
               />
@@ -560,6 +523,7 @@ export default function AcceptRide() {
                   variant="outlined"
                   color="error"
                   onClick={handleReject}
+                  disabled={loading}
                 >
                   Reject
                 </Button>
