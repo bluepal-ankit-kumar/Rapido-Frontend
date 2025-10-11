@@ -1462,39 +1462,24 @@ export default function RideTracking() {
 
   return (
     <>
-      <div className="flex justify-center items-center min-h-screen bg-gray-50">
-        <div className="max-w-6xl w-full">
+      <div className="flex justify-center items-center min-h-screen bg-grey-50">
+        <div className="max-w-6xl w-full" style={{ maxWidth: 1400 }}>
+        
           {/* Header */}
-          <Box className="mb-8">
+          <Box className="mb-4 mt-4">
             <Typography variant="h4" className="font-bold text-gray-800">
               Track Your Ride
             </Typography>
-            <Typography variant="body1" className="text-gray-600">
-              Real-time tracking of your ride status and location
-            </Typography>
+           
           </Box>
-
-          <Grid container spacing={4} style={{ minHeight: "70vh" }}>
-            {/* Left Column - Map and Status */}
-            <Grid
-              item
-              xs={12}
-              md={6}
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "1.5rem",
-                flexBasis: "45%",
-                maxWidth: "45%",
-              }}
-            >
+            
               {/* Status Card */}
               <Card
                 className="shadow-md rounded-xl mb-4"
-                style={{ maxHeight: 340, overflow: "auto" }}
+                style={{  overflow: "auto",width:"100%",maxWidth: 1400 ,backgroundColor:"#f6f7f9"}}
               >
                 <CardContent className="p-6">
-                  <Box className="flex justify-between items-center mb-6">
+                  <Box className="flex justify-between items-center mb-2 ">
                     <Typography
                       variant="h6"
                       className="font-bold text-gray-800"
@@ -1513,11 +1498,9 @@ export default function RideTracking() {
                   </Box>
 
                   <Box className="mb-6">
-                    <Typography variant="body2" className="text-gray-600 mb-1">
-                      Route
-                    </Typography>
+                    
                     <Box className="flex items-center">
-                      <LocationOn className="text-gray-500 mr-2" />
+                      <LocationOn className="text-green-600 mr-2" />
                       <Typography variant="h6" className="font-medium">
                         {ride.pickup}
                       </Typography>
@@ -1527,7 +1510,7 @@ export default function RideTracking() {
                       <div className="flex-1 h-0.5 bg-gray-300"></div>
                     </Box>
                     <Box className="flex items-center">
-                      <LocationOn className="text-gray-500 mr-2" />
+                      <LocationOn className="text-red-600 mr-2" />
                       <Typography variant="h6" className="font-medium">
                         {ride.destination}
                       </Typography>
@@ -1566,51 +1549,40 @@ export default function RideTracking() {
               </Card>
 
               {/* Map */}
-              <Card className="shadow-md rounded-xl flex-1">
-                <CardContent className="p-0">
-                  <Typography
+              
+                {/* <CardContent className="p-0 shadow-md rounded-xl " style={{backgroundColor:"#f6f7f9"}}> */}
+                  {/* <Typography
                     variant="h6"
                     className="font-bold text-gray-800 p-4 pb-2"
                   >
                     Live Tracking
-                  </Typography>
+                  </Typography> */}
                   <Divider />
-                  <MapDisplay
-                    userLocation={
-                      currentCoords
-                        ? [currentCoords.latitude, currentCoords.longitude]
-                        : null
-                    }
-                    // The rider location is always the driver's live position
-                    riderLocation={
-                      driverCoords
-                        ? [driverCoords.latitude, driverCoords.longitude]
-                        : null
-                    }
-                    pickupCoords={routeToShow.pickup}
-                    dropoffCoords={routeToShow.dropoff}
-                  />
-                </CardContent>
-              </Card>
-            </Grid>
+                  <div style={{ position: "relative", width: "100%", height: "350px", overflow: "hidden", zIndex: 1 }}>
+                    <MapDisplay
+                      userLocation={
+                        currentCoords
+                          ? [currentCoords.latitude, currentCoords.longitude]
+                          : null
+                      }
+                      riderLocation={
+                        driverCoords
+                          ? [driverCoords.latitude, driverCoords.longitude]
+                          : null
+                      }
+                      pickupCoords={routeToShow.pickup}
+                      dropoffCoords={routeToShow.dropoff}
+                    />
+                  </div>
+                {/* </CardContent> */}
+             
+            
 
-            {/* Right Column - Driver Info and Actions */}
-            <Grid
-              item
-              xs={12}
-              md={6}
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "1.5rem",
-                flexBasis: "40%",
-                maxWidth: "40%",
-              }}
-            >
+            
               {/* Driver Info */}
               <Card
                 className="shadow-md rounded-xl mb-4"
-                style={{ maxHeight: 340, overflow: "auto" }}
+                style={{ maxHeight: 340, overflow: "auto", backgroundColor:"#f6f7f9" }}
               >
                 <CardContent className="p-6">
                   <Typography
@@ -1619,7 +1591,7 @@ export default function RideTracking() {
                   >
                     Driver Information
                   </Typography>
-
+                  <Divider className="my-6 height-3" /> 
                   {ride.status === "ACCEPTED" ||
                   ride.status === "STARTED" ||
                   ride.status === "IN_PROGRESS" ||
@@ -1629,30 +1601,19 @@ export default function RideTracking() {
                       {ride.driver ? (
                         <>
                           <Box className="flex items-center mb-4">
-                            <Avatar
-                              className="mr-4"
-                              src={`https://i.pravatar.cc/150?u=${ride.driver.username}`}
-                            />
+                            
                             <Box>
-                              <Typography variant="h6" className="font-medium">
+                              <Typography variant="h4" className="font-medium ">
                                 {ride.driver.username}
                               </Typography>
-                              <Box className="flex items-center">
-                                <Star
-                                  className="text-yellow-500 mr-1"
-                                  fontSize="small"
-                                />
-                                <Typography variant="body2">
-                                  4.8 (Mock)
-                                </Typography>
-                              </Box>
+                              
                             </Box>
                           </Box>
 
-                          <Divider className="my-4" />
+                          {/* <Divider className="my-4" /> */}
                           <Box className="flex justify-between items-center">
                             <Box className="flex justify-between">
-                              <Typography fontWeight="medium">
+                              <Typography fontWeight="medium" >
                                 {ride.driver.vehicleModel}
                               </Typography>
                               <Chip
@@ -1660,17 +1621,19 @@ export default function RideTracking() {
                                 variant="outlined"
                                 sx={{
                                   mt: 0.5,
+                                  ml: 4,
                                   fontWeight: "bold",
                                   letterSpacing: 1,
                                 }}
                               />
 
-                              <Typography fontWeight="medium">Otp</Typography>
+                              <Typography fontWeight="medium" className="ml-10">Otp</Typography>
                               <Chip
                                 label={otp || "N/A"}
                                 variant="outlined"
                                 sx={{
                                   mt: 0.5,
+                                  ml: 4,
                                   fontWeight: "bold",
                                   letterSpacing: 1,
                                 }}
@@ -1679,14 +1642,14 @@ export default function RideTracking() {
                             {/* Use the getVehicleIcon function you already have */}
                             {getVehicleIcon()}
                           </Box>
-                          <Divider className="my-4" />
+                          {/* <Divider className="my-4" /> */}
                           {/* ... Other driver details like vehicle, license plate, etc. ... */}
-                          <Box className="flex justify-between">
+                          {/* <Box className="flex justify-between">
                             <Button startIcon={<Phone />}>Call Driver</Button>
                             <Button variant="outlined" startIcon={<Message />}>
                               Message
                             </Button>
-                          </Box>
+                          </Box> */}
                         </>
                       ) : (
                         // This is a fallback in case driver data is missing after acceptance
@@ -1715,7 +1678,7 @@ export default function RideTracking() {
               </Card>
 
               {/* Tracking Progress */}
-              <Card className="shadow-md rounded-xl flex-1">
+              <Card className="shadow-md rounded-xl flex-1" style={{ backgroundColor:"#f6f7f9" }}>
                 <CardContent className="p-6">
                   <Typography
                     variant="h6"
@@ -1830,8 +1793,8 @@ export default function RideTracking() {
                   </Box>
                 </CardContent>
               </Card>
-            </Grid>
-          </Grid>
+            
+          
         </div>
       </div>
 
