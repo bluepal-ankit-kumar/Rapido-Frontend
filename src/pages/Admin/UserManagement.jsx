@@ -264,6 +264,8 @@ export default function UserManagement() {
   };
 
   // PDF preview & download animation
+
+  // PDF preview & download for user list (existing)
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewUrl, setPreviewUrl] = useState('');
   const [previewLoading, setPreviewLoading] = useState(false);
@@ -278,7 +280,6 @@ export default function UserManagement() {
       const url = window.URL.createObjectURL(blob);
       setPreviewUrl(url);
       setPreviewOpen(true);
-      // small animation to indicate download
       setAnimatingDownload(true);
       setTimeout(() => setAnimatingDownload(false), 1400);
     } catch (err) {
@@ -301,6 +302,63 @@ export default function UserManagement() {
     const a = document.createElement('a');
     a.href = previewUrl;
     a.download = `users-${Date.now()}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  };
+
+  // PDF preview & download for individual rider
+  const [riderPdfPreviewOpen, setRiderPdfPreviewOpen] = useState(false);
+  const [riderPdfPreviewUrl, setRiderPdfPreviewUrl] = useState('');
+  const [riderPdfLoading, setRiderPdfLoading] = useState(false);
+  const [riderPdfError, setRiderPdfError] = useState('');
+  const [riderPdfUser, setRiderPdfUser] = useState(null);
+
+  const openRiderPdfPreview = async (user) => {
+    if (!user || !user.id) return;
+    setRiderPdfUser(user);
+    setRiderPdfLoading(true);
+    setRiderPdfError('');
+    // Revoke previous URL if any
+    if (riderPdfPreviewUrl) {
+      URL.revokeObjectURL(riderPdfPreviewUrl);
+      setRiderPdfPreviewUrl('');
+    }
+    try {
+      // GET /drivers/download/pdf/{driverId}
+      const res = await DriverService.downloadDriverPdf(user.id);
+      // Always create a Blob from res.data, like Users PDF Preview
+      const blob = new Blob([res.data], { type: res.headers?.['content-type'] || 'application/pdf' });
+      if (blob.type !== 'application/pdf') {
+        throw new Error('Response is not a PDF');
+      }
+      const url = window.URL.createObjectURL(blob);
+      setRiderPdfPreviewUrl(url);
+      setRiderPdfPreviewOpen(true);
+    } catch (err) {
+      setRiderPdfError('Failed to load PDF preview');
+      setRiderPdfPreviewOpen(true); // Show dialog with error
+      console.error('Failed to download driver PDF:', err);
+    } finally {
+      setRiderPdfLoading(false);
+    }
+  };
+
+  const closeRiderPdfPreview = () => {
+    setRiderPdfPreviewOpen(false);
+    if (riderPdfPreviewUrl) {
+      URL.revokeObjectURL(riderPdfPreviewUrl);
+      setRiderPdfPreviewUrl('');
+    }
+    setRiderPdfUser(null);
+    setRiderPdfError('');
+  };
+
+  const saveRiderPdfToDisk = () => {
+    if (!riderPdfPreviewUrl) return;
+    const a = document.createElement('a');
+    a.href = riderPdfPreviewUrl;
+    a.download = `driver-${riderPdfUser?.id || 'profile'}-${Date.now()}.pdf`;
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -342,8 +400,8 @@ export default function UserManagement() {
         <div>
           <Typography variant="h4" className="font-bold text-gray-800 mb-2">User Management</Typography>
           <Box className="mt-2 flex items-center gap-2">
-            <Button variant={viewMode === 'CUSTOMER' ? 'contained' : 'outlined'} size="small" onClick={() => setViewMode('CUSTOMER')}>Customers ({totalCustomers})</Button>
-            <Button variant={viewMode === 'RIDER' ? 'contained' : 'outlined'} size="small" onClick={() => setViewMode('RIDER')}>Riders ({totalRiders})</Button>
+            <Button variant={viewMode === 'CUSTOMER' ? 'contained' : 'outlined'} size="small"  onClick={() => setViewMode('CUSTOMER')}>Customers ({totalCustomers})</Button>
+            <Button variant={viewMode === 'RIDER' ? 'contained' : 'outlined'} size="small"  onClick={() => setViewMode('RIDER')}>Riders ({totalRiders})</Button>
           </Box>
         </div>
         <Box className="flex items-center gap-3">
@@ -450,9 +508,14 @@ export default function UserManagement() {
                   <TableCell>
                     <Box className="flex gap-1">
                       {viewMode === 'RIDER' && (
-                        <IconButton size="small" color="primary" onClick={() => openDriverDetails(user)}>
-                          <Visibility />
-                        </IconButton>
+                        <>
+                          <IconButton size="small" color="primary" onClick={() => openDriverDetails(user)}>
+                            <Visibility />
+                          </IconButton>
+                          <IconButton size="small" color="secondary" onClick={() => openRiderPdfPreview(user)} title="Download PDF">
+                            <GetApp />
+                          </IconButton>
+                        </>
                       )}
                       <IconButton size="small" color="error" onClick={() => { setSelectedUser(user); setConfirmDeleteOpen(true); }}>
                         <Delete />
@@ -525,7 +588,7 @@ export default function UserManagement() {
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, mb: 1 }}>
             <Box>
               <Typography variant="h5" sx={{ fontWeight: 700 }}>{headerName || '—'}</Typography>
-              <Typography variant="body2" color="text.secondary">Driver profile</Typography>
+              {/* <Typography variant="body2" color="text.secondary">Driver profile</Typography> */}
             </Box>
             <Box>
               <Button variant={driverSection === 'PROFILE' ? 'contained' : 'outlined'} size="small" onClick={() => setDriverSection('PROFILE')} sx={{ mr: 1 }}>Profile</Button>
@@ -544,10 +607,10 @@ export default function UserManagement() {
               {driverSection === 'PROFILE' && (
                 <Box>
                   <Grid container spacing={2}>
-                    <Grid item xs={12} md={6}>
+                    {/* <Grid item xs={12} md={6}>
                       <Typography variant="caption" color="text.secondary">Full name</Typography>
                       <Typography variant="body1">{finalDrvName}</Typography>
-                    </Grid>
+                    </Grid> */}
                     <Grid item xs={12} md={6}>
                       <Typography variant="caption" color="text.secondary">Date of birth</Typography>
                       <Typography variant="body1">{drvDob}</Typography>
@@ -567,10 +630,10 @@ export default function UserManagement() {
               {driverSection === 'VEHICLE' && (
                 <Box>
                   <Grid container spacing={2}>
-                    <Grid item xs={12} md={6}>
+                    {/* <Grid item xs={12} md={6}>
                       <Typography variant="caption" color="text.secondary">Make / Model</Typography>
                       <Typography variant="body1">{drvVehicleMakeModel}</Typography>
-                    </Grid>
+                    </Grid> */}
                     <Grid item xs={12} md={6}>
                       <Typography variant="caption" color="text.secondary">Registration No</Typography>
                       <Typography variant="body1">{drvVehicleNumber}</Typography>
@@ -579,13 +642,13 @@ export default function UserManagement() {
                       <Typography variant="caption" color="text.secondary">License No</Typography>
                       <Typography variant="body1">{drvLicenseNumber}</Typography>
                     </Grid>
-                    <Grid item xs={12} md={6}>
+                    {/* <Grid item xs={12} md={6}>
                       <Typography variant="caption" color="text.secondary">Valid Till</Typography>
                       <Typography variant="body1">{drvLicenseExpiry}</Typography>
-                    </Grid>
+                    </Grid> */}
                     <Grid item xs={12}>
                       {drvLicenseUrl ? (
-                        <Box component="img" src={drvLicenseUrl} alt="license" sx={{ maxWidth: 360, borderRadius: 1, boxShadow: 1 }} />
+                        <Box component="img" src={drvLicenseUrl} alt="license" sx={{ maxWidth: 200, borderRadius: 1, boxShadow: 1 }} />
                       ) : (
                         <Typography>No license image available</Typography>
                       )}

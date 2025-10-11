@@ -120,6 +120,39 @@ const DriverService = {
       throw err;
     }
   },
+
+// Downloads a driver's details as a PDF. Corresponds to: GET /drivers/download/pdf/{driverId}
+  downloadDriverPdf: async (driverId, token) => {
+    try {
+      const response = await api.get(`/drivers/download/pdf/${driverId}`, {
+        headers: {
+          Authorization: `${token}`, // Include JWT token in Authorization header
+        },
+        responseType: "blob", // Important for handling binary data (PDF)
+      });
+
+      // Create a blob URL for the PDF
+      const url = window.URL.createObjectURL(new Blob([response.data], { type: "application/pdf" }));
+      
+      // Create a temporary link element to trigger the download
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `driver_${driverId}_details.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      
+      // Clean up
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      
+      return { success: true };
+    } catch (error) {
+      throw new Error(
+        error.response?.data?.message || "Failed to download driver PDF"
+      );
+    }
+  },
+
 };
 
 export default DriverService;
