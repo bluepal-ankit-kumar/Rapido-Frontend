@@ -418,7 +418,7 @@ export default function AcceptRide() {
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-7.2xl mx-auto ml-7 mr-7">
         <Box className="mb-8">
           <Typography variant="h4" fontWeight="bold">
             Ride Details (ID: {rideDetails.id})
@@ -462,21 +462,21 @@ export default function AcceptRide() {
                   </Box>
                 </Box>
                 <Divider sx={{ my: 2 }} />
-                <Grid container spacing={1}>
-                  <Grid item xs={6} display="flex" alignItems="center" gap={1.5}>
+                <Grid container spacing={1} >
+                  <Grid item xs={6} display="flex" alignItems="center" gap={2.5} className="mr-20">
                     <CurrencyRupee color="action" />
                     <Typography fontWeight="bold">
                       ₹{cost}
                     </Typography>
                   </Grid>
-                  <Grid item xs={6} display="flex" alignItems="center" gap={1.5}>
+                  <Grid item xs={6} display="flex" alignItems="center" gap={2.5} className="mr-20">
                     <Straighten color="action" />
                     <Typography fontWeight="bold">
                       {distance} km
                     </Typography>
                   </Grid>
                   {/* --- NEWLY ADDED CODE --- */}
-                  <Grid item xs={12} display="flex" alignItems="center" gap={1.5} sx={{ mt: 1 }}>
+                  <Grid item xs={12} display="flex" alignItems="center" gap={2.5}  className="mr-20">
                     {getVehicleIcon(rideDetails.vehicleType)}
                     <Typography fontWeight="bold">
                       {rideDetails.vehicleType}
@@ -487,15 +487,17 @@ export default function AcceptRide() {
               </CardContent>
             </Card>
           </Grid>
-          <Grid item xs={12} md={7}>
-            <Card sx={{ borderRadius: 3, mb: 3 }}>
+          {/* Right Column: Map & Actions */}   
+          <Grid class="grid grid-cols-[1000px_auto] gap-5">
+             <Box sx={{ mb: 3}}  style={{ position: 'sticky', top: '72px', zIndex: 10, background: '#fff' }}>
               <MapDisplay
+                
                 userLocation={driverCoords}
                 pickupCoords={pickupCoords}
                 dropoffCoords={dropoffCoords}
               />
-            </Card>
-            <Card sx={{ borderRadius: 3, p: 2 }}>
+              </Box>
+            <Card sx={{ borderRadius: 3, p: 2 , width: "100%", minWidth: "350px", maxHeight: "320px" }}>
               <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
                 Confirm Action
               </Typography>
@@ -504,7 +506,7 @@ export default function AcceptRide() {
                   {error}
                 </Alert>
               )}
-              <Box display="flex" gap={2}>
+              <Box gap={2} class="grid grid-rows-[100px_100px] gap-5">
                 <Button
                   fullWidth
                   variant="contained"

@@ -1205,6 +1205,8 @@ export default function Dashboard() {
                 sx={{
                   borderRadius: 3,
                   boxShadow: 3,
+                  width: "100%",
+                  minWidth: "1380px",
                   mb: { xs: 2, md: 3 },
                 }}
               >
@@ -1314,14 +1316,14 @@ export default function Dashboard() {
                     >
                       Force Location Update
                     </Button>
-                    <Button
+                    {/* <Button
                       variant="outlined"
                       onClick={() => setWalletOpen(true)}
                       startIcon={<AccountBalanceWallet />}
                       sx={{ fontSize: { xs: "0.85rem", sm: "0.9rem" } }}
                     >
                       View Wallet & Earnings
-                    </Button>
+                    </Button> */}
                   </Box>
                 </CardContent>
               </Card>
@@ -1337,7 +1339,7 @@ export default function Dashboard() {
                 }}
               >
                 <CardContent sx={{ p: 0 }}>
-                  <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
+                  <Box sx={{ borderBottom: 1, borderColor: "divider",width: "100%", minWidth: "1380px", }}>
                     <Tabs
                       value={tabValue}
                       onChange={handleTabChange}
@@ -1350,9 +1352,9 @@ export default function Dashboard() {
                   </Box>
 
                   {/* Tab Panel 0: Ride Requests */}
-                  <TabPanel value={tabValue} index={0}>
+                  <TabPanel value={tabValue} index={0} >
                     {online ? (
-                      <Box sx={{ maxHeight: { xs: "400px", sm: "500px" }, overflowY: "auto" }}>
+                      <Box sx={{ maxHeight: { xs: "400px", sm: "500px" }, overflowY: "auto", width: "100%", maxWidth: "1330px" }}>
                         <RideRequestInbox
                           requests={rideRequests}
                           onAccept={handleAcceptRide}
@@ -1383,7 +1385,7 @@ export default function Dashboard() {
                   </TabPanel>
 
                   {/* Tab Panel 1: Statistics & History */}
-                  <TabPanel value={tabValue} index={1}>
+                  <TabPanel value={tabValue} index={1} >
                     <Typography
                       variant="h6"
                       fontWeight="bold"

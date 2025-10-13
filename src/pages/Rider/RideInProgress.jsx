@@ -197,7 +197,7 @@ export default function RideInProgress() {
       : { pickup: customerLocation, dropoff: destinationLocation };
 
   return (
-    <div className="p-6 max-w-3xl mx-auto">
+    <div className="p-6 max-w-8xl mx-auto">
       <Typography variant="h4" fontWeight="bold" gutterBottom>
         Ride In Progress (ID: {rideId})
       </Typography>
@@ -209,79 +209,80 @@ export default function RideInProgress() {
         </Alert>
       )}
 
-      {/* Map View */}
-      <Card elevation={3} className="mb-6">
-        <CardContent className="p-0">
-          <div className="w-full h-80 rounded-xl overflow-hidden">
-            <MapDisplay
-              userLocation={driverLocation}
-              pickupCoords={routeToShow.pickup}
-              dropoffCoords={routeToShow.dropoff}
-            />
-          </div>
-        </CardContent>
-      </Card>
+      {/* Map View - sticky below navbar */}
+      <CardContent className="p-0 w-full mb-6">
+        <div
+          className="w-full h-80 rounded-xl overflow-hidden"
+          style={{ position: 'sticky', top: '72px', zIndex: 10, background: '#fff' }}
+        >
+          <MapDisplay
+            userLocation={driverLocation}
+            pickupCoords={routeToShow.pickup}
+            dropoffCoords={routeToShow.dropoff}
+          />
+        </div>
+      </CardContent>
 
       {/* Customer/Trip Card */}
-      <Card elevation={3} className="mb-6">
-        <CardContent className="p-4">
-          <Box className="flex justify-between items-center mb-4">
-            <Typography variant="h6" fontWeight="medium">
-              {rideDetails.status === "ACCEPTED"
-                ? "Navigate to Customer"
-                : "Navigate to Destination"}
+      <CardContent className="p-4 border rounded-xl">
+        <Box className="flex justify-between items-center mb-4">
+          <Typography variant="h6" fontWeight="medium">
+            {rideDetails.status === "ACCEPTED"
+              ? "Navigate to Customer"
+              : "Navigate to Destination"}
+          </Typography>
+          <Chip label={rideDetails.status} color="primary" />
+        </Box>
+        <Box className="flex items-center mb-3">
+          <Avatar className="mr-3">
+            {rideDetails.customer?.username?.charAt(0) || "C"}
+          </Avatar>
+          <Box>
+            <Typography variant="subtitle1" fontWeight="medium">
+              {rideDetails.customer?.username ||
+                `Customer ID: ${rideDetails.userId}`}
             </Typography>
-            <Chip label={rideDetails.status} color="primary" />
+            <Typography variant="body2" color="textSecondary">
+              Phone: {rideDetails.customer?.phone || "N/A"}
+            </Typography>
           </Box>
-          <Box className="flex items-center mb-3">
-            <Avatar className="mr-3">
-              {rideDetails.customer?.username?.charAt(0) || "C"}
-            </Avatar>
-            <Box>
-              <Typography variant="subtitle1" fontWeight="medium">
-                {rideDetails.customer?.username ||
-                  `Customer ID: ${rideDetails.userId}`}
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
-                Phone: {rideDetails.customer?.phone || "N/A"}
-              </Typography>
-            </Box>
-            <Box sx={{ flexGrow: 1 }} />
-            <IconButton color="primary">
-              <Phone />
-            </IconButton>
-            <IconButton color="primary">
-              <Message />
-            </IconButton>
-          </Box>
-          <Divider className="my-3" />
-          <Box className="flex justify-between">
-            {rideDetails.status === "ACCEPTED" && (
-              <Button
-                variant="contained"
-                color="primary"
-                size="large"
-                onClick={handleReachedCustomer}
-              >
-                Reached Customer
-              </Button>
-            )}
-            {rideDetails.status === "STARTED" && (
-              <Button
-                variant="contained"
-                color="success"
-                size="large"
-                onClick={handleCompleteRide}
-              >
-                Complete Ride
-              </Button>
-            )}
-            <Button variant="outlined" color="error" size="large">
-              Cancel
+          <Box sx={{ flexGrow: 1 }} />
+          {/* <IconButton color="primary">
+            <Phone />
+          </IconButton>
+          <IconButton color="primary">
+            <Message />
+          </IconButton> */}
+        </Box>
+        <Divider className="my-3" />
+        <Box className="flex justify-between mt-2">
+          {rideDetails.status === "ACCEPTED" && (
+            <Button
+              fullWidth
+              variant="contained"
+              color="primary"
+              size="large"
+              onClick={handleReachedCustomer}
+            >
+              Reached Customer
             </Button>
-          </Box>
-        </CardContent>
-      </Card>
+          )}
+          {rideDetails.status === "STARTED" && (
+            <Button
+              fullWidth
+              variant="contained"
+              color="success"
+              size="large"
+              onClick={handleCompleteRide}
+            >
+              Complete Ride
+            </Button>
+          )}
+          {/* <Button variant="outlined" color="error" size="large">
+            Cancel
+          </Button> */}
+        </Box>
+      </CardContent>
 
       {/* OTP Dialog */}
       <Dialog open={otpOpen} onClose={() => setOtpOpen(false)}>
