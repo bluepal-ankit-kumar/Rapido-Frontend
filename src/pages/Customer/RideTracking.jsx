@@ -1,3 +1,4 @@
+
 import useGeolocation from "../../hooks/useGeolocation";
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -74,20 +75,27 @@ export default function RideTracking() {
   useEffect(() => {
     const state = routerLocation.state || {};
     const rideResp = state.ride || {};
+    
+    // Use the calculated fare from RideBooking if available, otherwise use backend cost
+    const calculatedFare = state.calculatedFare || (typeof rideResp.cost === "number" ? rideResp.cost : 0);
+    
     // Compose a local ride model using backend response
     const initialRide = {
       id: rideResp.id,
       userId: rideResp?.userId,
       pickup: state.pickup || "",
       destination: state.dropoff || "",
-      fare: typeof rideResp.cost === "number" ? rideResp.cost : 0,
+      fare: calculatedFare, // Use the calculated fare from RideBooking
       status: rideResp.status || "REQUESTED",
     };
+    
     if (rideResp.driver) {
       initialRide.driver = rideResp.driver;
       initialRide.driverId = rideResp.driver.id; // ✅ Add this
     }
+    
     setRide(initialRide);
+    
     // set coordinates from backend where available
     if (
       rideResp?.driverLocation &&
@@ -99,6 +107,7 @@ export default function RideTracking() {
         longitude: rideResp.driverLocation.longitude,
       });
     }
+    
     if (
       rideResp?.dropOffLocation &&
       typeof rideResp.dropOffLocation.latitude === "number" &&
@@ -117,6 +126,7 @@ export default function RideTracking() {
         setDestinationCoords({ latitude: parsed[0], longitude: parsed[1] });
       }
     }
+    
     if (
       geo &&
       typeof geo.latitude === "number" &&
@@ -244,18 +254,22 @@ export default function RideTracking() {
           const res = await RideService.getRide(ride.id);
           const safeOtp = res?.data?.otp ?? null;
           console.log("otp:- ", safeOtp);
+          
+          const data = res?.data || res; // normalize ApiResponse vs direct
+          
           setRide((prev) => ({
             ...prev,
             userId: data.userId || prev?.userId, // ✅ Capture userId
             driverId: data.driverId || prev?.driverId, // ✅ Capture driverId
             status: data.status || prev?.status,
-            fare: data.cost || prev?.fare,
+            // Keep the original fare from RideBooking, don't override with backend data
+            fare: prev?.fare || data.cost || 0,
             driver: data.driver || prev?.driver,
           }));
+          
           setOtp(safeOtp);
           console.log("Customer received location data:", res.data); // <-- ADD THIS LOG
 
-          const data = res?.data || res; // normalize ApiResponse vs direct
           if (
             data?.driverLocation &&
             typeof data.driverLocation.latitude === "number"
@@ -274,9 +288,11 @@ export default function RideTracking() {
               longitude: data.dropOffLocation.longitude,
             });
           }
-          if (typeof data?.cost === "number") {
-            setRide((prev) => (prev ? { ...prev, fare: data.cost } : prev));
-          }
+          // Don't update fare from backend data - keep the RideBooking calculated fare
+          // if (typeof data?.cost === "number") {
+          //   setRide((prev) => (prev ? { ...prev, fare: data.cost } : prev));
+          // }
+          
           if (typeof data?.status === "string") {
             setRide((prev) => (prev ? { ...prev, status: data.status } : prev));
           }
@@ -419,7 +435,7 @@ export default function RideTracking() {
         rideId: ride.id,
         userId: ride.userId || getCurrentUserId(), // Get from ride or decode from token
         driverId: ride.driver?.id || ride.driverId, // Get from driver object
-        amount: ride.fare,
+        amount: ride.fare, // Use the fare from RideBooking
         paymentMethod: "UPI", // ✅ Add payment method
       };
 
@@ -909,4 +925,4 @@ export default function RideTracking() {
       </Dialog>
     </>
   );
-}
+} 
