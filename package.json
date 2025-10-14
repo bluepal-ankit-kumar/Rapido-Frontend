@@ -23,6 +23,7 @@
     "@tanstack/react-table": "^8.21.3",
     "axios": "^1.12.2",
     "chart.js": "^4.5.0",
+    "date-fns": "^4.1.0",
     "leaflet": "^1.9.4",
     "leaflet-routing-machine": "^3.2.12",
     "lottie-react": "^2.4.1",

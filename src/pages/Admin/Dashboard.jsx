@@ -4,6 +4,7 @@ import { Link as RouterLink } from 'react-router-dom';
 import { People, DirectionsBike, Assessment, StarRate, Help, Refresh, CheckCircle, Cancel, MoreVert, TrendingUp } from '@mui/icons-material';
 import DriverService from '../../services/DriverService';
 import RideStatisticsChart from './RideStatisticsChart.jsx';
+import { subDays, format } from 'date-fns';
 
 // Fetch summary data from backend
 import UserService from '../../services/UserService';
@@ -100,17 +101,21 @@ function PendingDriverApprovals() {
 }
 
 export default function Dashboard() {
+  const [rideStatsData, setRideStatsData] = useState(null);
   const [summary, setSummary] = useState([]);
   const [loadingSummary, setLoadingSummary] = useState(true);
+  const [totalCustomers, setTotalCustomers] = useState(0);
+  const [totalRiders, setTotalRiders] = useState(0);
+  const [totalRides, setTotalRides] = useState(0);
 
   useEffect(() => {
     async function fetchSummary() {
       setLoadingSummary(true);
       try {
-        // Fetch counts concurrently but tolerate individual failures.
+        // Fetch all users and all rides (no userType filter)
         const promises = [
-          UserService.getAllUsers(),
-          RideService.getAllRides(),
+          UserService.getAllUsers(0, 10000), // all users
+          RideService.getAllRides(), // all rides
           DriverService.getPendingDrivers(),
           UserService.getAllRatings(),
           UserService.getAllHelpTickets()
@@ -118,7 +123,6 @@ export default function Dashboard() {
 
         const results = await Promise.allSettled(promises);
 
-        // Helper to normalize settled results
         const valueOrDefault = (res, defaultVal) => {
           if (!res) return defaultVal;
           if (res.status === 'fulfilled') return res.value;
@@ -126,21 +130,80 @@ export default function Dashboard() {
           return defaultVal;
         };
 
-        const userRes = valueOrDefault(results[0], { data: [] });
-        const rideRes = valueOrDefault(results[1], { data: [] });
+        // --- Normalize users array as in UserManagement ---
+        const usersRes = valueOrDefault(results[0], { data: [] });
+        let usersArr = [];
+        const usersPayload = usersRes && usersRes.data !== undefined ? usersRes.data : usersRes;
+        if (Array.isArray(usersPayload)) usersArr = usersPayload;
+        else if (usersPayload && Array.isArray(usersPayload.data)) usersArr = usersPayload.data;
+        else if (usersPayload && usersPayload.data && Array.isArray(usersPayload.data.content)) usersArr = usersPayload.data.content;
+        else if (usersPayload && Array.isArray(usersPayload.users)) usersArr = usersPayload.users;
+        else if (usersPayload && Array.isArray(usersPayload.items)) usersArr = usersPayload.items;
+        else usersArr = [];
+
+        // --- Normalize rides array as in RideManagement ---
+        const ridesRes = valueOrDefault(results[1], { data: [] });
+        let ridesArr = [];
+        const ridesPayload = ridesRes && ridesRes.data !== undefined ? ridesRes.data : ridesRes;
+        if (Array.isArray(ridesPayload)) ridesArr = ridesPayload;
+        else if (ridesPayload && Array.isArray(ridesPayload.data)) ridesArr = ridesPayload.data;
+        else if (ridesPayload && ridesPayload.data && Array.isArray(ridesPayload.data.content)) ridesArr = ridesPayload.data.content;
+        else if (ridesPayload && Array.isArray(ridesPayload.rides)) ridesArr = ridesPayload.rides;
+        else ridesArr = [];
+
+        // --- Ride Statistics Chart Data ---
+        if (ridesArr.length > 0) {
+          const days = Array.from({length: 7}).map((_,i) => format(subDays(new Date(), 6-i), 'dd-MM-yyyy'));
+          const stats = days.map(day => {
+            const ridesForDay = ridesArr.filter(r => (r.createdAt || '').slice(0,10) === day);
+            return {
+              completed: ridesForDay.filter(r => (r.status || '').toUpperCase() === 'COMPLETED').length,
+              cancelled: ridesForDay.filter(r => (r.status || '').toUpperCase() === 'CANCELLED').length,
+            };
+          });
+          setRideStatsData({
+            labels: days,
+            datasets: [
+              {
+                label: 'Completed Rides',
+                data: stats.map(s => s.completed),
+                borderColor: '#FACC15',
+                backgroundColor: 'rgba(250,204,21,0.2)',
+                tension: 0.4,
+                fill: true,
+              },
+              {
+                label: 'Cancelled Rides',
+                data: stats.map(s => s.cancelled),
+                borderColor: '#EF4444',
+                backgroundColor: 'rgba(239,68,68,0.1)',
+                tension: 0.4,
+                fill: true,
+              }
+            ]
+          });
+        } else {
+          setRideStatsData(null);
+        }
+
         const pendingRes = valueOrDefault(results[2], { data: [] });
         const ratingRes = valueOrDefault(results[3], { data: [] });
         const helpRes = valueOrDefault(results[4], { data: [] });
 
-        const usersCount = Array.isArray(userRes.data) ? userRes.data.length : (userRes.data?.length || 0);
-        const ridesCount = Array.isArray(rideRes.data) ? rideRes.data.length : (rideRes.data?.length || 0);
+        // --- Count customers and riders from usersArr ---
+        const totalCustomersCount = usersArr.filter(u => (u.userType || u.role || '').toUpperCase() === 'CUSTOMER').length;
+        const totalRidersCount = usersArr.filter(u => (u.userType || u.role || '').toUpperCase() === 'RIDER').length;
+        setTotalCustomers(totalCustomersCount);
+        setTotalRiders(totalRidersCount);
+        setTotalRides(ridesArr.length);
+
+        const ridesCount = ridesArr.length;
         const pendingCount = Array.isArray(pendingRes.data) ? pendingRes.data.length : (pendingRes.data?.length || 0);
         const ratingsCount = Array.isArray(ratingRes.data) ? ratingRes.data.length : (ratingRes.data?.length || 0);
         const helpCount = Array.isArray(helpRes.data) ? helpRes.data.length : (helpRes.data?.length || 0);
 
         setSummary([
-          { title: 'Users', value: usersCount, link: '/admin/user-management', icon: <People />, color: '#1976D2' },
-          { title: 'Rides', value: ridesCount, link: '/admin/ride-management', icon: <DirectionsBike />, color: '#388E3C' },
+          { title: 'Rides', value: ridesCount, link: '/admin/ride-management', icon: <TrendingUp />, color: '#FACC15' },
           { title: 'Pending', value: pendingCount, link: '/admin/reports', icon: <Assessment />, color: '#F57C00' },
           { title: 'Ratings', value: ratingsCount, link: '/admin/ratings-review', icon: <StarRate />, color: '#D32F2F' },
           { title: 'Help Tickets', value: helpCount, link: '/admin/help-management', icon: <Help />, color: '#7B1FA2' },
@@ -148,6 +211,8 @@ export default function Dashboard() {
       } catch (err) {
         console.error('Failed to fetch admin summary:', err);
         setSummary([]);
+        setTotalCustomers(0);
+        setTotalRiders(0);
       }
       setLoadingSummary(false);
     }
@@ -163,6 +228,51 @@ export default function Dashboard() {
         </div>
         <IconButton onClick={() => window.location.reload()} sx={{ mt: { xs: 2, sm: 0 } }}><Refresh /></IconButton>
       </Box>
+
+      {/* Explicit Total Customers, Total Riders, and Total Rides Cards */}
+      {!loadingSummary && (
+        <Grid container spacing={3} className="mb-6">
+          <Grid item xs={12} sm={6} md={3}>
+            <Card sx={{ borderRadius: 3, boxShadow: 2, p: 2 }}>
+              <CardContent>
+                <Box display="flex" alignItems="center" gap={2}>
+                  <Avatar sx={{ bgcolor: '#1976D220', color: '#1976D2' }}><People /></Avatar>
+                  <Box>
+                    <Typography variant="h6">Total Customers</Typography>
+                    <Typography variant="h4" fontWeight="bold">{totalCustomers}</Typography>
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card sx={{ borderRadius: 3, boxShadow: 2, p: 2 }}>
+              <CardContent>
+                <Box display="flex" alignItems="center" gap={2}>
+                  <Avatar sx={{ bgcolor: '#388E3C20', color: '#388E3C' }}><DirectionsBike /></Avatar>
+                  <Box>
+                    <Typography variant="h6">Total Riders</Typography>
+                    <Typography variant="h4" fontWeight="bold">{totalRiders}</Typography>
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card sx={{ borderRadius: 3, boxShadow: 2, p: 2 }}>
+              <CardContent>
+                <Box display="flex" alignItems="center" gap={2}>
+                  <Avatar sx={{ bgcolor: '#FACC1520', color: '#FACC15' }}><TrendingUp /></Avatar>
+                  <Box>
+                    <Typography variant="h6">Total Rides</Typography>
+                    <Typography variant="h4" fontWeight="bold">{totalRides}</Typography>
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+      )}
 
       {/* Summary Cards */}
       <Grid container spacing={3} className="mb-6">
@@ -191,12 +301,28 @@ export default function Dashboard() {
       {/* Charts and Recent Activities */}
       <Grid container spacing={3}>
         <Grid item xs={12} lg={8}>
-          <Card sx={{ borderRadius: 3, boxShadow: 2, height: '100%' }}>
-            <CardContent>
-              <Typography variant="h6" className="font-bold text-gray-800">Ride Statistics</Typography>
-              <Box sx={{ height: 300 }}><RideStatisticsChart /></Box>
-            </CardContent>
-          </Card>
+          <RouterLink to="/admin/ride-statistics" style={{ textDecoration: 'none' }}>
+            <Card sx={{ borderRadius: 3, boxShadow: 2, height: '100%', cursor: 'pointer' }}>
+              <CardContent>
+                <Typography variant="h6" className="font-bold text-gray-800">Ride Statistics</Typography>
+                <Box sx={{ height: 300 }}>
+                  <RideStatisticsChart
+                    data={rideStatsData}
+                    options={{
+                      responsive: true,
+                      plugins: {
+                        legend: { position: 'top' },
+                        title: { display: false },
+                      },
+                      scales: {
+                        y: { beginAtZero: true, ticks: { stepSize: 1 } },
+                      },
+                    }}
+                  />
+                </Box>
+              </CardContent>
+            </Card>
+          </RouterLink>
         </Grid>
         <Grid item xs={12} lg={4}>
           <Card sx={{ borderRadius: 3, boxShadow: 2, height: '100%' }}>

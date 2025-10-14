@@ -388,7 +388,7 @@ export default function UserManagement() {
   const headerName = (driverDetails && (driverDetails.fullName || driverDetails.name || driverDetails.user?.fullName || driverDetails.user?.name)) || selectedUser?.fullName || selectedUser?.username || '—';
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
+    <div className="p-6 bg-gray-50 min-h-screen maxwidth-7xl">
       {loading && (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}><CircularProgress /></Box>
       )}

@@ -45,6 +45,7 @@ import RideManagement from './pages/Admin/RideManagement.jsx';
 import Reports from './pages/Admin/Reports.jsx';
 import RatingsReview from './pages/Admin/RatingsReview.jsx';
 import HelpManagement from './pages/Admin/HelpManagement.jsx';
+import RideStatisticsChart from './pages/Admin/RideStatisticsChart.jsx';
 import 'leaflet-routing-machine/dist/leaflet-routing-machine.css';
 import 'leaflet/dist/leaflet.css';
 
@@ -112,6 +113,7 @@ function AppLayout({ sidebarOpen, setSidebarOpen }) {
             <Route path="/admin/reports" element={<RequireAuth><Reports /></RequireAuth>} />
             <Route path="/admin/ratings-review" element={<RequireAuth><RatingsReview /></RequireAuth>} />
             <Route path="/admin/help-management" element={<RequireAuth><HelpManagement /></RequireAuth>} />
+            <Route path="/admin/ride-statistics" element={<RequireAuth><RideStatisticsChart /></RequireAuth>} />
             {/* Not Found */}
             <Route path="*" element={<NotFound />} />
           </Routes>
