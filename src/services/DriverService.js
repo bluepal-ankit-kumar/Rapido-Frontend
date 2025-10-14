@@ -153,6 +153,44 @@ const DriverService = {
     }
   },
 
+
+//  getDriverByUserId: async (userId) => {
+//     try {
+//       const response = await api.get(`/drivers/user/${userId}`);
+//       return response.data;
+//     } catch (error) {
+//       const err = new Error(
+//         error.response?.data?.message || "Failed to fetch driver details"
+//       );
+//       err.status = error.response?.status;
+//       throw err;
+//     }
+//   },
+updateLiveStatus: async (isOnline, token) => {
+  try {
+    const config = {
+      headers: { Authorization: `Bearer ${token}` },
+    };
+
+    const requestBody = { isOnline: isOnline };
+
+    const response = await api.post(
+      "http://localhost:8080/api/driver/status",
+      requestBody,
+      config
+    );
+
+    return response.data;
+  } catch (error) {
+    const err = new Error(
+      error.response?.data?.message || "Failed to update live status"
+    );
+    err.status = error.response?.status;
+    throw err;
+  }
+},
+
+
 };
 
 export default DriverService;

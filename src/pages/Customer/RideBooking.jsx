@@ -3,7 +3,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import VehicleTypeSelector from '../../components/common/VehicleTypeSelector';
 import '../../styles/pickupDropoffSeparator.css';
 import Button from '../../components/common/Button';
-import RideService from '../../services/RideService.js';
 import useAuth from '../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -36,6 +35,7 @@ import {
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
+import RideService from '../../services/RideService';
 
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -241,7 +241,36 @@ export default function RideBooking() {
     }
   }, [user?.id, geo?.latitude]);
 
+  // const deleteRide = async (token) => {
+  //   console.log("inside delete ride method")
+  //   setTimeout(async() => {
+  //     console.log("inside settimeout")
+  //      const res = await RideService.getRide(123);
+  //      console.log("res:- ", res.data)
+  //     if(res.data?.status=="REQUESTED"){
+  //       console.log("inside if")
+  //       RideService.deleteRide(123, token);
+  //       navigate("/ride-booking");
+  //     }
+  //   },20000);
+  // }
+
+  const deleteRide = async (rideId, token) => {
+    console.log("inside delete ride method for ride ID:", rideId);
+    setTimeout(async() => {
+      console.log("inside settimeout checking ride status for ID:", rideId);
+       const res = await RideService.getRide(rideId);
+       console.log("res:- ", res.data);
+      if(res.data?.status=="REQUESTED"){
+        console.log("inside if - deleting ride ID:", rideId);
+        RideService.deleteRide(rideId, token);
+        navigate("/ride-booking");
+      }
+    },20000);
+  }
+
   const handleBook = async () => {
+    const jwtToken=localStorage.getItem("jwtToken")
     setError('');
     if (!pickup || !dropoff) {
       setError('Please enter pickup and dropoff locations.');
@@ -295,6 +324,9 @@ export default function RideBooking() {
       const response = await RideService.bookRide(rideRequest);
       const rideResp = response?.data || response;
 
+      // Call deleteRide with the new ride's ID and token
+      deleteRide(rideResp.id, jwtToken);
+
       navigate('/ride-tracking', {
         state: {
           pickup,
@@ -311,6 +343,79 @@ export default function RideBooking() {
       setLoading(false);
     }
   };
+
+  // const handleBook = async () => {
+  //   const jwtToken=localStorage.getItem("jwtToken")
+  //   setError('');
+  //   if (!pickup || !dropoff) {
+  //     setError('Please enter pickup and dropoff locations.');
+  //     return;
+  //   }
+  //   if (!user?.id) {
+  //     setError('You must be logged in to book a ride.');
+  //     return;
+  //   }
+  //   deleteRide(jwtToken);
+
+  //   setLoading(true);
+
+  //   try {
+  //     let finalPickupCoords = pickupCoords;
+  //     let finalDropoffCoords = dropoffCoords;
+
+  //     // If pickup coordinates are missing (user typed manually), find them now.
+  //     if (!finalPickupCoords) {
+  //       const pickupResults = await searchPlaces(pickup);
+  //       if (pickupResults.length > 0) {
+  //         finalPickupCoords = [pickupResults[0].lat, pickupResults[0].lon];
+  //         setPickupCoords(finalPickupCoords); // Update state to reflect on the map
+  //       } else {
+  //         throw new Error(`Could not find a valid location for pickup: "${pickup}"`);
+  //       }
+  //     }
+
+  //     // If dropoff coordinates are missing, find them now.
+  //     if (!finalDropoffCoords) {
+  //       const dropoffResults = await searchPlaces(dropoff);
+  //       if (dropoffResults.length > 0) {
+  //         finalDropoffCoords = [dropoffResults[0].lat, dropoffResults[0].lon];
+  //         setDropoffCoords(finalDropoffCoords); // Update state to reflect on the map
+  //       } else {
+  //         throw new Error(`Could not find a valid location for dropoff: "${dropoff}"`);
+  //       }
+  //     }
+
+  //     const rideRequest = {
+  //       userId: user.id,
+  //       currentPlaceName: pickup,
+  //       dropOffPlaceName: dropoff,
+  //       vehicleType: selectedType,
+  //       timestamp: Date.now(),
+  //       startLatitude: finalPickupCoords[0],
+  //       startLongitude: finalPickupCoords[1],
+  //       endLatitude: finalDropoffCoords[0],
+  //       endLongitude: finalDropoffCoords[1],
+  //     };
+
+  //     const response = await RideService.bookRide(rideRequest);
+  //     const rideResp = response?.data || response;
+
+  //     navigate('/ride-tracking', {
+  //       state: {
+  //         pickup,
+  //         dropoff,
+  //         vehicleType: selectedType,
+  //         ride: rideResp,
+  //       }
+  //     });
+
+  //   } catch (err) {
+  //     console.log("err:- ", err);
+  //     setError(err.message || 'Unable to book the ride. Please check locations and try again.');
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">

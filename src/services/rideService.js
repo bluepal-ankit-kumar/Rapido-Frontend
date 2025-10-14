@@ -24,6 +24,7 @@ const RideService = {
       throw err;
     }
   },
+  
 
   updateRideStatus: async (request, token) => {
     console.log("request", request);
@@ -53,6 +54,22 @@ const RideService = {
       throw err;
     }
   },
+  deleteRide: async (rideId, token) => {
+  try {
+    const response = await api.delete(`/rides/delete/${rideId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    const err = new Error(
+      error.response?.data?.message || "Failed to delete ride"
+    );
+    err.status = error.response?.status;
+    throw err;
+  }
+},
 
   getAllRides: async () => {
     try {

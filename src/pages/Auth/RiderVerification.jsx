@@ -353,8 +353,12 @@ export default function RiderVerification() {
           >
             <MenuItem value=""><em>Select Vehicle Type</em></MenuItem>
             <MenuItem value="Bike">Bike</MenuItem>
-            <MenuItem value="Car">Car</MenuItem>
+            <MenuItem value="Scooty">Scooty</MenuItem>
+            <MenuItem value="Non AC Cab">Non AC Cab</MenuItem>
             <MenuItem value="Auto">Auto</MenuItem>
+            <MenuItem value="Ac Cab">Ac Cab</MenuItem>
+            <MenuItem value="Suv">Suv</MenuItem>
+            
           </TextField>
           
           <Button
