@@ -108,10 +108,10 @@ export default function HelpPage() {
           </Typography>
         </Box>
 
-        <Grid container spacing={4}>
+        <Grid  className="mb-4 mr-5 grid grid-cols-[200px_700px]" >
           {/* Contact Options */}
-          <Grid item xs={12} md={4}>
-            <Card className="h-full">
+          <Grid item xs={12} md={8}>
+            <Card className="h-full mr-5">
               <CardContent>
                 <Typography variant="h6" className="font-bold text-gray-800 mb-4">Contact Us</Typography>
                 
@@ -144,7 +144,7 @@ export default function HelpPage() {
 
           {/* Submit Request */}
           <Grid item xs={12} md={8}>
-            <Card>
+            <Card className='h-full width-full'>
               <CardContent>
                 <Typography variant="h6" className="font-bold text-gray-800 mb-4">Submit a Request</Typography>
                 
@@ -186,15 +186,17 @@ export default function HelpPage() {
                     helperText={error}
                   />
                   
-                  <Button
-                    type="submit"
-                    variant="contained"
-                    className="bg-yellow-500 hover:bg-yellow-600 text-white"
-                    disabled={submitting}
-                    startIcon={submitting ? <CircularProgress size={20} color="inherit" /> : <Send />}
-                  >
-                    {submitting ? 'Submitting...' : 'Submit Request'}
-                  </Button>
+                  <Box display="flex" justifyContent="flex-end" mt={2}>
+                    <Button
+                      type="submit"
+                      variant="contained"
+                      className="bg-yellow-500 hover:bg-yellow-600 text-white"
+                      disabled={submitting}
+                      startIcon={submitting ? <CircularProgress size={20} color="inherit" /> : <Send />}
+                    >
+                      {submitting ? 'Submitting...' : 'Submit Request'}
+                    </Button>
+                  </Box>
                 </form>
               </CardContent>
             </Card>
