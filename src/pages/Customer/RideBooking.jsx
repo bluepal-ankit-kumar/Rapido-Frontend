@@ -266,7 +266,7 @@ export default function RideBooking() {
         RideService.deleteRide(rideId, token);
         navigate("/ride-booking");
       }
-    },20000);
+    },90000);
   }
 
   const handleBook = async () => {

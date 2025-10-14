@@ -201,8 +201,7 @@ export default function Dashboard() {
   //     console.error("Polling for rides failed:", err);
   //   }
   // };
-
-  const checkForNewRides = async () => {
+const checkForNewRides = async () => {
   console.log("online status:", online);
   try {
     console.log("Polling for new rides...");
@@ -224,24 +223,28 @@ export default function Dashboard() {
           return prevRequests;
         }
 
-        // ✅ CHANGED: For each unique request, set 90s timer with DELETION LOGIC
         uniqueNewRequests.forEach((request) => {
           const timerId = setTimeout(async () => {
             console.log(`Request ${request.id} expired after 90 seconds.`);
             try {
-              // ✅ NEW: Check status and DELETE if still REQUESTED
               const res = await RideService.getRide(request.id);
               console.log("Expired ride status check:", res.data);
               if (res.data?.status === "REQUESTED") {
                 console.log("Deleting expired ride ID:", request.id);
                 await RideService.deleteRide(request.id, token);
+              } else {
+                console.log(`Ride ${request.id} not deleted: status is ${res.data?.status}`);
               }
             } catch (err) {
-              console.error("Error deleting expired ride:", err);
+              if (err.response?.status === 404) {
+                console.log(`Ride ${request.id} not found (already deleted or invalid). Skipping deletion.`);
+              } else {
+                console.error("Error checking/deleting expired ride:", err);
+              }
             }
-            // Remove from UI after deletion/check
+            // Remove from UI regardless of deletion outcome
             handleRemoveRequest(request.id);
-          }, 90000);  // ✅ CHANGED: 60000 → 90000 (90 seconds)
+          }, 90000); // 90 seconds
 
           requestTimersRef.current[request.id] = timerId;
         });
@@ -255,7 +258,6 @@ export default function Dashboard() {
     console.error("Polling for rides failed:", err);
   }
 };
-
 
   useEffect(() => {
     const startActiveDuties = () => {
