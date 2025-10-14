@@ -169,7 +169,7 @@ export default function RideBooking() {
     try {
       const response = await axios.get('https://nominatim.openstreetmap.org/reverse', {
         params: { lat, lon, format: 'json' },
-        timeout: 20000 // Keep the increased timeout, but be ready for it to fail.
+        timeout: 90000 // Keep the increased timeout, but be ready for it to fail.
       });
       return response.data.display_name || null;
     } catch (err) {

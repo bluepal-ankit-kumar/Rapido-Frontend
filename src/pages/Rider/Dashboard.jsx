@@ -163,44 +163,98 @@ export default function Dashboard() {
   //   }
   // };
 
+  // const checkForNewRides = async () => {
+  //   console.log("online status:", online);
+  //   // if (!token) return;
+  //   try {
+  //     console.log("Polling for new rides..."); // 1. Check if the function is running
+  //     const response = await DriverService.getRideRequests(token);
+
+  //     console.log("API Response received:", response.data); // 2. Check the raw data
+  //     const newRequests = response.data; // You might need .data.data depending on your ApiResponse structure
+
+  //     if (Array.isArray(newRequests) && newRequests.length > 0) {
+  //       console.log("New rides found:", newRequests);
+
+  //       // This is the correct way to update the state
+  //       setRideRequests((prevRequests) => {
+  //         // Get the IDs of the requests we are already showing
+  //         const existingIds = new Set(prevRequests.map((r) => r.id));
+
+  //         // Filter out any new requests that we are already showing
+  //         const uniqueNewRequests = newRequests.filter(
+  //           (r) => !existingIds.has(r.id)
+  //         );
+
+  //         // If there are no truly new requests, don't update the state
+  //         if (uniqueNewRequests.length === 0) {
+  //           return prevRequests;
+  //         }
+
+  //         // Add the unique new requests to the existing list
+  //         const updatedRequests = [...prevRequests, ...uniqueNewRequests];
+  //         console.log("Updating state with:", updatedRequests);
+  //         return updatedRequests;
+  //       });
+  //     }
+  //   } catch (err) {
+  //     console.error("Polling for rides failed:", err);
+  //   }
+  // };
+
   const checkForNewRides = async () => {
-    console.log("online status:", online);
-    // if (!token) return;
-    try {
-      console.log("Polling for new rides..."); // 1. Check if the function is running
-      const response = await DriverService.getRideRequests(token);
+  console.log("online status:", online);
+  try {
+    console.log("Polling for new rides...");
+    const response = await DriverService.getRideRequests(token);
 
-      console.log("API Response received:", response.data); // 2. Check the raw data
-      const newRequests = response.data; // You might need .data.data depending on your ApiResponse structure
+    console.log("API Response received:", response.data);
+    const newRequests = response.data;
 
-      if (Array.isArray(newRequests) && newRequests.length > 0) {
-        console.log("New rides found:", newRequests);
+    if (Array.isArray(newRequests) && newRequests.length > 0) {
+      console.log("New rides found:", newRequests);
 
-        // This is the correct way to update the state
-        setRideRequests((prevRequests) => {
-          // Get the IDs of the requests we are already showing
-          const existingIds = new Set(prevRequests.map((r) => r.id));
+      setRideRequests((prevRequests) => {
+        const existingIds = new Set(prevRequests.map((r) => r.id));
+        const uniqueNewRequests = newRequests.filter(
+          (r) => !existingIds.has(r.id)
+        );
 
-          // Filter out any new requests that we are already showing
-          const uniqueNewRequests = newRequests.filter(
-            (r) => !existingIds.has(r.id)
-          );
+        if (uniqueNewRequests.length === 0) {
+          return prevRequests;
+        }
 
-          // If there are no truly new requests, don't update the state
-          if (uniqueNewRequests.length === 0) {
-            return prevRequests;
-          }
+        // ✅ CHANGED: For each unique request, set 90s timer with DELETION LOGIC
+        uniqueNewRequests.forEach((request) => {
+          const timerId = setTimeout(async () => {
+            console.log(`Request ${request.id} expired after 90 seconds.`);
+            try {
+              // ✅ NEW: Check status and DELETE if still REQUESTED
+              const res = await RideService.getRide(request.id);
+              console.log("Expired ride status check:", res.data);
+              if (res.data?.status === "REQUESTED") {
+                console.log("Deleting expired ride ID:", request.id);
+                await RideService.deleteRide(request.id, token);
+              }
+            } catch (err) {
+              console.error("Error deleting expired ride:", err);
+            }
+            // Remove from UI after deletion/check
+            handleRemoveRequest(request.id);
+          }, 90000);  // ✅ CHANGED: 60000 → 90000 (90 seconds)
 
-          // Add the unique new requests to the existing list
-          const updatedRequests = [...prevRequests, ...uniqueNewRequests];
-          console.log("Updating state with:", updatedRequests);
-          return updatedRequests;
+          requestTimersRef.current[request.id] = timerId;
         });
-      }
-    } catch (err) {
-      console.error("Polling for rides failed:", err);
+
+        const updatedRequests = [...prevRequests, ...uniqueNewRequests];
+        console.log("Updating state with:", updatedRequests);
+        return updatedRequests;
+      });
     }
-  };
+  } catch (err) {
+    console.error("Polling for rides failed:", err);
+  }
+};
 
 
   useEffect(() => {
