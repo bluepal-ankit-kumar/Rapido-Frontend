@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Table, 
   TableBody, 
@@ -29,7 +29,8 @@ import {
   DialogContent,
   DialogActions,
   Alert,
-  Divider
+  Divider,
+  CircularProgress
 } from '@mui/material';
 import { 
   Search, 
@@ -50,79 +51,7 @@ import {
   PendingActions
 } from '@mui/icons-material';
 
-// Sample data
-const helpRequests = [
-  { 
-    id: 1, 
-    user: 'John Doe', 
-    email: 'john@example.com', 
-    phone: '+91 9876543210',
-    issue: 'Payment failed during ride booking', 
-    status: 'Open',
-    priority: 'High',
-    category: 'Payment',
-    date: '2023-06-15',
-    assignedTo: 'Support Team',
-    description: 'I tried to book a ride but the payment failed. Money was deducted from my account but no booking confirmation received.',
-    lastUpdated: '2023-06-15 14:30'
-  },
-  { 
-    id: 2, 
-    user: 'Jane Smith', 
-    email: 'jane@example.com', 
-    phone: '+91 8765432109',
-    issue: 'Ride not found in history', 
-    status: 'Resolved',
-    priority: 'Medium',
-    category: 'Technical',
-    date: '2023-06-14',
-    assignedTo: 'Alex Johnson',
-    description: 'Completed a ride yesterday but it\'s not showing in my ride history.',
-    lastUpdated: '2023-06-14 16:45'
-  },
-  { 
-    id: 3, 
-    user: 'Robert Brown', 
-    email: 'robert@example.com', 
-    phone: '+91 7654321098',
-    issue: 'Driver behavior complaint', 
-    status: 'In Progress',
-    priority: 'High',
-    category: 'Safety',
-    date: '2023-06-13',
-    assignedTo: 'Sarah Williams',
-    description: 'The driver was driving recklessly and using phone while driving. Felt unsafe during the entire journey.',
-    lastUpdated: '2023-06-15 10:20'
-  },
-  { 
-    id: 4, 
-    user: 'Emily Davis', 
-    email: 'emily@example.com', 
-    phone: '+91 6543210987',
-    issue: 'Refund not processed', 
-    status: 'Open',
-    priority: 'Medium',
-    category: 'Payment',
-    date: '2023-06-12',
-    assignedTo: 'Support Team',
-    description: 'Cancelled a ride due to long waiting time but refund hasn\'t been processed yet.',
-    lastUpdated: '2023-06-12 09:15'
-  },
-  { 
-    id: 5, 
-    user: 'Michael Wilson', 
-    email: 'michael@example.com', 
-    phone: '+91 5432109876',
-    issue: 'App login issue', 
-    status: 'Resolved',
-    priority: 'Low',
-    category: 'Technical',
-    date: '2023-06-11',
-    assignedTo: 'Tech Team',
-    description: 'Unable to login to the app. Keeps showing invalid credentials error.',
-    lastUpdated: '2023-06-11 13:25'
-  }
-];
+import * as helpService from '../../services/helpService';
 
 const statusColors = {
   'Open': '#F44336',
@@ -145,13 +74,50 @@ const categoryColors = {
 };
 
 export default function HelpManagement() {
-  const [requests, setRequests] = useState(helpRequests);
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [requests, setRequests] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('All');
   const [filterPriority, setFilterPriority] = useState('All');
   const [filterCategory, setFilterCategory] = useState('All');
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(5);
+  // Fetch help requests from backend
+  useEffect(() => {
+    async function fetchRequests() {
+      setLoading(true);
+      setError('');
+      try {
+        const data = await helpService.getHelpRequests({
+          search: searchTerm,
+          status: filterStatus !== 'All' ? filterStatus : undefined,
+          category: filterCategory !== 'All' ? filterCategory : undefined,
+          priority: filterPriority !== 'All' ? filterPriority : undefined,
+          page,
+          size: rowsPerPage
+        });
+        setRequests(data.content || []);
+      } catch (err) {
+        if (err.response) {
+          if (err.response.status === 403) {
+            setError('Access denied. Please log in with proper permissions.');
+          } else if (err.response.status === 500) {
+            setError('Server error. Please try again later or contact support.');
+          } else {
+            setError(`Error: ${err.response.status} ${err.response.statusText}`);
+          }
+        } else if (err.request) {
+          setError('No response from server. Please check your network connection.');
+        } else {
+          setError('Unexpected error occurred.');
+        }
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchRequests();
+  }, [searchTerm, filterStatus, filterPriority, filterCategory, page, rowsPerPage]);
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [tabValue, setTabValue] = useState(0);
@@ -191,10 +157,38 @@ export default function HelpManagement() {
   };
 
   // Handle status update
-  const updateStatus = (id, newStatus) => {
-    setRequests(requests.map(req => 
-      req.id === id ? { ...req, status: newStatus, lastUpdated: new Date().toLocaleString() } : req
-    ));
+  const updateStatus = async (id, newStatus) => {
+    setLoading(true);
+    setError('');
+    try {
+      await helpService.updateHelpRequest(id, { status: newStatus });
+      // Refresh requests
+      const data = await helpService.getHelpRequests({
+        search: searchTerm,
+        status: filterStatus !== 'All' ? filterStatus : undefined,
+        category: filterCategory !== 'All' ? filterCategory : undefined,
+        priority: filterPriority !== 'All' ? filterPriority : undefined,
+        page,
+        size: rowsPerPage
+      });
+      setRequests(data.content || []);
+    } catch (err) {
+      if (err.response) {
+        if (err.response.status === 403) {
+          setError('Access denied. Please log in with proper permissions.');
+        } else if (err.response.status === 500) {
+          setError('Server error. Please try again later or contact support.');
+        } else {
+          setError(`Error: ${err.response.status} ${err.response.statusText}`);
+        }
+      } else if (err.request) {
+        setError('No response from server. Please check your network connection.');
+      } else {
+        setError('Unexpected error occurred.');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Handle menu open
@@ -223,11 +217,39 @@ export default function HelpManagement() {
   };
 
   // Handle save edit
-  const handleSaveEdit = () => {
-    setRequests(requests.map(req => 
-      req.id === editForm.id ? { ...editForm, lastUpdated: new Date().toLocaleString() } : req
-    ));
-    setEditDialogOpen(false);
+  const handleSaveEdit = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      await helpService.updateHelpRequest(editForm.id, editForm);
+      setEditDialogOpen(false);
+      // Refresh requests
+      const data = await helpService.getHelpRequests({
+        search: searchTerm,
+        status: filterStatus !== 'All' ? filterStatus : undefined,
+        category: filterCategory !== 'All' ? filterCategory : undefined,
+        priority: filterPriority !== 'All' ? filterPriority : undefined,
+        page,
+        size: rowsPerPage
+      });
+      setRequests(data.content || []);
+    } catch (err) {
+      if (err.response) {
+        if (err.response.status === 403) {
+          setError('Access denied. Please log in with proper permissions.');
+        } else if (err.response.status === 500) {
+          setError('Server error. Please try again later or contact support.');
+        } else {
+          setError(`Error: ${err.response.status} ${err.response.statusText}`);
+        }
+      } else if (err.request) {
+        setError('No response from server. Please check your network connection.');
+      } else {
+        setError('Unexpected error occurred.');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Handle edit form change
@@ -237,6 +259,8 @@ export default function HelpManagement() {
 
   return (
     <div className="p-6 bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
+      {loading && <Box className="mb-4"><CircularProgress /></Box>}
+      {error && <Alert severity="error" className="mb-4">{error}</Alert>}
       {/* Header */}
       <Box className="mb-8">
         <Typography variant="h4" className="font-bold text-gray-800 mb-2">

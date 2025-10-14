@@ -112,10 +112,10 @@ export default function Dashboard() {
     async function fetchSummary() {
       setLoadingSummary(true);
       try {
-        // Fetch all users and all rides (no userType filter)
+        // Fetch all users, total rides, pending drivers, ratings, help tickets
         const promises = [
           UserService.getAllUsers(0, 10000), // all users
-          RideService.getAllRides(), // all rides
+          RideService.getTotalRides(), // total rides from /rides/total
           DriverService.getPendingDrivers(),
           UserService.getAllRatings(),
           UserService.getAllHelpTickets()
@@ -141,50 +141,26 @@ export default function Dashboard() {
         else if (usersPayload && Array.isArray(usersPayload.items)) usersArr = usersPayload.items;
         else usersArr = [];
 
-        // --- Normalize rides array as in RideManagement ---
-        const ridesRes = valueOrDefault(results[1], { data: [] });
-        let ridesArr = [];
-        const ridesPayload = ridesRes && ridesRes.data !== undefined ? ridesRes.data : ridesRes;
-        if (Array.isArray(ridesPayload)) ridesArr = ridesPayload;
-        else if (ridesPayload && Array.isArray(ridesPayload.data)) ridesArr = ridesPayload.data;
-        else if (ridesPayload && ridesPayload.data && Array.isArray(ridesPayload.data.content)) ridesArr = ridesPayload.data.content;
-        else if (ridesPayload && Array.isArray(ridesPayload.rides)) ridesArr = ridesPayload.rides;
-        else ridesArr = [];
-
-        // --- Ride Statistics Chart Data ---
-        if (ridesArr.length > 0) {
-          const days = Array.from({length: 7}).map((_,i) => format(subDays(new Date(), 6-i), 'dd-MM-yyyy'));
-          const stats = days.map(day => {
-            const ridesForDay = ridesArr.filter(r => (r.createdAt || '').slice(0,10) === day);
-            return {
-              completed: ridesForDay.filter(r => (r.status || '').toUpperCase() === 'COMPLETED').length,
-              cancelled: ridesForDay.filter(r => (r.status || '').toUpperCase() === 'CANCELLED').length,
-            };
-          });
-          setRideStatsData({
-            labels: days,
-            datasets: [
-              {
-                label: 'Completed Rides',
-                data: stats.map(s => s.completed),
-                borderColor: '#FACC15',
-                backgroundColor: 'rgba(250,204,21,0.2)',
-                tension: 0.4,
-                fill: true,
-              },
-              {
-                label: 'Cancelled Rides',
-                data: stats.map(s => s.cancelled),
-                borderColor: '#EF4444',
-                backgroundColor: 'rgba(239,68,68,0.1)',
-                tension: 0.4,
-                fill: true,
-              }
-            ]
-          });
-        } else {
-          setRideStatsData(null);
-        }
+        // --- Get total rides from /rides/total endpoint ---
+        // const totalRidesRes = valueOrDefault(results[1], { data: 0 });
+        // let totalRidesCount = 0;
+        // // RideService.getTotalRides() returns { success, message, data: <number> }
+        // if (typeof totalRidesRes === 'number') {
+        //   totalRidesCount = totalRidesRes;
+        // } else if (totalRidesRes && typeof totalRidesRes.data === 'number') {
+        //   totalRidesCount = totalRidesRes.data;
+        // } else if (totalRidesRes && typeof totalRidesRes.total === 'number') {
+        //   totalRidesCount = totalRidesRes.total;
+        // } else if (totalRidesRes && typeof totalRidesRes.count === 'number') {
+        //   totalRidesCount = totalRidesRes.count;
+        // } else if (totalRidesRes && typeof totalRidesRes.data === 'object' && typeof totalRidesRes.data.data === 'number') {
+        //   totalRidesCount = totalRidesRes.data.data;
+        // }
+        // setTotalRides(totalRidesCount);
+const totalRidesCount = valueOrDefault(results[1], 0); // result of RideService.getTotalRides()
+setTotalRides(totalRidesCount);
+        // --- Ride Statistics Chart Data (keep previous logic, but fallback to 0 rides) ---
+        // If you want to keep chart, you may need to fetch all rides separately
 
         const pendingRes = valueOrDefault(results[2], { data: [] });
         const ratingRes = valueOrDefault(results[3], { data: [] });
@@ -195,15 +171,13 @@ export default function Dashboard() {
         const totalRidersCount = usersArr.filter(u => (u.userType || u.role || '').toUpperCase() === 'RIDER').length;
         setTotalCustomers(totalCustomersCount);
         setTotalRiders(totalRidersCount);
-        setTotalRides(ridesArr.length);
 
-        const ridesCount = ridesArr.length;
         const pendingCount = Array.isArray(pendingRes.data) ? pendingRes.data.length : (pendingRes.data?.length || 0);
         const ratingsCount = Array.isArray(ratingRes.data) ? ratingRes.data.length : (ratingRes.data?.length || 0);
         const helpCount = Array.isArray(helpRes.data) ? helpRes.data.length : (helpRes.data?.length || 0);
 
         setSummary([
-          { title: 'Rides', value: ridesCount, link: '/admin/ride-management', icon: <TrendingUp />, color: '#FACC15' },
+          { title: 'Rides', value: totalRidesCount, link: '/admin/ride-management', icon: <TrendingUp />, color: '#FACC15' },
           { title: 'Pending', value: pendingCount, link: '/admin/reports', icon: <Assessment />, color: '#F57C00' },
           { title: 'Ratings', value: ratingsCount, link: '/admin/ratings-review', icon: <StarRate />, color: '#D32F2F' },
           { title: 'Help Tickets', value: helpCount, link: '/admin/help-management', icon: <Help />, color: '#7B1FA2' },
@@ -213,6 +187,7 @@ export default function Dashboard() {
         setSummary([]);
         setTotalCustomers(0);
         setTotalRiders(0);
+        setTotalRides(0);
       }
       setLoadingSummary(false);
     }

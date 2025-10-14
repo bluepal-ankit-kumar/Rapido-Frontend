@@ -52,10 +52,9 @@ export const AuthProvider = ({ children }) => {
       if (!status || !userId || !role) {
         throw new Error(message || 'Invalid credentials');
       }
-      const userData = { id: userId, email, role };
-      setUser(userData);
+      setUser(responseUser);
       setUserRole(role);
-      localStorage.setItem('user', JSON.stringify(userData));
+      localStorage.setItem('user', JSON.stringify(responseUser));
       localStorage.setItem('userRole', role);
       localStorage.setItem('jwtToken', jwt);
 
@@ -88,7 +87,7 @@ export const AuthProvider = ({ children }) => {
       } else {
         throw new Error('Invalid user role');
       }
-      return { user: userData, role };
+      return { user: responseUser, role };
     } catch (error) {
       console.error('signIn error:', error);
       setUser(null);

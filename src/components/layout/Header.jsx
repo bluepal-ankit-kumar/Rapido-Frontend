@@ -13,13 +13,34 @@ import '../../styles/profileDropdown.css';
 import Profile from "../../pages/Customer/Profile";
 import RiderProfile from "../../pages/Rider/RiderProfile";
 
+
 export default function Header({ onSidebarToggle }) {
-  const { user, userRole } = useAuth();
+  const { user: contextUser, userRole } = useAuth();
+  const [user, setUser] = useState(contextUser);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileDropdown, setProfileDropdown] = useState(false);
   const dropdownRef = useRef(null);
-  
   const darkColor = '#212121';
+
+  // Listen for localStorage changes to update user name in header
+  // Sync user state with contextUser and localStorage changes
+  React.useEffect(() => {
+    // Always update user state when contextUser changes (e.g., login, logout, user switch)
+    setUser(contextUser);
+  }, [contextUser]);
+
+  React.useEffect(() => {
+    function syncUserFromStorage() {
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        setUser(JSON.parse(storedUser));
+      }
+    }
+    window.addEventListener('storage', syncUserFromStorage);
+    // Also update on mount in case of direct profile update
+    syncUserFromStorage();
+    return () => window.removeEventListener('storage', syncUserFromStorage);
+  }, []);
 
   return (
     <header className="sticky top-0 z-50 bg-gradient-to-r from-gray-50 to-gray-100 shadow-lg backdrop-blur-sm bg-opacity-90">

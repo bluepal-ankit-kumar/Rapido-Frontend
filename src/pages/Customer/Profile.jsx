@@ -63,9 +63,17 @@ export default function Profile() {
       const response = await UserService.updateUserProfile(updatedData);
       if (response.data?.success) {
         setProfile(response.data.data);
+        // Update user name in localStorage and context for header icon
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+          const userObj = JSON.parse(storedUser);
+          userObj.name = response.data.data.fullName || response.data.data.name;
+          localStorage.setItem('user', JSON.stringify(userObj));
+        }
         setEditModalOpen(false);
         setSuccessMessage('Profile updated successfully!');
         setTimeout(() => setSuccessMessage(''), 3000);
+        window.dispatchEvent(new Event('storage'));
       } else {
         setError(response.data?.message || 'Failed to update profile.');
       }

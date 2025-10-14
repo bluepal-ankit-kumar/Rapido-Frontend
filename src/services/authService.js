@@ -26,11 +26,20 @@ const AuthService = {
       if (jwt) {
         setAuthToken(jwt);
       }
+      // Fetch user profile to get the name
+      let name = '';
+      try {
+        const profileRes = await api.get('/users/profile');
+        name = profileRes?.data?.name || profileRes?.data?.username || '';
+      } catch (e) {
+        console.warn('Could not fetch user profile for name:', e);
+      }
       const user = {
         id: userId,
         email: loginRequest.email,
         role: role, // 'CUSTOMER', 'RIDER', 'ADMIN' from backend
         verified: role === 'RIDER' ? false : true,
+        name: name,
       };
       localStorage.setItem('userRole', role);
       localStorage.setItem('user', JSON.stringify(user));

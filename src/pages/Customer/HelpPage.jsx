@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   TextField, 
   Button, 
@@ -34,10 +34,7 @@ import {
   Message
 } from '@mui/icons-material';
 
-const initialRequests = [
-  { id: 1, issue: 'Payment failed during ride booking', status: 'Open', date: '2023-06-15', category: 'Payment' },
-  { id: 2, issue: 'Driver was late for pickup', status: 'Resolved', date: '2023-06-10', category: 'Service' },
-];
+import * as helpService from '../../services/helpService';
 
 const faqs = [
   {
@@ -59,38 +56,53 @@ const faqs = [
 ];
 
 export default function HelpPage() {
-  const [requests, setRequests] = useState(initialRequests);
+  const [requests, setRequests] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [fetchError, setFetchError] = useState('');
+  // Fetch user's help requests on mount
+  useEffect(() => {
+    async function fetchRequests() {
+      setLoading(true);
+      setFetchError('');
+      try {
+        // Optionally filter by user if backend supports
+        const data = await helpService.getHelpRequests({ page: 0, size: 10 });
+        setRequests(data.content || []);
+      } catch (err) {
+        setFetchError('Failed to fetch requests');
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchRequests();
+  }, []);
   const [issue, setIssue] = useState('');
   const [category, setCategory] = useState('General');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
 
-  const handleSubmit = e => {
+  const handleSubmit = async e => {
     e.preventDefault();
     if (!issue.trim()) {
       setError('Please describe your issue.');
       return;
     }
     setSubmitting(true);
-    
-    // Simulate API call
-    setTimeout(() => {
-      setRequests([...requests, { 
-        id: requests.length + 1, 
-        issue, 
-        status: 'Open', 
-        date: new Date().toLocaleDateString(),
-        category
-      }]);
+    try {
+      await helpService.createHelpRequest({ issue, category });
       setIssue('');
       setError('');
-      setSubmitting(false);
       setSuccess(true);
-      
-      // Reset success message after 3 seconds
+      // Refresh requests
+      const data = await helpService.getHelpRequests({ page: 0, size: 10 });
+      setRequests(data.content || []);
       setTimeout(() => setSuccess(false), 3000);
-    }, 1000);
+    } catch (err) {
+      setError('Failed to submit request');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const getStatusColor = (status) => {
@@ -226,8 +238,9 @@ export default function HelpPage() {
         {/* Your Requests */}
         <Box className="mt-8">
           <Typography variant="h6" className="font-bold text-gray-800 mb-4">Your Requests</Typography>
-          
-          {requests.length === 0 ? (
+          {loading && <Box className="mb-4"><CircularProgress /></Box>}
+          {fetchError && <Alert severity="error" className="mb-4">{fetchError}</Alert>}
+          {requests.length === 0 && !loading ? (
             <Card>
               <CardContent className="text-center py-6">
                 <Help className="text-gray-400" fontSize="large" />
@@ -247,7 +260,7 @@ export default function HelpPage() {
                         primary={r.issue}
                         secondary={
                           <Typography variant="body2" component="span" className="text-gray-500">
-                            {r.date}
+                            {r.date || r.createdAt}
                           </Typography>
                         }
                       />
