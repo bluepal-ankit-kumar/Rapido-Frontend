@@ -588,7 +588,7 @@ const toggleOnlineStatus = async () => {
             )}
           </Box>
           {/* Main Grid Container */}
-          <Grid container spacing={{ xs: 2, sm: 3, md: 4 }}>
+          <Grid container spacing={{ xs: 2, sm: 3, md: 4 }} class="grid grid-cols-1">
             {/* Right Sidebar: Status & Actions */}
             <Grid item xs={12} md={4}>
               <Card
@@ -702,16 +702,16 @@ const toggleOnlineStatus = async () => {
                       disabled={isUpdatingLocation || typeof geo?.latitude !== "number"}
                       sx={{ fontSize: { xs: "0.85rem", sm: "0.9rem" } }}
                     >
-                      Force Location Update
+                      Live Location Update
                     </Button>
-                    <Button
+                    {/* <Button
                       variant="outlined"
                       onClick={() => setWalletOpen(true)}
                       startIcon={<AccountBalanceWallet />}
                       sx={{ fontSize: { xs: "0.85rem", sm: "0.9rem" } }}
                     >
                       View Wallet & Earnings
-                    </Button>
+                    </Button> */}
                   </Box>
                 </CardContent>
               </Card>
@@ -837,7 +837,7 @@ const toggleOnlineStatus = async () => {
       </Box>
 
       {/* Wallet Dialog */}
-      <Dialog
+      {/* <Dialog
         open={walletOpen}
         onClose={() => setWalletOpen(false)}
         maxWidth="sm"
@@ -856,7 +856,7 @@ const toggleOnlineStatus = async () => {
         <DialogContent dividers sx={{ p: { xs: 2, sm: 3 } }}>
           <Wallet />
         </DialogContent>
-      </Dialog>
+      </Dialog> */}
     </>
   );
 }

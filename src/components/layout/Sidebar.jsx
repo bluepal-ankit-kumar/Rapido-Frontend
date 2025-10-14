@@ -66,13 +66,13 @@ export default function Sidebar({ open, onClose }) {
         `}
         style={{ display: open ? 'flex' : 'none', top: 64 }}
       >
-        <button
+        {/* <button
           className="absolute top-4 right-4 text-gray-400 hover:text-yellow-500 focus:outline-none p-2 rounded-full hover:bg-gray-100 transition-all duration-300"
           onClick={onClose}
           aria-label="Close sidebar"
         >
           <Close />
-        </button>
+        </button> */}
         <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-white to-gray-50">
           <div className="flex items-center space-x-4">
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-yellow-400 to-yellow-500 flex items-center justify-center shadow-lg">
