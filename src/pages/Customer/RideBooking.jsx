@@ -121,6 +121,7 @@ const RoutingMachine = ({ routePoints, selectedType, onRouteCalculated }) => {
         onRouteCalculated(distKm, timeMin, null);
       } else {
         const distKm = haversineKm(pickup, dropoff);
+        console.log("distKm:- ", distKm)
         const timeMin = Math.max(1, Math.round((distKm / 25) * 60)); // Assume 25 km/h
         onRouteCalculated(distKm, timeMin, 'Using approximate distance (OSRM failed)');
       }
@@ -447,6 +448,7 @@ export default function RideBooking() {
         endLongitude: finalDropoffCoords[1],
         cost: fare, // Use the calculated fare from RideBooking
       };
+      console.log("ride request:- ", rideRequest)
 
       const response = await RideService.bookRide(rideRequest);
       const rideResp = response?.data || response;
