@@ -75,10 +75,10 @@ export default function RideTracking() {
   useEffect(() => {
     const state = routerLocation.state || {};
     const rideResp = state.ride || {};
-    
+
     // Use the calculated fare from RideBooking if available, otherwise use backend cost
     const calculatedFare = state.calculatedFare || (typeof rideResp.cost === "number" ? rideResp.cost : 0);
-    
+
     // Compose a local ride model using backend response
     const initialRide = {
       id: rideResp.id,
@@ -88,14 +88,14 @@ export default function RideTracking() {
       fare: calculatedFare, // Use the calculated fare from RideBooking
       status: rideResp.status || "REQUESTED",
     };
-    
+
     if (rideResp.driver) {
       initialRide.driver = rideResp.driver;
       initialRide.driverId = rideResp.driver.id; // ✅ Add this
     }
-    
+
     setRide(initialRide);
-    
+
     // set coordinates from backend where available
     if (
       rideResp?.driverLocation &&
@@ -107,7 +107,7 @@ export default function RideTracking() {
         longitude: rideResp.driverLocation.longitude,
       });
     }
-    
+
     if (
       rideResp?.dropOffLocation &&
       typeof rideResp.dropOffLocation.latitude === "number" &&
@@ -126,7 +126,7 @@ export default function RideTracking() {
         setDestinationCoords({ latitude: parsed[0], longitude: parsed[1] });
       }
     }
-    
+
     if (
       geo &&
       typeof geo.latitude === "number" &&
@@ -213,8 +213,8 @@ export default function RideTracking() {
       currentCoords ||
       location ||
       (geo &&
-      typeof geo.latitude === "number" &&
-      typeof geo.longitude === "number"
+        typeof geo.latitude === "number" &&
+        typeof geo.longitude === "number"
         ? { latitude: geo.latitude, longitude: geo.longitude }
         : null);
     if (dest && curr) {
@@ -236,13 +236,13 @@ export default function RideTracking() {
     geo?.longitude,
   ]);
 
- const  deleteRide = async (token) => {
+  const deleteRide = async (token) => {
     setTimeout(() => {
-      if(ride?.status=="REQUESTED" && !redirectedToRating){
+      if (ride?.status == "REQUESTED" && !redirectedToRating) {
         RideService.deleteRide(ride.id, token);
         navigate("/ride-booking");
       }
-    },60000);
+    }, 60000);
   }
 
   // Poll backend for latest ride data as fallback to websocket
@@ -254,9 +254,9 @@ export default function RideTracking() {
           const res = await RideService.getRide(ride.id);
           const safeOtp = res?.data?.otp ?? null;
           console.log("otp:- ", safeOtp);
-          
+
           const data = res?.data || res; // normalize ApiResponse vs direct
-          
+
           setRide((prev) => ({
             ...prev,
             userId: data.userId || prev?.userId, // ✅ Capture userId
@@ -266,7 +266,7 @@ export default function RideTracking() {
             fare: prev?.fare || data.cost || 0,
             driver: data.driver || prev?.driver,
           }));
-          
+
           setOtp(safeOtp);
           console.log("Customer received location data:", res.data); // <-- ADD THIS LOG
 
@@ -292,7 +292,7 @@ export default function RideTracking() {
           // if (typeof data?.cost === "number") {
           //   setRide((prev) => (prev ? { ...prev, fare: data.cost } : prev));
           // }
-          
+
           if (typeof data?.status === "string") {
             setRide((prev) => (prev ? { ...prev, status: data.status } : prev));
           }
@@ -449,9 +449,9 @@ export default function RideTracking() {
       // Your backend should return the order details from Razorpay
       const { razorpayOrderId, amount } = orderResponse;
 
-      
+
       const options = {
-        key: "rzp_test_RBUXcgoNul6l9q", 
+        key: "rzp_test_RBUXcgoNul6l9q",
         amount: amount * 100, // Convert to paise
         currency: "INR",
         name: "Rapido",
@@ -493,8 +493,8 @@ export default function RideTracking() {
       console.error("Payment error:", error);
       alert(
         error.response?.data?.message ||
-          error.message ||
-          "An error occurred during payment."
+        error.message ||
+        "An error occurred during payment."
       );
       setPaymentProcessing(false);
     }
@@ -547,337 +547,340 @@ export default function RideTracking() {
     <>
       <div className="flex justify-center items-center min-h-screen bg-grey-50">
         <div className="max-w-6xl w-full" style={{ maxWidth: 1400 }}>
-        
+
           {/* Header */}
           <Box className="mb-4 mt-4">
             <Typography variant="h4" className="font-bold text-gray-800">
               Track Your Ride
             </Typography>
-           
+
           </Box>
-            
-              {/* Status Card */}
-              <Card
-                className="shadow-md rounded-xl mb-4"
-                style={{  overflow: "auto",width:"100%",maxWidth: 1400 ,backgroundColor:"#f6f7f9"}}
-              >
-                <CardContent className="p-6">
-                  <Box className="flex justify-between items-center mb-2 ">
-                    <Typography
-                      variant="h6"
-                      className="font-bold text-gray-800"
-                    >
-                      Ride Status
-                    </Typography>
-                    <Chip
-                      label={ride.status}
-                      size="medium"
-                      style={{
-                        backgroundColor: `${getStatusColor()}20`,
-                        color: getStatusColor(),
-                        fontWeight: "bold",
-                      }}
-                    />
-                  </Box>
 
-                  <Box className="mb-6">
-                    
-                    <Box className="flex items-center">
-                      <LocationOn className="text-green-600 mr-2" />
-                      <Typography variant="h6" className="font-medium">
-                        {ride.pickup}
-                      </Typography>
-                    </Box>
-                    <Box className="flex items-center my-1">
-                      <div className="w-4 h-4 rounded-full bg-gray-300 mx-2"></div>
-                      <div className="flex-1 h-0.5 bg-gray-300"></div>
-                    </Box>
-                    <Box className="flex items-center">
-                      <LocationOn className="text-red-600 mr-2" />
-                      <Typography variant="h6" className="font-medium">
-                        {ride.destination}
-                      </Typography>
-                    </Box>
-                  </Box>
+          {/* Status Card */}
+          <Card
+            className="shadow-md rounded-xl mb-4"
+            style={{ overflow: "auto", width: "100%", maxWidth: 1400, backgroundColor: "#f6f7f9" }}
+          >
+            <CardContent className="p-6">
+              <Box className="flex justify-between items-center mb-2 ">
+                <Typography
+                  variant="h6"
+                  className="font-bold text-gray-800"
+                >
+                  Ride Status
+                </Typography>
+                <Chip
+                  label={ride.status}
+                  size="medium"
+                  style={{
+                    backgroundColor: `${getStatusColor()}20`,
+                    color: getStatusColor(),
+                    fontWeight: "bold",
+                  }}
+                />
+              </Box>
 
-                  <Divider className="my-6" />
+              <Box className="mb-6">
 
-                  <Box className="flex justify-between items-center">
-                    <Box>
-                      <Typography variant="body2" className="text-gray-600">
-                        Estimated Time
-                      </Typography>
-                      <Typography variant="h6" className="font-medium">
-                        {eta}
-                      </Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant="body2" className="text-gray-600">
-                        Distance
-                      </Typography>
-                      <Typography variant="h6" className="font-medium">
-                        {distance}
-                      </Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant="body2" className="text-gray-600">
-                        Fare
-                      </Typography>
-                      <Typography variant="h6" className="font-medium">
-                        ₹{ride.fare}
-                      </Typography>
-                    </Box>
-                  </Box>
-                </CardContent>
-              </Card>
+                <Box className="flex items-center">
+                  <LocationOn className="text-green-600 mr-2" />
+                  <Typography variant="h6" className="font-medium">
+                    {ride.pickup}
+                  </Typography>
+                </Box>
+                <Box className="flex items-center my-1">
+                  <div className="w-4 h-4 rounded-full bg-gray-300 mx-2"></div>
+                  <div className="flex-1 h-0.5 bg-gray-300"></div>
+                </Box>
+                <Box className="flex items-center">
+                  <LocationOn className="text-red-600 mr-2" />
+                  <Typography variant="h6" className="font-medium">
+                    {ride.destination}
+                  </Typography>
+                </Box>
+              </Box>
 
-              {/* Map */}
-              
-                {/* <CardContent className="p-0 shadow-md rounded-xl " style={{backgroundColor:"#f6f7f9"}}> */}
-                  {/* <Typography
+              <Divider className="my-6" />
+
+              <Box className="flex justify-between items-center">
+                <Box>
+                  <Typography variant="body2" className="text-gray-600">
+                    Estimated Time
+                  </Typography>
+                  <Typography variant="h6" className="font-medium">
+                    {eta}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="body2" className="text-gray-600">
+                    Distance
+                  </Typography>
+                  <Typography variant="h6" className="font-medium">
+                    {distance}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="body2" className="text-gray-600">
+                    Fare
+                  </Typography>
+                  <Typography variant="h6" className="font-medium">
+                    ₹{ride.fare}
+                  </Typography>
+                </Box>
+              </Box>
+            </CardContent>
+          </Card>
+
+          {/* Map */}
+
+          {/* <CardContent className="p-0 shadow-md rounded-xl " style={{backgroundColor:"#f6f7f9"}}> */}
+          {/* <Typography
                     variant="h6"
                     className="font-bold text-gray-800 p-4 pb-2"
                   >
                     Live Tracking
                   </Typography> */}
-                  <Divider />
-                  <div style={{ position: "relative", width: "100%", height: "350px", overflow: "hidden", zIndex: 1 }}>
-                    <MapDisplay
-                      userLocation={
-                        currentCoords
-                          ? [currentCoords.latitude, currentCoords.longitude]
-                          : null
-                      }
-                      riderLocation={
-                        driverCoords
-                          ? [driverCoords.latitude, driverCoords.longitude]
-                          : null
-                      }
-                      pickupCoords={routeToShow.pickup}
-                      dropoffCoords={routeToShow.dropoff}
-                    />
-                  </div>
-                {/* </CardContent> */}
-             
-            
+          <Divider />
+          <div style={{ position: "relative", width: "100%", height: "350px", overflow: "hidden", zIndex: 1 }}>
+            <MapDisplay
+              userLocation={
+                currentCoords
+                  ? [currentCoords.latitude, currentCoords.longitude]
+                  : null
+              }
+              riderLocation={
+                driverCoords
+                  ? [driverCoords.latitude, driverCoords.longitude]
+                  : null
+              }
+              pickupCoords={routeToShow.pickup}
+              dropoffCoords={routeToShow.dropoff}
+            />
+          </div>
+          {/* </CardContent> */}
 
-            
-              {/* Driver Info */}
-              <Card
-                className="shadow-md rounded-xl mb-4"
-                style={{ maxHeight: 340, overflow: "auto", backgroundColor:"#f6f7f9" }}
+
+
+
+          {/* Driver Info */}
+          <Card
+            className="shadow-md rounded-xl mb-4"
+            style={{ maxHeight: 340, overflow: "auto", backgroundColor: "#f6f7f9" }}
+          >
+            <CardContent className="p-6">
+              <Typography
+                variant="h6"
+                className="font-bold text-gray-800 mb-4"
               >
-                <CardContent className="p-6">
-                  <Typography
-                    variant="h6"
-                    className="font-bold text-gray-800 mb-4"
-                  >
-                    Driver Information
-                  </Typography>
-                  <Divider className="my-6 height-3" /> 
-                  {ride.status === "ACCEPTED" ||
-                  ride.status === "STARTED" ||
-                  ride.status === "IN_PROGRESS" ||
-                  ride.status === "COMPLETED" ? (
-                    // --- If YES, show the full driver details ---
+                Driver Information
+              </Typography>
+              <Divider className="my-4" />
+
+              {ride.status === "ACCEPTED" ||
+                ride.status === "STARTED" ||
+                ride.status === "IN_PROGRESS" ||
+                ride.status === "COMPLETED" ? (
+                // Show driver details when ride is accepted or in progress
+                <>
+                  {ride.driver ? (
                     <>
-                      {ride.driver ? (
-                        <>
-                          <Box className="flex items-center mb-4">
-                            
-                            <Box>
-                              <Typography variant="h4" className="font-medium ">
-                                {ride.driver.username}
-                              </Typography>
-                              
-                            </Box>
-                          </Box>
+                      {/* Driver Name Section */}
+                      <Box className="flex items-center mb-6">
+                        <Box className="flex-1">
+                          <Typography variant="h5" className="font-medium">
+                            {ride.driver.username}
+                          </Typography>
+                        </Box>
+                        <Box>
+                          {getVehicleIcon()}
+                        </Box>
+                      </Box>
 
-                          {/* <Divider className="my-4" /> */}
-                          <Box className="flex justify-between items-center">
-                            <Box className="flex justify-between">
-                              <Typography fontWeight="medium" >
-                                {ride.driver.vehicleModel}
-                              </Typography>
-                              <Chip
-                                label={ride.driver.vehicleNumber || "N/A"}
-                                variant="outlined"
-                                sx={{
-                                  mt: 0.5,
-                                  ml: 4,
-                                  fontWeight: "bold",
-                                  letterSpacing: 1,
-                                }}
-                              />
+                      {/* Vehicle and OTP Information */}
+                      <Box className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        {/* Vehicle Information */}
+                        <Box className="bg-white p-4 rounded-lg shadow-sm">
+                          <Typography variant="body2" color="textSecondary" className="mb-2">
+                            Vehicle Details
+                          </Typography>
+                          <Typography fontWeight="medium" className="mb-1">
+                            {ride.driver.vehicleModel || "N/A"}
+                          </Typography>
+                          <Chip
+                            label={ride.driver.vehicleNumber || "N/A"}
+                            variant="outlined"
+                            size="small"
+                            sx={{
+                              fontWeight: "bold",
+                              letterSpacing: 1,
+                            }}
+                          />
+                        </Box>
 
-                              <Typography fontWeight="medium" className="ml-10">Otp</Typography>
-                              <Chip
-                                label={otp || "N/A"}
-                                variant="outlined"
-                                sx={{
-                                  mt: 0.5,
-                                  ml: 4,
-                                  fontWeight: "bold",
-                                  letterSpacing: 1,
-                                }}
-                              />
-                            </Box>
-                            {/* Use the getVehicleIcon function you already have */}
-                            {getVehicleIcon()}
-                          </Box>
-                          {/* <Divider className="my-4" /> */}
-                          {/* ... Other driver details like vehicle, license plate, etc. ... */}
-                          {/* <Box className="flex justify-between">
-                            <Button startIcon={<Phone />}>Call Driver</Button>
-                            <Button variant="outlined" startIcon={<Message />}>
-                              Message
-                            </Button>
-                          </Box> */}
-                        </>
-                      ) : (
-                        // This is a fallback in case driver data is missing after acceptance
-                        <Typography color="text.secondary">
-                          Waiting for driver details...
-                        </Typography>
-                      )}
+                        {/* OTP Information */}
+                        <Box className="bg-white p-4 rounded-lg shadow-sm">
+                          <Typography variant="body2" color="textSecondary" className="mb-2">
+                            Ride Verification
+                          </Typography>
+                          <Typography fontWeight="medium" className="mb-1">
+                            OTP
+                          </Typography>
+                          <Chip
+                            label={otp || "N/A"}
+                            variant="outlined"
+                            size="small"
+                            sx={{
+                              fontWeight: "bold",
+                              letterSpacing: 1,
+                            }}
+                          />
+                        </Box>
+                      </Box>
                     </>
                   ) : (
-                    // --- If NO (status is 'REQUESTED'), show a searching message ---
-                    <Box sx={{ textAlign: "center", p: 3 }}>
-                      <CircularProgress sx={{ mb: 2 }} />
+                    // Fallback when driver data is missing
+                    <Box className="text-center py-4">
                       <Typography color="text.secondary">
-                        Searching for a nearby driver...
-                      </Typography>
-                      <Typography
-                        variant="caption"
-                        display="block"
-                        color="text.secondary"
-                      >
-                        We're connecting you with the best driver for your trip.
+                        Waiting for driver details...
                       </Typography>
                     </Box>
                   )}
-                </CardContent>
-              </Card>
-
-              {/* Tracking Progress */}
-              <Card className="shadow-md rounded-xl flex-1" style={{ backgroundColor:"#f6f7f9" }}>
-                <CardContent className="p-6">
-                  <Typography
-                    variant="h6"
-                    className="font-bold text-gray-800 mb-4"
-                  >
-                    Ride Progress
+                </>
+              ) : (
+                // Show searching message when ride is requested
+                <Box className="text-center py-6">
+                  <CircularProgress className="mb-3" />
+                  <Typography color="text.secondary" className="mb-1">
+                    Searching for a nearby driver...
                   </Typography>
-                  <Box className="space-y-4">
-                    <Box className="space-y-4">
-                      <Box className="flex items-center">
-                        <Box
-                          className={`w-8 h-8 rounded-full flex items-center justify-center mr-3 ${
-                            ride.status === "COMPLETED"
-                              ? "bg-green-500"
-                              : ride.status === "IN_PROGRESS" ||
-                                ride.status === "STARTED"
-                              ? "bg-blue-500"
-                              : ride.status === "ACCEPTED"
+                  <Typography
+                    variant="caption"
+                    display="block"
+                    color="text.secondary"
+                  >
+                    We're connecting you with the best driver for your trip.
+                  </Typography>
+                </Box>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Tracking Progress */}
+          <Card className="shadow-md rounded-xl flex-1" style={{ backgroundColor: "#f6f7f9" }}>
+            <CardContent className="p-6">
+              <Typography
+                variant="h6"
+                className="font-bold text-gray-800 mb-4"
+              >
+                Ride Progress
+              </Typography>
+              <Box className="space-y-4">
+                <Box className="space-y-4">
+                  <Box className="flex items-center">
+                    <Box
+                      className={`w-8 h-8 rounded-full flex items-center justify-center mr-3 ${ride.status === "COMPLETED"
+                          ? "bg-green-500"
+                          : ride.status === "IN_PROGRESS" ||
+                            ride.status === "STARTED"
+                            ? "bg-blue-500"
+                            : ride.status === "ACCEPTED"
                               ? "bg-yellow-500"
                               : "bg-gray-300"
-                          }`}
-                        >
-                          {(ride.status === "COMPLETED" ||
+                        }`}
+                    >
+                      {(ride.status === "COMPLETED" ||
+                        ride.status === "IN_PROGRESS" ||
+                        ride.status === "STARTED" ||
+                        ride.status === "ACCEPTED") && (
+                          <span className="text-white text-sm">✓</span>
+                        )}
+                    </Box>
+                    <Box className="flex-1">
+                      <Typography
+                        variant="body2"
+                        className={`${ride.status === "COMPLETED" ||
                             ride.status === "IN_PROGRESS" ||
                             ride.status === "STARTED" ||
-                            ride.status === "ACCEPTED") && (
-                            <span className="text-white text-sm">✓</span>
-                          )}
-                        </Box>
-                        <Box className="flex-1">
-                          <Typography
-                            variant="body2"
-                            className={`${
-                              ride.status === "COMPLETED" ||
-                              ride.status === "IN_PROGRESS" ||
-                              ride.status === "STARTED" ||
-                              ride.status === "ACCEPTED"
-                                ? "font-medium"
-                                : "text-gray-500"
-                            }`}
-                          >
-                            {ride.status}
-                          </Typography>
-                        </Box>
-                      </Box>
+                            ride.status === "ACCEPTED"
+                            ? "font-medium"
+                            : "text-gray-500"
+                          }`}
+                      >
+                        {ride.status}
+                      </Typography>
                     </Box>
                   </Box>
-                  <Box className="mt-6">
-                    {/* Conditionally render the text based on the ride's status */}
-                    {ride.status === "ACCEPTED" && (
-                      <Typography
-                        variant="body2"
-                        className="text-gray-600 mb-2"
-                      >
-                        Your driver is approximately <b>{eta}</b> away (
-                        {distance}).
-                      </Typography>
-                    )}
+                </Box>
+              </Box>
+              <Box className="mt-6">
+                {/* Conditionally render the text based on the ride's status */}
+                {ride.status === "ACCEPTED" && (
+                  <Typography
+                    variant="body2"
+                    className="text-gray-600 mb-2"
+                  >
+                    Your driver is approximately <b>{eta}</b> away (
+                    {distance}).
+                  </Typography>
+                )}
 
-                    {(ride.status === "IN_PROGRESS" ||
-                      ride.status === "STARTED") && (
-                      <Typography
-                        variant="body2"
-                        className="text-gray-600 mb-2"
-                      >
-                        You will reach your destination in approximately{" "}
-                        <b>{eta}</b>.
-                      </Typography>
-                    )}
+                {(ride.status === "IN_PROGRESS" ||
+                  ride.status === "STARTED") && (
+                    <Typography
+                      variant="body2"
+                      className="text-gray-600 mb-2"
+                    >
+                      You will reach your destination in approximately{" "}
+                      <b>{eta}</b>.
+                    </Typography>
+                  )}
 
-                    {ride.status === "REQUESTED" && (
-                      <Typography
-                        variant="body2"
-                        className="text-gray-600 mb-2"
-                      >
-                        Searching for a nearby driver...
-                      </Typography>
-                    )}
+                {ride.status === "REQUESTED" && (
+                  <Typography
+                    variant="body2"
+                    className="text-gray-600 mb-2"
+                  >
+                    Searching for a nearby driver...
+                  </Typography>
+                )}
 
-                    {ride.status === "COMPLETED" && (
-                      <Typography
-                        variant="body2"
-                        className="text-gray-600 mb-2"
-                        color="green"
-                      >
-                        You have arrived at your destination!
-                      </Typography>
-                    )}
+                {ride.status === "COMPLETED" && (
+                  <Typography
+                    variant="body2"
+                    className="text-gray-600 mb-2"
+                    color="green"
+                  >
+                    You have arrived at your destination!
+                  </Typography>
+                )}
 
-                    <LinearProgress
-                      variant="determinate"
-                      value={progressPercent}
-                      className="h-2 rounded-lg"
-                    />
-                  </Box>
-                  <Box className="mt-6 pt-4 border-t border-gray-200">
-                    {ride?.status === "REQUESTED" && (
-                      <Button
-                        variant="contained"
-                        className="w-full bg-red-500 hover:bg-red-600 text-white"
-                        startIcon={<Cancel />}
-                        onClick={() => {
-                          setRide((prev) => ({ ...prev, status: "Cancelled" }));
-                          setTimeout(() => {
-                            navigate("/ride-booking");
-                          }, 500);
-                        }}
-                      >
-                        Cancel Ride
-                      </Button>
-                    )}
-                  </Box>
-                </CardContent>
-              </Card>
-            
-          
+                <LinearProgress
+                  variant="determinate"
+                  value={progressPercent}
+                  className="h-2 rounded-lg"
+                />
+              </Box>
+              <Box className="mt-6 pt-4 border-t border-gray-200">
+                {ride?.status === "REQUESTED" && (
+                  <Button
+                    variant="contained"
+                    className="w-full bg-red-500 hover:bg-red-600 text-white"
+                    startIcon={<Cancel />}
+                    onClick={() => {
+                      setRide((prev) => ({ ...prev, status: "Cancelled" }));
+                      setTimeout(() => {
+                        navigate("/ride-booking");
+                      }, 500);
+                    }}
+                  >
+                    Cancel Ride
+                  </Button>
+                )}
+              </Box>
+            </CardContent>
+          </Card>
+
+
         </div>
       </div>
 
