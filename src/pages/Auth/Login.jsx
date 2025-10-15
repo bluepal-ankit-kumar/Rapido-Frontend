@@ -138,7 +138,7 @@ export default function Login() {
 
         <Box className="text-center mt-6">
           <Typography variant="caption" className="text-gray-500">
-            © 2023 Rapido. All rights reserved.
+            © 2025 Rapido. All rights reserved.
           </Typography>
         </Box>
       </Paper>

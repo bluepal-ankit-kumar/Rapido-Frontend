@@ -562,7 +562,17 @@ export default function RideBooking() {
             m: 0,
           }}
         >
-          <CardContent sx={{ p: 0, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <CardContent sx={{
+            p: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            maxHeight: '90vh',
+            overflowY: 'auto',
+            scrollbarWidth: 'thin',
+            '&::-webkit-scrollbar': { width: '8px' },
+            '&::-webkit-scrollbar-thumb': { background: '#e2e8f0', borderRadius: '8px' },
+          }}>
                 <Typography variant="h5" sx={{ fontWeight: 700, mb: 1, mt: 2, textAlign: 'center', color: '#1e293b', letterSpacing: 0.5 }}>Enter Your Trip Details</Typography>
                 
                 {/* Pickup & Dropoff Grouped Box */}
