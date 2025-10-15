@@ -77,7 +77,9 @@ export default function HelpPage() {
     fetchRequests();
   }, []);
   const [issue, setIssue] = useState('');
-  const [category, setCategory] = useState('General');
+  // Only allow valid enum values for category
+  const validCategories = ['GENERAL', 'PAYMENT', 'TECHNICAL', 'SAFETY', 'SERVICE'];
+  const [category, setCategory] = useState('GENERAL');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -90,7 +92,15 @@ export default function HelpPage() {
     }
     setSubmitting(true);
     try {
-      await helpService.createHelpRequest({ issue, category });
+      // Get JWT token from localStorage
+      const jwt = localStorage.getItem('jwtToken');
+      // Send JSON in required format with token
+      // Ensure category is a valid enum value
+      const safeCategory = validCategories.includes(category.toUpperCase()) ? category.toUpperCase() : 'GENERAL';
+      await helpService.createHelpRequest(jwt, {
+        issue,
+        category: safeCategory
+      });
       setIssue('');
       setError('');
       setSuccess(true);
@@ -177,11 +187,9 @@ export default function HelpPage() {
                     variant="outlined"
                     size="small"
                   >
-                    <MenuItem value="General">General</MenuItem>
-                    <MenuItem value="Payment">Payment</MenuItem>
-                    <MenuItem value="Service">Service</MenuItem>
-                    <MenuItem value="Technical">Technical</MenuItem>
-                    <MenuItem value="Safety">Safety</MenuItem>
+                    {validCategories.map(cat => (
+                      <MenuItem key={cat} value={cat}>{cat.charAt(0) + cat.slice(1).toLowerCase()}</MenuItem>
+                    ))}
                   </TextField>
                   
                   <TextField
