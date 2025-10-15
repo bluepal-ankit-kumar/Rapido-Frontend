@@ -2,7 +2,9 @@ import api from './api';
 
 const UserService = {
   getUserProfile: async () => {
-    return api.get('/users/profile');
+    const token = localStorage.getItem('jwtToken');
+    const headers = token ? { Authorization: `Bearer ${token.replace(/^Bearer /, '')}` } : {};
+    return api.get('/users/profile', { headers });
   },
 
   updateUserProfile: async (updateRequest) => {
