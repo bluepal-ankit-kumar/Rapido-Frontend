@@ -1,4 +1,3 @@
-
 import useGeolocation from '../../hooks/useGeolocation';
 import React, { useState, useEffect, useRef } from 'react';
 import VehicleTypeSelector from '../../components/common/VehicleTypeSelector';
@@ -548,11 +547,11 @@ export default function RideBooking() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      <div className="w-screen h-screen min-h-screen min-w-full p-0 m-0">
+      <div className="w-full h-full min-h-screen min-w-full p-0 m-0">
         <Card
           elevation={0}
           sx={{
-            width: '100vw',
+            width: '100%',
             minHeight: '100vh',
             borderRadius: 0,
             background: '#f8fafc',
@@ -560,235 +559,347 @@ export default function RideBooking() {
             boxShadow: 'none',
             p: 0,
             m: 0,
+            display: 'flex',
+            flexDirection: 'column',
           }}
         >
           <CardContent sx={{
-            p: 0,
+            p: { xs: 2, sm: 3, md: 4 },
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            maxHeight: '90vh',
+            flexGrow: 1,
             overflowY: 'auto',
             scrollbarWidth: 'thin',
             '&::-webkit-scrollbar': { width: '8px' },
             '&::-webkit-scrollbar-thumb': { background: '#e2e8f0', borderRadius: '8px' },
           }}>
-                <Typography variant="h5" sx={{ fontWeight: 700, mb: 1, mt: 2, textAlign: 'center', color: '#1e293b', letterSpacing: 0.5 }}>Enter Your Trip Details</Typography>
-                
-                {/* Pickup & Dropoff Grouped Box */}
-                <Box sx={{
-                  mb: 2,
-                  width: '100%',
-                  maxWidth: 1100,
-                  background: '#f6f7f9',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '16px',
-                  p: 0,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  boxShadow: '0 2px 8px 0 rgba(0,0,0,0.03)'
-                }} >
-                  <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'stretch', p: 2, pb: 2 }}>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mr: 2, mt: 2, minWidth: 32, justifyContent: 'center', height: '100%' }}>
-                      <LocationOn color="success" sx={{ fontSize: 28, mb: 0.5 }} />
-                      <Box sx={{ flex: 1, width: 2, minHeight: 24, borderRight: '2px dotted #94a3b8', my: 0.5 }} />
-                      <Directions color="error" sx={{ fontSize: 28, mt: 0.5 }} />
-                    </Box>
-                    <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', position: 'relative' }}>
-                      <Autocomplete
-                        freeSolo
-                        options={pickupSuggestions}
-                        getOptionLabel={(option) => (typeof option === 'string' ? option : option.label)}
-                        loading={searching.pickup}
-                        value={pickup}
-                        onInputChange={(e, newValue) => {
-                          setPickup(newValue);
-                          setPickupCoords(null);
-                          setRouteError(null);
-                          handleSearch(newValue, setPickupSuggestions, 'pickup');
-                        }}
-                        onChange={(e, newValue) => {
-                          if (newValue && typeof newValue === 'object') {
-                            setPickup(newValue.label);
-                            setPickupCoords([newValue.lat, newValue.lon]);
-                            setPickupSuggestions([]);
-                            setRouteError(null);
-                          }
-                        }}
-                        renderInput={(params) => (
-                          <TextField
-                            {...params}
-                            placeholder="Search pickup location"
-                            InputProps={{
-                              ...params.InputProps,
-                              style: {
-                                color: 'transparent',
-                                caretColor: '#2563eb',
-                                background: 'transparent',
-                              },
-                              endAdornment: (
-                                <>
-                                  <MyLocation
-                                    sx={{ cursor: 'pointer', color: '#2563eb', mr: 1 }}
-                                    fontSize="medium"
-                                    onClick={useCurrentLocationForPickup}
-                                  />
-                                  {searching.pickup ? <CircularProgress color="inherit" size={20} /> : null}
-                                  {params.InputProps.endAdornment}
-                                </>
-                              )
-                            }}
-                            sx={{
-                              background: 'transparent',
-                              borderRadius: '8px',
-                              '& .MuiOutlinedInput-notchedOutline': { border: 'none' },
-                              '& .MuiInputBase-input::placeholder': {
-                                color: '#64748b',
-                                opacity: 1,
-                              },
-                              '& .MuiInputBase-input': {
-                                color: 'transparent',
-                                textShadow: '0 0 0 #000',
-                              },
-                            }}
-                          />
-                        )}
-                      />
-                      <div className="pickup-dropoff-separator" />
-                      <Autocomplete
-                        freeSolo
-                        options={dropoffSuggestions}
-                        getOptionLabel={(option) => (typeof option === 'string' ? option : option.label)}
-                        loading={searching.dropoff}
-                        value={dropoff}
-                        onInputChange={(e, newValue) => {
-                          setDropoff(newValue);
-                          setDropoffCoords(null);
-                          setRouteError(null);
-                          handleSearch(newValue, setDropoffSuggestions, 'dropoff');
-                        }}
-                        onChange={(e, newValue) => {
-                          if (newValue && typeof newValue === 'object') {
-                            setDropoff(newValue.label);
-                            setDropoffCoords([newValue.lat, newValue.lon]);
-                            setDropoffSuggestions([]);
-                            setRouteError(null);
-                          }
-                        }}
-                        renderInput={(params) => (
-                          <TextField
-                            {...params}
-                            placeholder="Search dropoff location"
-                            InputProps={{
-                              ...params.InputProps,
-                              style: {
-                                color: 'transparent',
-                                caretColor: '#2563eb',
-                                background: 'transparent',
-                              },
-                              endAdornment: (
-                                <>
-                                  {searching.dropoff ? <CircularProgress color="inherit" size={20} /> : null}
-                                  {params.InputProps.endAdornment}
-                                </>
-                              )
-                            }}
-                            sx={{
-                              background: 'transparent',
-                              borderRadius: '8px',
-                              '& .MuiOutlinedInput-notchedOutline': { border: 'none' },
-                              '& .MuiInputBase-input::placeholder': {
-                                color: '#64748b',
-                                opacity: 1,
-                              },
-                              '& .MuiInputBase-input': {
-                                color: 'transparent',
-                                textShadow: '0 0 0 #000',
-                              },
-                            }}
-                          />
-                        )}
-                      />
-                    </Box>
-                  </Box>
+            <Typography 
+              variant="h5" 
+              sx={{ 
+                fontWeight: 700, 
+                mb: { xs: 2, sm: 3 }, 
+                mt: { xs: 1, sm: 2 }, 
+                textAlign: 'center', 
+                color: '#1e293b', 
+                letterSpacing: 0.5,
+                fontSize: { xs: '1.25rem', sm: '1.5rem' }
+              }}
+            >
+              Enter Your Trip Details
+            </Typography>
+            
+            {/* Pickup & Dropoff Grouped Box */}
+            <Box sx={{
+              mb: { xs: 2, sm: 3 },
+              width: '100%',
+              maxWidth: { xs: '100%', sm: 600, md: 800, lg: 1100 },
+              background: '#f6f7f9',
+              border: '1px solid #e2e8f0',
+              borderRadius: '16px',
+              p: { xs: 1.5, sm: 2 },
+              display: 'flex',
+              flexDirection: 'column',
+              boxShadow: '0 2px 8px 0 rgba(0,0,0,0.03)'
+            }}>
+              <Box sx={{ 
+                display: 'flex', 
+                flexDirection: 'row', 
+                alignItems: 'stretch', 
+                p: { xs: 0, sm: 1 }, 
+                pb: { xs: 0, sm: 1 } 
+              }}>
+                <Box sx={{ 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  alignItems: 'center', 
+                  mr: { xs: 1, sm: 2 }, 
+                  mt: { xs: 1.5, sm: 2 }, 
+                  minWidth: { xs: 24, sm: 32 }, 
+                  justifyContent: 'center', 
+                  height: '100%' 
+                }}>
+                  <LocationOn color="success" sx={{ fontSize: { xs: 24, sm: 28 }, mb: 0.5 }} />
+                  <Box sx={{ 
+                    flex: 1, 
+                    width: 2, 
+                    minHeight: { xs: 20, sm: 24 }, 
+                    borderRight: '2px dotted #94a3b8', 
+                    my: 0.5 
+                  }} />
+                  <Directions color="error" sx={{ fontSize: { xs: 24, sm: 28 }, mt: 0.5 }} />
                 </Box>
-
-                <Box sx={{ mb: 3, textAlign: 'center', width: '100%', maxWidth: 1100 }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-                      <Box sx={{ width: '100%', maxWidth: 1100 }}>
-                        <VehicleTypeSelector selected={selectedType} onSelect={(type) => {
-                          setSelectedType(type);
-                          setRouteError(null);
-                        }} />
-                      </Box>
-                  </Box>
-                </Box>
-
-                <Box sx={{ mb: 3, width: '100%', maxWidth: 1100 }}>
-                  <LeafletMapDisplay
-                    userLocation={pickupCoords || (geo?.latitude ? [geo.latitude, geo.longitude] : null)}
-                    routePoints={(pickupCoords && dropoffCoords) ? [pickupCoords, dropoffCoords] : []}
-                    selectedType={selectedType}
-                    onRouteCalculated={handleRouteCalculated}
-                  />
-                </Box>
-
-                <Box sx={{ mb: 2, p: 2, width: '100%', maxWidth: 1100, background: '#f6f7f9', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                  <Typography variant="body1" sx={{ fontWeight: 600, mb: 1 }}>Trip Estimates</Typography>
-                  {routeError ? (
-                    <Typography color="error">Error: {routeError}</Typography>
-                  ) : (
-                    <>
-                      <Typography>Distance: {distance > 0 ? `${distance.toFixed(1)} km` : 'Enter locations to calculate'}</Typography>
-                      <Typography>Estimated Time: {eta > 0 ? `${eta} min` : 'Enter locations to calculate'}</Typography>
-                      <Typography>Estimated Fare: ₹{fare > 0 ? fare : 'Enter locations to calculate'}</Typography>
-                    </>
-                  )}
-                </Box>
-
-                <Box sx={{ mt: 'auto', width: '100%', maxWidth: 1100, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
-                  <Box sx={{ width: '100%', borderTop: '1px solid #facc15', mb: 3, mt: 1, opacity: 1.7 }} />
-                  <Button
-                    variant="contained"
-                    fullWidth
-                    size="large"
-                    disableElevation
-                    sx={{
-                      backgroundColor: '#fde047 !important',
-                      color: '#2e2a2a !important',
-                      fontSize: '1rem',
-                      fontWeight: 600,
-                      borderRadius: '12px',
-                      boxShadow: '0 4px 12px 0 rgba(250,204,21,0.10)',
-                      transition: 'all 0.2s',
-                      '&:hover': {
-                        backgroundColor: '#facc15 !important',
-                        boxShadow: '0 8px 24px 0 rgba(250,204,21,0.13)',
-                        transform: 'scale(1.03)',
-                        filter: 'brightness(1.05)'
-                      },
-                      '&:active': {
-                        filter: 'brightness(0.97)'
-                      },
-                      '&.Mui-disabled': {
-                        backgroundColor: '#fef9c3 !important',
-                        color: '#bdbdbd !important'
+                <Box sx={{ 
+                  flex: 1, 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  justifyContent: 'center', 
+                  position: 'relative' 
+                }}>
+                  <Autocomplete
+                    freeSolo
+                    options={pickupSuggestions}
+                    getOptionLabel={(option) => (typeof option === 'string' ? option : option.label)}
+                    loading={searching.pickup}
+                    value={pickup}
+                    onInputChange={(e, newValue) => {
+                      setPickup(newValue);
+                      setPickupCoords(null);
+                      setRouteError(null);
+                      handleSearch(newValue, setPickupSuggestions, 'pickup');
+                    }}
+                    onChange={(e, newValue) => {
+                      if (newValue && typeof newValue === 'object') {
+                        setPickup(newValue.label);
+                        setPickupCoords([newValue.lat, newValue.lon]);
+                        setPickupSuggestions([]);
+                        setRouteError(null);
                       }
                     }}
-                    onClick={handleBook}
-                    disabled={loading || !pickup || !dropoff || fare === 0}
-                    startIcon={loading ? <CircularProgress size={20} color="inherit" /> : null}
-                    endIcon={!loading ? <ArrowForward /> : null}
-                  >
-                    {loading ? 'Booking...' : 'Confirm Booking'}
-                  </Button>
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        placeholder="Search pickup location"
+                        InputProps={{
+                          ...params.InputProps,
+                          style: {
+                            color: 'transparent',
+                            caretColor: '#2563eb',
+                            background: 'transparent',
+                          },
+                          endAdornment: (
+                            <>
+                              <MyLocation
+                                sx={{ 
+                                  cursor: 'pointer', 
+                                  color: '#2563eb', 
+                                  mr: { xs: 0.5, sm: 1 },
+                                  fontSize: { xs: 'medium', sm: 'large' }
+                                }}
+                                onClick={useCurrentLocationForPickup}
+                              />
+                              {searching.pickup ? <CircularProgress color="inherit" size={20} /> : null}
+                              {params.InputProps.endAdornment}
+                            </>
+                          )
+                        }}
+                        sx={{
+                          background: 'transparent',
+                          borderRadius: '8px',
+                          '& .MuiOutlinedInput-notchedOutline': { border: 'none' },
+                          '& .MuiInputBase-input::placeholder': {
+                            color: '#64748b',
+                            opacity: 1,
+                          },
+                          '& .MuiInputBase-input': {
+                            color: 'transparent',
+                            textShadow: '0 0 0 #000',
+                            fontSize: { xs: '0.875rem', sm: '1rem' }
+                          },
+                        }}
+                      />
+                    )}
+                  />
+                  <div className="pickup-dropoff-separator" />
+                  <Autocomplete
+                    freeSolo
+                    options={dropoffSuggestions}
+                    getOptionLabel={(option) => (typeof option === 'string' ? option : option.label)}
+                    loading={searching.dropoff}
+                    value={dropoff}
+                    onInputChange={(e, newValue) => {
+                      setDropoff(newValue);
+                      setDropoffCoords(null);
+                      setRouteError(null);
+                      handleSearch(newValue, setDropoffSuggestions, 'dropoff');
+                    }}
+                    onChange={(e, newValue) => {
+                      if (newValue && typeof newValue === 'object') {
+                        setDropoff(newValue.label);
+                        setDropoffCoords([newValue.lat, newValue.lon]);
+                        setDropoffSuggestions([]);
+                        setRouteError(null);
+                      }
+                    }}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        placeholder="Search dropoff location"
+                        InputProps={{
+                          ...params.InputProps,
+                          style: {
+                            color: 'transparent',
+                            caretColor: '#2563eb',
+                            background: 'transparent',
+                          },
+                          endAdornment: (
+                            <>
+                              {searching.dropoff ? <CircularProgress color="inherit" size={20} /> : null}
+                              {params.InputProps.endAdornment}
+                            </>
+                          )
+                        }}
+                        sx={{
+                          background: 'transparent',
+                          borderRadius: '8px',
+                          '& .MuiOutlinedInput-notchedOutline': { border: 'none' },
+                          '& .MuiInputBase-input::placeholder': {
+                            color: '#64748b',
+                            opacity: 1,
+                          },
+                          '& .MuiInputBase-input': {
+                            color: 'transparent',
+                            textShadow: '0 0 0 #000',
+                            fontSize: { xs: '0.875rem', sm: '1rem' }
+                          },
+                        }}
+                      />
+                    )}
+                  />
                 </Box>
-                
-              </CardContent>
-              {error && <Alert severity="error" sx={{ mt: 2, borderRadius: '12px' }}>{error}</Alert>}
+              </Box>
+            </Box>
+
+            <Box sx={{ 
+              mb: { xs: 2, sm: 3 }, 
+              textAlign: 'center', 
+              width: '100%', 
+              maxWidth: { xs: '100%', sm: 600, md: 800, lg: 1100 } 
+            }}>
+              <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                <Box sx={{ width: '100%', maxWidth: { xs: '100%', sm: 600, md: 800, lg: 1100 } }}>
+                  <VehicleTypeSelector selected={selectedType} onSelect={(type) => {
+                    setSelectedType(type);
+                    setRouteError(null);
+                  }} />
+                </Box>
+              </Box>
+            </Box>
+
+            <Box sx={{ 
+              mb: { xs: 2, sm: 3 }, 
+              width: '100%', 
+              maxWidth: { xs: '100%', sm: 600, md: 800, lg: 1100 } 
+            }}>
+              <LeafletMapDisplay
+                userLocation={pickupCoords || (geo?.latitude ? [geo.latitude, geo.longitude] : null)}
+                routePoints={(pickupCoords && dropoffCoords) ? [pickupCoords, dropoffCoords] : []}
+                selectedType={selectedType}
+                onRouteCalculated={handleRouteCalculated}
+              />
+            </Box>
+
+            <Box sx={{ 
+              mb: { xs: 2, sm: 3 }, 
+              p: { xs: 1.5, sm: 2 }, 
+              width: '100%', 
+              maxWidth: { xs: '100%', sm: 600, md: 800, lg: 1100 }, 
+              background: '#f6f7f9', 
+              borderRadius: '8px', 
+              border: '1px solid #e2e8f0' 
+            }}>
+              <Typography 
+                variant="body1" 
+                sx={{ 
+                  fontWeight: 600, 
+                  mb: 1,
+                  fontSize: { xs: '0.875rem', sm: '1rem' }
+                }}
+              >
+                Trip Estimates
+              </Typography>
+              {routeError ? (
+                <Typography 
+                  color="error" 
+                  sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}
+                >
+                  Error: {routeError}
+                </Typography>
+              ) : (
+                <>
+                  <Typography sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
+                    Distance: {distance > 0 ? `${distance.toFixed(1)} km` : 'Enter locations to calculate'}
+                  </Typography>
+                  <Typography sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
+                    Estimated Time: {eta > 0 ? `${eta} min` : 'Enter locations to calculate'}
+                  </Typography>
+                  <Typography sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
+                    Estimated Fare: ₹{fare > 0 ? fare : 'Enter locations to calculate'}
+                  </Typography>
+                </>
+              )}
+            </Box>
+
+            <Box sx={{ 
+              mt: 'auto', 
+              width: '100%', 
+              maxWidth: { xs: '100%', sm: 600, md: 800, lg: 1100 }, 
+              display: 'flex', 
+              flexDirection: 'column', 
+              justifyContent: 'center', 
+              alignItems: 'center',
+              pb: { xs: 2, sm: 3 }
+            }}>
+              <Box sx={{ 
+                width: '100%', 
+                borderTop: '1px solid #facc15', 
+                mb: { xs: 2, sm: 3 }, 
+                mt: { xs: 1, sm: 2 }, 
+                opacity: 1.7 
+              }} />
+              <Button
+                variant="contained"
+                fullWidth
+                size="large"
+                disableElevation
+                sx={{
+                  backgroundColor: '#fde047 !important',
+                  color: '#2e2a2a !important',
+                  fontSize: { xs: '0.875rem', sm: '1rem' },
+                  fontWeight: 600,
+                  borderRadius: '12px',
+                  boxShadow: '0 4px 12px 0 rgba(250,204,21,0.10)',
+                  transition: 'all 0.2s',
+                  py: { xs: 1.2, sm: 1.5 },
+                  '&:hover': {
+                    backgroundColor: '#facc15 !important',
+                    boxShadow: '0 8px 24px 0 rgba(250,204,21,0.13)',
+                    transform: 'scale(1.03)',
+                    filter: 'brightness(1.05)'
+                  },
+                  '&:active': {
+                    filter: 'brightness(0.97)'
+                  },
+                  '&.Mui-disabled': {
+                    backgroundColor: '#fef9c3 !important',
+                    color: '#bdbdbd !important'
+                  }
+                }}
+                onClick={handleBook}
+                disabled={loading || !pickup || !dropoff || fare === 0}
+                startIcon={loading ? <CircularProgress size={20} color="inherit" /> : null}
+                endIcon={!loading ? <ArrowForward /> : null}
+              >
+                {loading ? 'Booking...' : 'Confirm Booking'}
+              </Button>
+            </Box>
+            
+          </CardContent>
+          {error && (
+            <Alert 
+              severity="error" 
+              sx={{ 
+                mt: { xs: 1, sm: 2 }, 
+                borderRadius: '12px',
+                mx: { xs: 2, sm: 3, md: 4 },
+                mb: { xs: 2, sm: 3 }
+              }}
+            >
+              {error}
+            </Alert>
+          )}
         </Card>
-        
       </div>
     </div>
   );
-} 
+}
