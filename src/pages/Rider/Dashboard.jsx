@@ -588,7 +588,7 @@ const toggleOnlineStatus = async () => {
             )}
           </Box>
           {/* Main Grid Container */}
-          <Grid container spacing={{ xs: 2, sm: 3, md: 4 }} class="grid grid-cols-1">
+          <Grid container spacing={{ xs: 2, sm: 3, md: 4 }} className="grid grid-cols-1">
             {/* Right Sidebar: Status & Actions */}
             <Grid item xs={12} md={4}>
               <Card
