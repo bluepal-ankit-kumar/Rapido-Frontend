@@ -20,16 +20,16 @@ import {
 const customerLinks = [
   { to: '/', label: 'Home', icon: <Home /> },
   { to: '/ride-booking', label: 'Book Ride', icon: <TwoWheeler /> },
-  { to: '/ride-history', label: 'History', icon: <History /> },
+  // { to: '/ride-history', label: 'History', icon: <History /> },
   { to: '/help', label: 'Help', icon: <Help /> },
 ];
 
 const riderLinks = [
   { to: '/rider/dashboard', label: 'Dashboard', icon: <Dashboard /> },
-  { to: '/rider/accept-ride', icon: <DirectionsBike /> },
-  { to: '/rider/ride-history', label: 'Ride History', icon: <History /> },
-  { to: '/rider/profile', label: 'Profile', icon: <Person /> },
-  { to: '/rider/help', label: 'Help', icon: <Help /> },
+  { to: '/rider/accept-ride',label: 'Accept Ride', icon: <DirectionsBike /> },
+  // { to: '/rider/ride-history', label: 'Ride History', icon: <History /> },
+  // { to: '/rider/profile', label: 'Profile', icon: <Person /> },
+  // { to: '/rider/help', label: 'Help', icon: <Help /> },
 ];
 
 const adminLinks = [
